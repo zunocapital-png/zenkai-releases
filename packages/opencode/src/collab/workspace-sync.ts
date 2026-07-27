@@ -112,8 +112,8 @@ export const addToWorkspace = Effect.fn("Collab.addToWorkspace")(function* (
     addedAt: Date.now(),
   }
 
-  meta.sessions.push(entry)
-  yield* Effect.promise(() => writeMeta(projectRoot, meta))
+  const updated = { ...meta, sessions: [...meta.sessions, entry] }
+  yield* Effect.promise(() => writeMeta(projectRoot, updated))
 
   return entry
 })
@@ -162,8 +162,8 @@ export const removeFromWorkspace = Effect.fn("Collab.removeFromWorkspace")(funct
   const filePath = path.join(workspacePath(projectRoot), filename)
   yield* Effect.promise(() => fs.unlink(filePath).catch(() => {}))
 
-  meta.sessions = meta.sessions.filter((s) => s.filename !== filename)
-  yield* Effect.promise(() => writeMeta(projectRoot, meta))
+  const updated = { ...meta, sessions: meta.sessions.filter((s) => s.filename !== filename) }
+  yield* Effect.promise(() => writeMeta(projectRoot, updated))
 })
 
 export * as WorkspaceSync from "./workspace-sync"

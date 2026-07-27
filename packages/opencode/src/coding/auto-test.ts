@@ -80,10 +80,7 @@ function exec(command: string, args: string[], cwd?: string): Effect.Effect<Exec
 }
 
 function fileExists(filePath: string): Effect.Effect<boolean> {
-  return Effect.tryPromise({
-    try: () => fs.access(filePath).then(() => true),
-    catch: () => false,
-  })
+  return Effect.promise(() => fs.access(filePath).then(() => true).catch(() => false))
 }
 
 function readFile(filePath: string): Effect.Effect<string, TestError> {

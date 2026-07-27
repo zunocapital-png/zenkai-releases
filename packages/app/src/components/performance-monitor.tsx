@@ -112,8 +112,8 @@ function UtilGauge(props: { value?: number; label: string }) {
           fill="none"
           stroke="#EC5B2B"
           stroke-width="4"
-          stroke-dasharray={c}
-          stroke-dashoffset={offset()}
+          stroke-dasharray={String(c)}
+          stroke-dashoffset={String(offset())}
           stroke-linecap="round"
           transform="rotate(-90 26 26)"
           class="transition-all duration-300"

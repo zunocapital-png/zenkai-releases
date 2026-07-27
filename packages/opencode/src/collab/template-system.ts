@@ -117,15 +117,15 @@ export const updateTemplate = Effect.fn("Collab.updateTemplate")(function* (
   id: TemplateID,
   updates: Partial<Pick<Template, "name" | "prompt" | "tags">>,
 ) {
-  const template = yield* getTemplate(id)
+  const current = yield* getTemplate(id)
 
-  if (updates.name) template.name = updates.name
-  if (updates.prompt) {
-    template.prompt = updates.prompt
-    template.variables = extractVariables(updates.prompt)
+  const template: Template = {
+    ...current,
+    ...(updates.name ? { name: updates.name } : {}),
+    ...(updates.prompt ? { prompt: updates.prompt, variables: extractVariables(updates.prompt) } : {}),
+    ...(updates.tags ? { tags: updates.tags } : {}),
+    updatedAt: Date.now(),
   }
-  if (updates.tags) template.tags = updates.tags
-  template.updatedAt = Date.now()
 
   yield* Effect.promise(() => fs.writeFile(templateFilePath(id), JSON.stringify(template, null, 2), "utf-8"))
 

@@ -27,7 +27,6 @@ import { useSync } from "@/context/sync"
 import { createSessionTabs } from "@/pages/session/helpers"
 import { showToast } from "@/utils/toast"
 import { PromptInputV2, type PromptInputV2Suggestion } from "@opencode-ai/session-ui/v2/prompt-input"
-import { VoiceInputButton } from "@/components/voice-input"
 import { SkipPermissionsToggle } from "@/components/skip-permissions-toggle"
 import {
   createPromptInputV2Controller,
@@ -52,43 +51,31 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
   const language = useLanguage()
 
   return (
-    <div class="flex flex-col gap-3">
-      <div class="flex items-end gap-2">
-        <div class="flex-1 min-w-0">
-          <PromptInputV2
-            controller={props.controller}
-            borderUnderlay={props.borderUnderlay}
-            class={props.class}
-            attachKeybind={command.keybindParts("file.attach")}
-            attachShortcut={command.keybind("file.attach")}
-            modelControl={
-              <PromptInputV2ModelControl
-                loading={props.controller.model.loading}
-                paid={props.controller.model.paid}
-                title={language.t("command.model.choose")}
-                keybind={command.keybindParts("model.choose")}
-                model={props.controller.model.selection}
-                providerID={props.controller.model.selection.current()?.provider?.id}
-                modelName={props.controller.model.selection.current()?.name ?? language.t("dialog.model.select.title")}
-                onClose={props.controller.restoreFocus}
-                onUnpaidClick={() =>
-                  dialog.show(() => <DialogSelectModelUnpaidV2 model={props.controller.model.selection} />)
-                }
-              />
+    <div class="flex flex-col gap-2">
+      <PromptInputV2
+        controller={props.controller}
+        borderUnderlay={props.borderUnderlay}
+        class={props.class}
+        attachKeybind={command.keybindParts("file.attach")}
+        attachShortcut={command.keybind("file.attach")}
+        modelControl={
+          <PromptInputV2ModelControl
+            loading={props.controller.model.loading}
+            paid={props.controller.model.paid}
+            title={language.t("command.model.choose")}
+            keybind={command.keybindParts("model.choose")}
+            model={props.controller.model.selection}
+            providerID={props.controller.model.selection.current()?.provider?.id}
+            modelName={props.controller.model.selection.current()?.name ?? language.t("dialog.model.select.title")}
+            onClose={props.controller.restoreFocus}
+            onUnpaidClick={() =>
+              dialog.show(() => <DialogSelectModelUnpaidV2 model={props.controller.model.selection} />)
             }
           />
-        </div>
-        <div class="shrink-0 pb-1 flex items-center gap-1">
-          <SkipPermissionsToggle />
-          <VoiceInputButton
-            onTranscript={(text) => {
-              const current = props.controller.value()
-              const next = current ? current + " " + text : text
-              props.controller.onInput(next, [{ type: "text", content: next, start: 0, end: next.length }], next.length)
-              props.controller.restoreFocus()
-            }}
-          />
-        </div>
+        }
+      />
+      <div class="flex items-center justify-end px-1">
+        <SkipPermissionsToggle />
       </div>
     </div>
   )

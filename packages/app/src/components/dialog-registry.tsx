@@ -28,19 +28,19 @@ export function openSessionExport(dialog: DialogContext) {
 
 export function openCodeSnippets(dialog: DialogContext) {
   void import("@/components/code-snippets").then((x) => {
-    dialog.show(() => <x.CodeSnippets />)
+    dialog.show(() => <x.CodeSnippets snippets={[]} />)
   })
 }
 
 export function openSmartContext(dialog: DialogContext) {
   void import("@/components/smart-context-panel").then((x) => {
-    dialog.show(() => <x.SmartContextPanel />)
+    dialog.show(() => <x.SmartContextPanel items={[]} totalTokens={0} maxTokens={128000} />)
   })
 }
 
 export function openErrorAnalyzer(dialog: DialogContext) {
   void import("@/components/error-analyzer").then((x) => {
-    dialog.show(() => <x.ErrorAnalyzer />)
+    dialog.show(() => <x.ErrorAnalyzer error="" />)
   })
 }
 

@@ -19,7 +19,11 @@ const SECRET_PATTERNS = [
   /Bearer\s+[A-Za-z0-9_\-.]{20,}/gi,
 ]
 
-export const ExportFormat = Schema.Literal("zenkai-session", "markdown", "json")
+export const ExportFormat = Schema.Union([
+  Schema.Literal("zenkai-session"),
+  Schema.Literal("markdown"),
+  Schema.Literal("json"),
+])
 export type ExportFormat = Schema.Schema.Type<typeof ExportFormat>
 
 export const ExportOptions = Schema.Struct({
@@ -101,29 +105,31 @@ export const exportSession = Effect.fn("Collab.exportSession")(function* (
   sessionID: SessionID,
   options: ExportOptions,
 ) {
-  const db = yield* Database
-  const drizzle = db.drizzle
+  const { db: drizzle } = yield* Database.Service
 
-  const [sessionRow] = yield* Effect.promise(() =>
-    drizzle.select().from(SessionTable).where(eq(SessionTable.id, sessionID)).limit(1),
-  )
+  const sessionRow = yield* drizzle
+    .select()
+    .from(SessionTable)
+    .where(eq(SessionTable.id, sessionID))
+    .get()
+    .pipe(Effect.orDie)
   if (!sessionRow) throw new Error(`Session not found: ${sessionID}`)
 
-  const messageRows = yield* Effect.promise(() =>
-    drizzle
-      .select()
-      .from(MessageTable)
-      .where(eq(MessageTable.session_id, sessionID))
-      .orderBy(asc(MessageTable.time_created)),
-  )
+  const messageRows = yield* drizzle
+    .select()
+    .from(MessageTable)
+    .where(eq(MessageTable.session_id, sessionID))
+    .orderBy(asc(MessageTable.time_created))
+    .all()
+    .pipe(Effect.orDie)
 
-  const partRows = yield* Effect.promise(() =>
-    drizzle
-      .select()
-      .from(PartTable)
-      .where(eq(PartTable.session_id, sessionID))
-      .orderBy(asc(PartTable.time_created)),
-  )
+  const partRows = yield* drizzle
+    .select()
+    .from(PartTable)
+    .where(eq(PartTable.session_id, sessionID))
+    .orderBy(asc(PartTable.time_created))
+    .all()
+    .pipe(Effect.orDie)
 
   const partsByMessage = new Map<string, typeof partRows>()
   for (const part of partRows) {
@@ -134,26 +140,27 @@ export const exportSession = Effect.fn("Collab.exportSession")(function* (
 
   const messages: ExportedMessage[] = []
   for (const msg of messageRows) {
-    if (!options.includeResponses && msg.role === "assistant") continue
+    const m = msg.data as { role?: string; agent?: string; model?: { id?: string } }
+    if (!options.includeResponses && m.role === "assistant") continue
 
-    const msgParts = partsByMessage.get(msg.id) ?? []
+    const msgParts = (partsByMessage.get(msg.id) ?? []).map((p) => p.data)
     let content = extractTextFromParts(msgParts as Array<{ type: string; text?: string }>)
     if (options.redactSecrets) content = redactSecrets(content)
 
     messages.push({
       id: msg.id,
-      role: msg.role,
+      role: m.role ?? "user",
       content,
       time: options.includeTimestamps ? msg.time_created : undefined,
-      agent: msg.agent ?? undefined,
-      model: msg.model?.id ?? undefined,
+      agent: m.agent ?? undefined,
+      model: m.model?.id ?? undefined,
     })
   }
 
   const exportedParts: Array<Schema.Schema.Type<typeof ExportedPart>> = []
   if (options.includeToolOutputs || options.includeFileChanges) {
     for (const part of partRows) {
-      const typedPart = part as { type: string; tool?: string; input?: unknown; output?: unknown }
+      const typedPart = part.data as { type: string; tool?: string; input?: unknown; output?: unknown }
       if (typedPart.type === "tool" && options.includeToolOutputs) {
         let content: unknown = { input: typedPart.input, output: typedPart.output }
         if (options.redactSecrets && typeof content === "string") {
@@ -161,7 +168,7 @@ export const exportSession = Effect.fn("Collab.exportSession")(function* (
         }
         exportedParts.push({
           id: part.id,
-          type: part.type,
+          type: typedPart.type,
           content,
           tool: typedPart.tool,
           time: options.includeTimestamps ? part.time_created : undefined,
@@ -249,29 +256,31 @@ export const exportAsMarkdown = Effect.fn("Collab.exportAsMarkdown")(function* (
 export const createSessionSnapshot = Effect.fn("Collab.createSessionSnapshot")(function* (
   sessionID: SessionID,
 ) {
-  const db = yield* Database
-  const drizzle = db.drizzle
+  const { db: drizzle } = yield* Database.Service
 
-  const [sessionRow] = yield* Effect.promise(() =>
-    drizzle.select().from(SessionTable).where(eq(SessionTable.id, sessionID)).limit(1),
-  )
+  const sessionRow = yield* drizzle
+    .select()
+    .from(SessionTable)
+    .where(eq(SessionTable.id, sessionID))
+    .get()
+    .pipe(Effect.orDie)
   if (!sessionRow) throw new Error(`Session not found: ${sessionID}`)
 
-  const messageRows = yield* Effect.promise(() =>
-    drizzle
-      .select()
-      .from(MessageTable)
-      .where(eq(MessageTable.session_id, sessionID))
-      .orderBy(asc(MessageTable.time_created)),
-  )
+  const messageRows = yield* drizzle
+    .select()
+    .from(MessageTable)
+    .where(eq(MessageTable.session_id, sessionID))
+    .orderBy(asc(MessageTable.time_created))
+    .all()
+    .pipe(Effect.orDie)
 
-  const partRows = yield* Effect.promise(() =>
-    drizzle
-      .select()
-      .from(PartTable)
-      .where(eq(PartTable.session_id, sessionID))
-      .orderBy(asc(PartTable.time_created)),
-  )
+  const partRows = yield* drizzle
+    .select()
+    .from(PartTable)
+    .where(eq(PartTable.session_id, sessionID))
+    .orderBy(asc(PartTable.time_created))
+    .all()
+    .pipe(Effect.orDie)
 
   const firstMsg = messageRows[0]
   const lastMsg = messageRows[messageRows.length - 1]
@@ -279,8 +288,8 @@ export const createSessionSnapshot = Effect.fn("Collab.createSessionSnapshot")(f
   const firstParts = firstMsg ? partRows.filter((p) => p.message_id === firstMsg.id) : []
   const lastParts = lastMsg ? partRows.filter((p) => p.message_id === lastMsg.id) : []
 
-  const firstText = extractTextFromParts(firstParts as Array<{ type: string; text?: string }>)
-  const lastText = extractTextFromParts(lastParts as Array<{ type: string; text?: string }>)
+  const firstText = extractTextFromParts(firstParts.map((p) => p.data) as Array<{ type: string; text?: string }>)
+  const lastText = extractTextFromParts(lastParts.map((p) => p.data) as Array<{ type: string; text?: string }>)
 
   const snapshot: SessionSnapshot = {
     id: sessionID,

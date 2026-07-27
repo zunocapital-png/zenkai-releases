@@ -126,7 +126,7 @@ export const SessionExport: Component = () => {
           content: processText(textParts.map((p) => p.text).join("\n")),
           time: options.includeTimestamps ? m.time.created : undefined,
           agent: m.agent,
-          model: m.model,
+          model: "modelID" in m ? m.modelID : undefined,
         }
       })
 

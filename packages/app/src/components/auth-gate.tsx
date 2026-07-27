@@ -1,5 +1,5 @@
 import { createSignal, onMount, Show, For, type JSX } from "solid-js"
-import { ZenkaiLogo } from "./zenkai-logo"
+import { ZenkaiLogoMark } from "./zenkai-logo"
 import { MatrixRain } from "./matrix-rain"
 import { hashCredentials } from "@/auth/license-data"
 import { validateCredentials, isAuthenticated, isExpired, saveAuth } from "@/auth/license-manager"
@@ -317,35 +317,34 @@ function LoginScreen(props: { onSuccess: () => void; mounted: boolean; leaving: 
       <div class="scanline-overlay" />
       <div class="scanline-bar" />
 
+      {/* Terminal boot log — esquina inferior izquierda */}
+      <div
+        class="absolute bottom-5 left-6 font-mono text-[10px] leading-[1.7] pointer-events-none select-none hidden sm:block"
+        style={{ color: "rgba(236,91,43,0.4)", "z-index": "15", "max-width": "70vw" }}
+      >
+        <For each={TERMINAL_LINES.slice(0, visibleLines())}>
+          {(line) => (
+            <div class="term-line">
+              <span style={{ color: "rgba(236,91,43,0.22)" }}>$</span> <span>{line.text}</span>
+            </div>
+          )}
+        </For>
+      </div>
+
       <div class="auth-gate-container auth-scroll flex flex-col items-center w-full max-w-md px-6 py-6 max-h-[100dvh] overflow-y-auto" style={{ "z-index": "20" }}>
         {/* Logo + ZENKAI title */}
-        <div class="logo-area flex flex-col items-center gap-3 mb-4">
-          <ZenkaiLogo size={72} animate />
-          <div class="flex flex-col items-center">
-            <h1 class="zenkai-wordmark text-xl tracking-[0.25em] select-none">ZENKAI</h1>
-            <div class="flex items-center gap-2 mt-2">
-              <div style={{ width: "40px", height: "1px", background: "linear-gradient(90deg, transparent, rgba(236,91,43,0.4))" }} />
-              <span class="text-[9px] font-mono tracking-[0.4em] uppercase" style={{ color: "rgba(236,91,43,0.35)" }}>
-                AI CODING ASSISTANT
-              </span>
-              <div style={{ width: "40px", height: "1px", background: "linear-gradient(90deg, rgba(236,91,43,0.4), transparent)" }} />
-            </div>
+        <div class="logo-area flex flex-col items-center gap-2 mb-5">
+          <div class="flex items-center gap-3">
+            <ZenkaiLogoMark size={52} animate />
+            <h1 class="zenkai-wordmark text-3xl tracking-[0.25em] select-none">ZENKAI</h1>
           </div>
-        </div>
-
-        {/* Terminal output */}
-        <div class="w-full mb-4 font-mono text-[11px] leading-[1.6]" style={{ color: "rgba(236,91,43,0.45)" }}>
-          <For each={TERMINAL_LINES.slice(0, visibleLines())}>
-            {(line) => (
-              <div class="term-line">
-                <span style={{ color: "rgba(236,91,43,0.25)" }}>$</span>{" "}
-                <span>{line.text}</span>
-              </div>
-            )}
-          </For>
-          <Show when={visibleLines() >= TERMINAL_LINES.length && !showForm()}>
-            <span class="term-cursor" />
-          </Show>
+          <div class="flex items-center gap-2 mt-1">
+            <div style={{ width: "40px", height: "1px", background: "linear-gradient(90deg, transparent, rgba(236,91,43,0.4))" }} />
+            <span class="text-[9px] font-mono tracking-[0.4em] uppercase" style={{ color: "rgba(236,91,43,0.35)" }}>
+              AI CODING ASSISTANT
+            </span>
+            <div style={{ width: "40px", height: "1px", background: "linear-gradient(90deg, rgba(236,91,43,0.4), transparent)" }} />
+          </div>
         </div>
 
         {/* Login form */}

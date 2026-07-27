@@ -24,7 +24,7 @@ type SpeechRecognitionInstance = EventTarget & {
 type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance
 
 function getSpeechRecognition(): SpeechRecognitionConstructor | undefined {
-  const w = window as Record<string, unknown>
+  const w = window as unknown as Record<string, unknown>
   return (w.SpeechRecognition ?? w.webkitSpeechRecognition) as SpeechRecognitionConstructor | undefined
 }
 

@@ -142,7 +142,7 @@ export const CollabPanel: Component = () => {
               content: textParts.map((p) => p.text).join("\n"),
               time: m.time.created,
               agent: m.agent,
-              model: m.model,
+              model: "modelID" in m ? m.modelID : undefined,
             }
           }),
         }

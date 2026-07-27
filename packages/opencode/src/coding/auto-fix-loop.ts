@@ -270,10 +270,7 @@ function detectLanguage(filePath: string): Language {
 }
 
 function delay(ms: number): Effect.Effect<void> {
-  return Effect.tryPromise({
-    try: () => new Promise<void>((resolve) => setTimeout(resolve, ms)),
-    catch: () => new AutoFixError({ reason: "Delay interrupted" }),
-  })
+  return Effect.promise(() => new Promise<void>((resolve) => setTimeout(resolve, ms)))
 }
 
 export const runAutoFix = Effect.fn("AutoFix.runAutoFix")(function* (

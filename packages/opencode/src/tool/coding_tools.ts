@@ -389,7 +389,7 @@ export const CodingTools = Tool.define(
         if (!params.code) {
           return yield* Effect.fail(new Error("code parameter is required for run_code"))
         }
-        const lang = (params.language ?? "javascript") as SupportedLanguage
+        const lang = (params.language ?? "javascript").toLowerCase() as SupportedLanguage
         if (!SUPPORTED_LANGUAGES.has(lang)) {
           return yield* Effect.fail(
             new Error(`Unsupported language: ${lang}. Supported: ${[...SUPPORTED_LANGUAGES].join(", ")}`),

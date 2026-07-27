@@ -164,7 +164,7 @@ export function ErrorAnalyzer(props: ErrorAnalyzerProps) {
         <div class="px-3 py-4 text-center text-[12px] text-[#EC5B2B]">{state.error}</div>
       </Show>
 
-      <Show when={state.result && !state.loading}>
+      <Show when={!state.loading && state.result}>
         {(r) => (
           <div class="flex flex-col">
             <div class="border-b border-border-base px-3 py-2">

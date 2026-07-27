@@ -2080,7 +2080,7 @@ export default function Page() {
             </div>
           </Match>
           <Match when={params.id}>
-            <Show when={sync().data.session_status[params.id ?? ""]?.type === "running"}>
+            <Show when={sync().data.session_status[params.id ?? ""]?.type === "busy"}>
               <div class="shrink-0 px-4 pt-3">
                 <ThinkingPanel steps={[]} isActive={true} />
               </div>
@@ -2136,7 +2136,7 @@ export default function Page() {
         <div class="shrink-0 px-4 py-2">
           <DiffPreview
             diffs={reviewDiffs().map((d) => ({
-              filePath: d.file,
+              filePath: d.file ?? "",
               additions: d.additions,
               deletions: d.deletions,
               lines: [],

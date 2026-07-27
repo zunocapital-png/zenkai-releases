@@ -21,6 +21,14 @@ interface MarketplaceEntry {
   dependencies?: string[]
   changelog?: { version: string; date: string; changes: string }[]
   defaults?: Record<string, unknown>
+  configSchema?: Record<string, ConfigField>
+}
+
+interface ConfigField {
+  label: string
+  description?: string
+  type: "boolean" | "number" | "string" | string
+  default?: unknown
 }
 import "./plugin-detail.css"
 
