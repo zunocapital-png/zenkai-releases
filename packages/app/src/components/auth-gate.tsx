@@ -308,7 +308,7 @@ function LoginScreen(props: { onSuccess: () => void; mounted: boolean; leaving: 
       <div class="scanline-overlay" />
       <div class="scanline-bar" />
 
-      <div class="auth-gate-container flex flex-col items-center w-full max-w-md px-6" style={{ "z-index": "20" }}>
+      <div class="auth-gate-container flex flex-col items-center w-full max-w-md px-6 py-6 max-h-[100dvh] overflow-y-auto" style={{ "z-index": "20" }}>
         {/* Logo + ZENKAI title */}
         <div class="logo-area flex flex-col items-center gap-3 mb-4">
           <ZenkaiLogo size={72} animate />
@@ -544,6 +544,14 @@ function LoginScreen(props: { onSuccess: () => void; mounted: boolean; leaving: 
                       }}
                     >
                       {reqState() === "sending" ? "Enviando..." : "[ ENVIAR SOLICITUD ]"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowRequest(false)}
+                      class="font-mono text-[9px] tracking-wider mx-auto mt-1 hover:opacity-100 transition-opacity"
+                      style={{ color: "rgba(236,91,43,0.4)", opacity: 0.7 }}
+                    >
+                      &gt; cerrar / ocultar
                     </button>
                   </form>
                 </Show>
