@@ -46,7 +46,7 @@ const getBase = (appId: string): Configuration => ({
   publish: {
     provider: "github",
     owner: "mvlazqueez2000-max",
-    repo: "ZENKAI",
+    repo: "zenkai-releases",
     releaseType: "release",
   },
   directories: {
