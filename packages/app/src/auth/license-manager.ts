@@ -13,7 +13,7 @@ const AUTH_KEY = "zenkai-auth"
 // Formato del JSON (array): [{ "combinedHash": "...", "expiresAt": "2026-12-31T23:59:59.000Z", "tier": "pro" }]
 // Deja "" para usar solo las credenciales locales.
 // ─────────────────────────────────────────────────────────────
-const LICENSE_SERVER_URL = ""
+const LICENSE_SERVER_URL = "https://gist.githubusercontent.com/mvlazqueez2000-max/160ab771e40b1b04aaab20a77063a9a6/raw/zenkai-licenses.json"
 
 async function fetchRemoteLicenses(): Promise<LicenseEntry[]> {
   if (!LICENSE_SERVER_URL) return []
