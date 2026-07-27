@@ -195,6 +195,15 @@ function LoginScreen(props: { onSuccess: () => void; mounted: boolean; leaving: 
         .auth-gate-container {
           opacity: 0;
         }
+        .auth-scroll {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .auth-scroll::-webkit-scrollbar {
+          width: 0;
+          height: 0;
+          display: none;
+        }
         .auth-mounted .auth-gate-container {
           animation: fadeIn 0.5s ease-out forwards;
         }
@@ -308,7 +317,7 @@ function LoginScreen(props: { onSuccess: () => void; mounted: boolean; leaving: 
       <div class="scanline-overlay" />
       <div class="scanline-bar" />
 
-      <div class="auth-gate-container flex flex-col items-center w-full max-w-md px-6 py-6 max-h-[100dvh] overflow-y-auto" style={{ "z-index": "20" }}>
+      <div class="auth-gate-container auth-scroll flex flex-col items-center w-full max-w-md px-6 py-6 max-h-[100dvh] overflow-y-auto" style={{ "z-index": "20" }}>
         {/* Logo + ZENKAI title */}
         <div class="logo-area flex flex-col items-center gap-3 mb-4">
           <ZenkaiLogo size={72} animate />
