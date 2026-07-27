@@ -1,0 +1,113 @@
+---
+title: Windows (WSL)
+description: En iyi deneyim icin zenkai'u WSL'de calistirin.
+---
+
+import { Steps } from "@astrojs/starlight/components"
+
+zenkai Windows'ta dogrudan calisabilir, ancak en iyi deneyim icin [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install) kullanmanizi oneriyoruz. WSL, zenkai ozellikleriyle sorunsuz calisan bir Linux ortami saglar.
+
+:::tip[Neden WSL?]
+WSL, daha iyi dosya sistemi performansi, tam terminal destegi ve zenkai'un dayandigi gelistirme araclariyla uyumluluk sunar.
+:::
+
+---
+
+## Kurulum
+
+<Steps>
+
+1. **WSL'i yukleyin**
+
+   Henuz yuklemediyseniz resmi Microsoft rehberini kullanarak [WSL kurulumunu](https://learn.microsoft.com/en-us/windows/wsl/install) yapin.
+
+2. **zenkai'u WSL icine yukleyin**
+
+   WSL hazir olduktan sonra WSL terminalini acin ve zenkai'u [kurulum yontemlerinden](/docs/) biriyle yukleyin.
+
+   ```bash
+   curl -fsSL # | bash
+   ```
+
+3. **zenkai'u WSL icinden kullanin**
+
+   Proje dizininize gidin (`/mnt/c/`, `/mnt/d/` vb. ile Windows dosyalarina erisebilirsiniz) ve zenkai'u calistirin.
+
+   ```bash
+   cd /mnt/c/Users/YourName/project
+   zenkai
+   ```
+
+</Steps>
+
+---
+
+## Masaüstü uygulaması + WSL sunucusu
+
+zenkai Desktop kullanmak isteyip sunucuyu WSL'de calistirmak istiyorsaniz:
+
+1. **Sunucuyu WSL'de baslatin** ve dis baglantilara izin vermek icin `--hostname 0.0.0.0` kullanin:
+
+   ```bash
+   zenkai serve --hostname 0.0.0.0 --port 4096
+   ```
+
+2. **Desktop uygulamasini** `http://localhost:4096` adresine baglayin
+
+:::note
+Kurulumunuzda `localhost` calismiyorsa bunun yerine WSL IP adresini kullanin (WSL icinde: `hostname -I`) ve `http://<wsl-ip>:4096` adresine baglanin.
+:::
+
+:::caution
+`--hostname 0.0.0.0` kullaniyorsaniz sunucuyu guvene almak icin `OPENCODE_SERVER_PASSWORD` ayarlayin.
+
+```bash
+OPENCODE_SERVER_PASSWORD=your-password zenkai serve --hostname 0.0.0.0
+```
+
+:::
+
+---
+
+## Web istemcisi + WSL
+
+Windows'ta en iyi web deneyimi icin:
+
+1. **`zenkai web` komutunu PowerShell yerine WSL terminalinde calistirin**:
+
+   ```bash
+   zenkai web --hostname 0.0.0.0
+   ```
+
+2. **Windows tarayicinizdan** `http://localhost:<port>` adresini acin (zenkai URL'yi yazdirir)
+
+`zenkai web` komutunu WSL'den calistirmak, dosya sistemi erisimi ve terminal entegrasyonunu daha tutarli hale getirirken tarayicidan erisimi korur.
+
+---
+
+## Windows dosyalarına erişin
+
+WSL, tum Windows dosyalariniza `/mnt/` dizini uzerinden erisebilir:
+
+- `C:` surucusu -> `/mnt/c/`
+- `D:` surucusu -> `/mnt/d/`
+- Ve digerleri...
+
+Ornek:
+
+```bash
+cd /mnt/c/Users/YourName/Documents/project
+zenkai
+```
+
+:::tip
+En sorunsuz deneyim icin deponuzu WSL dosya sistemine (ornegin `~/code/` altina) klonlayip zenkai'u orada calistirmayi dusunun.
+:::
+
+---
+
+## İpuçları
+
+- Windows suruculerinde duran projelerde zenkai'u WSL icinde calistirin - dosya erisimi daha sorunsuz olur
+- Butunlesik bir gelistirme akisi icin zenkai ile birlikte VS Code [WSL eklentisini](https://code.visualstudio.com/docs/remote/wsl) kullanin
+- zenkai konfigurasyonunuz ve oturumlariniz WSL ortaminda `~/.local/share/zenkai/` konumunda saklanir

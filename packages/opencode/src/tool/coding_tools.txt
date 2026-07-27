@@ -1,0 +1,9 @@
+Specialized coding tools for code execution, analysis, testing, scaffolding, refactoring, and auto-fixing.
+
+Actions:
+- run_code: Execute code snippets in a sandboxed environment. Supports javascript, typescript, python, and bash. Returns stdout, stderr, exit code, and execution duration.
+- analyze_code: Read a source file and produce a structured analysis covering type safety, error handling, security risks, performance concerns, and code style issues.
+- generate_tests: Read a source file and generate test cases following the project's existing test framework and conventions.
+- scaffold_project: Generate a new project structure from a template. Supports common project types like node-typescript, python-package, react-app, nextjs-app, go-module, and rust-crate.
+- refactor: Apply a named refactoring operation to a file. Operations include extract-function, rename-symbol, inline-variable, and extract-interface.
+- auto_fix: Run a shell command in a loop, analyzing and fixing errors automatically. Retries up to 5 times. Use for build, lint, or typecheck commands that fail.

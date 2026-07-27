@@ -1,0 +1,1 @@
+Search and retrieve previously saved memories. Use this to look up information the user asked you to remember in past sessions, or to check if there are relevant memories for the current task. You can search by text query, filter by memory type, or both. Returns matching memories sorted by most recently updated.

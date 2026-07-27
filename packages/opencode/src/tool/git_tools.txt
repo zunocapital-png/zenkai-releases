@@ -1,0 +1,12 @@
+Git integration tools for repository management.
+
+Provides commands for:
+- git_diff: View working tree diffs or diffs between commits
+- git_log: Browse commit history with pagination
+- git_blame: See line-by-line blame annotations for a file
+- git_branch: List, create, or switch branches
+- git_status: View file statuses (staged, unstaged, untracked)
+- git_stage: Stage or unstage files for commit
+- git_commit: Create a new commit with a message
+
+Use these tools to inspect and manage the git repository state.

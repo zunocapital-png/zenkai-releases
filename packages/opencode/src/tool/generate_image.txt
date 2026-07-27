@@ -1,0 +1,20 @@
+Genera una imagen a partir de una descripcion de texto (text-to-image). GRATIS, sin API key, usando Pollinations.ai.
+
+Cuando usar esta herramienta:
+- El usuario pide crear, generar o dibujar una imagen, ilustracion, logo, icono, mockup, arte, foto o concepto visual.
+- Se necesita un asset visual generado por IA.
+
+Parametros:
+- prompt (requerido): descripcion detallada de la imagen. Escribe el prompt en INGLES para mejores resultados, aunque el usuario escriba en espanol. Se descriptivo (estilo, colores, composicion, iluminacion).
+- width / height (opcional): dimensiones en pixeles, default 1024x1024, maximo 1536.
+- model (opcional): "flux" para maxima calidad (default) o "turbo" para velocidad.
+- filename (opcional): nombre del archivo de salida.
+
+Comportamiento:
+- La imagen se guarda en el directorio del proyecto y se adjunta a la respuesta.
+- Requiere conexion a internet (el servicio de generacion es remoto y gratuito).
+
+Ejemplos de buen prompt:
+- "a minimalist orange fox logo, flat vector style, dark background"
+- "cozy pixel art bedroom, warm lighting, 16-bit retro game style"
+- "professional product photo of a coffee mug on a wooden table, soft daylight"

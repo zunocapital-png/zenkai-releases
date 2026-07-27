@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zenkai — Panel de Credenciales</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--o:#EC5B2B;--o2:#EE7948}
+body{background:#080808;color:#ddd;font-family:'Consolas','SF Mono',monospace;padding:24px;min-height:100vh}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-size:20px;letter-spacing:.3em;color:var(--o);text-transform:uppercase;text-shadow:0 0 20px rgba(236,91,43,.3);margin-bottom:4px}
+.sub{font-size:11px;color:#666;margin-bottom:24px}
+.card{background:#0e0e0e;border:1px solid #1e1e1e;border-radius:10px;padding:20px;margin-bottom:18px}
+.card h2{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--o);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid rgba(236,91,43,.12)}
+label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#888;margin:12px 0 5px}
+input,select{width:100%;padding:10px 12px;background:#000;border:1px solid #262626;color:#fff;font-family:inherit;font-size:13px;border-radius:6px;outline:none}
+input:focus,select:focus{border-color:var(--o)}
+.row{display:flex;gap:12px}.row>div{flex:1}
+.btn{width:100%;padding:12px;margin-top:16px;background:var(--o);border:none;color:#fff;font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:.08em;border-radius:6px;cursor:pointer;transition:.2s}
+.btn:hover{background:var(--o2)}
+.btn.ghost{background:transparent;border:1px solid #333;color:#aaa;margin-top:8px}
+.btn.ghost:hover{border-color:var(--o);color:var(--o)}
+.out{margin-top:16px;display:none}
+.out.show{display:block}
+.field{margin-bottom:10px}
+.field .k{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#666;margin-bottom:3px}
+.field .v{background:#000;border:1px solid #262626;border-radius:5px;padding:8px 10px;font-size:13px;color:var(--o);word-break:break-all;cursor:pointer}
+.field .v:hover{border-color:var(--o)}
+pre{background:#000;border:1px solid #262626;border-radius:6px;padding:12px;font-size:11px;color:#9cdcfe;overflow-x:auto;white-space:pre-wrap;word-break:break-all;cursor:pointer;margin-top:6px}
+pre:hover{border-color:var(--o)}
+.hint{font-size:10px;color:#555;margin-top:6px;line-height:1.5}
+.hist-item{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:#000;border:1px solid #1e1e1e;border-radius:6px;margin-bottom:6px;font-size:12px}
+.hist-item .info{color:#bbb}.hist-item .tag{font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(236,91,43,.12);color:var(--o);text-transform:uppercase;letter-spacing:.08em}
+.hist-item .exp{font-size:10px;color:#666;margin-left:8px}
+.del{background:none;border:none;color:#844;cursor:pointer;font-size:14px;padding:0 4px}.del:hover{color:#f55}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--o);color:#fff;padding:10px 20px;border-radius:6px;font-size:12px;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+.empty{font-size:11px;color:#555;text-align:center;padding:14px}
+.info-box{background:rgba(236,91,43,.04);border:1px solid rgba(236,91,43,.15);border-radius:6px;padding:12px;font-size:11px;color:#999;line-height:1.6}
+.info-box b{color:var(--o)}
+a{color:var(--o)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>&gt; Zenkai · Credenciales</h1>
+  <div class="sub">Panel privado de administracion — Zuno Company</div>
+
+  <div class="card">
+    <h2>Generar credencial de acceso</h2>
+    <label>Etiqueta / nombre (solo para tu registro)</label>
+    <input id="etiqueta" placeholder="Ej: Juan Perez - cliente"/>
+    <div class="row">
+      <div>
+        <label>License Key</label>
+        <input id="key" placeholder="ZENKAI-XXXX-2026"/>
+      </div>
+      <div>
+        <label>Access Code</label>
+        <input id="code" placeholder="codigo-secreto"/>
+      </div>
+    </div>
+    <button class="btn ghost" onclick="generarAleatorio()">🎲 Generar key + code aleatorios</button>
+    <div class="row">
+      <div>
+        <label>Duracion</label>
+        <select id="dur" onchange="toggleFecha()">
+          <option value="7">7 dias (prueba)</option>
+          <option value="30">1 mes</option>
+          <option value="90">3 meses</option>
+          <option value="180">6 meses</option>
+          <option value="365" selected>1 año</option>
+          <option value="730">2 años</option>
+          <option value="custom">Fecha exacta...</option>
+        </select>
+      </div>
+      <div>
+        <label>Tier</label>
+        <select id="tier">
+          <option value="pro" selected>pro</option>
+          <option value="trial">trial</option>
+          <option value="admin">admin</option>
+        </select>
+      </div>
+    </div>
+    <div id="fechaWrap" style="display:none">
+      <label>Fecha de expiracion</label>
+      <input type="date" id="fecha"/>
+    </div>
+    <button class="btn" onclick="generar()">GENERAR CREDENCIAL</button>
+
+    <div class="out" id="out">
+      <div class="field"><div class="k">Entregar a la persona — License Key</div><div class="v" id="oKey" onclick="copy(this)"></div></div>
+      <div class="field"><div class="k">Entregar a la persona — Access Code</div><div class="v" id="oCode" onclick="copy(this)"></div></div>
+      <div class="field"><div class="k">Expira</div><div class="v" id="oExp" onclick="copy(this)"></div></div>
+      <div class="k" style="margin-top:12px">Pega este bloque en DEFAULT_LICENSES (license-data.ts):</div>
+      <pre id="oBlock" onclick="copy(this)"></pre>
+      <div class="hint">Click en cualquier campo para copiarlo. Despues de pegar el bloque, recompila el instalador.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Credenciales generadas</h2>
+    <div id="hist"></div>
+    <div class="row" style="margin-top:14px">
+      <div><button class="btn" onclick="publicarGist()">🚀 PUBLICAR (automatico)</button></div>
+      <div><button class="btn ghost" onclick="exportarJSON()" style="margin-top:0">⬇ Exportar JSON (manual)</button></div>
+    </div>
+    <div class="hint">"Publicar" sube las credenciales a tu Gist al instante — la app las reconoce sin recompilar ni subir archivos a mano.</div>
+  </div>
+
+  <div class="card">
+    <h2>Publicacion automatica (Nivel 2)</h2>
+    <div class="info-box" style="margin-bottom:14px">
+      Configura esto UNA vez. Crea un <b>Gist secreto</b> en
+      <a href="https://gist.github.com" target="_blank">gist.github.com</a> con un archivo
+      llamado <b>zenkai-licenses.json</b> (contenido inicial: <b>[]</b>). Copia su ID (esta en la URL).
+      Luego crea un <b>token</b> en
+      <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens</a>
+      con permiso solo de <b>Gists</b>. Con eso, el boton "Publicar" actualiza el Gist solo.
+    </div>
+    <label>GitHub Gist ID</label>
+    <input id="gistId" placeholder="ej: a1b2c3d4e5f6..." oninput="saveCfg()"/>
+    <label>GitHub Token (permiso Gists)</label>
+    <input id="ghToken" type="password" placeholder="github_pat_..." oninput="saveCfg()"/>
+    <div class="hint" id="rawHint"></div>
+  </div>
+
+  <div class="card">
+    <h2>¿Como me llegan las solicitudes?</h2>
+    <div class="info-box">
+      Cuando alguien pide acceso desde el login de Zenkai, el mensaje llega a tu correo
+      via <b>Web3Forms</b>. Para verlas todas juntas, entra a tu panel en
+      <a href="https://web3forms.com/dashboard" target="_blank">web3forms.com/dashboard</a>
+      (con la cuenta que registraste). Ahi ves nombre, correo y motivo de cada solicitud.
+      <br><br>
+      <b>Flujo:</b> te llega la solicitud → generas la credencial aqui → le respondes su
+      key + code por correo → la persona entra hasta la fecha que pusiste.
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast">Copiado</div>
+
+<script>
+const HKEY = "zenkai-cred-historial"
+
+function toggleFecha(){
+  document.getElementById('fechaWrap').style.display = document.getElementById('dur').value==='custom'?'block':'none'
+}
+
+function rand(n){
+  const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+  let s="";for(let i=0;i<n;i++)s+=chars[Math.floor(Math.random()*chars.length)]
+  return s
+}
+function generarAleatorio(){
+  document.getElementById('key').value = "ZENKAI-"+rand(4)+"-2026"
+  document.getElementById('code').value = rand(4).toLowerCase()+"-"+rand(4).toLowerCase()
+}
+
+async function sha256(text){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text))
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("")
+}
+
+function expiryISO(){
+  const dur = document.getElementById('dur').value
+  if(dur==='custom'){
+    const f = document.getElementById('fecha').value
+    if(!f) return null
+    return new Date(f+"T23:59:59.000Z").toISOString()
+  }
+  const d = new Date()
+  d.setDate(d.getDate()+parseInt(dur,10))
+  d.setHours(23,59,59,0)
+  return d.toISOString()
+}
+
+async function generar(){
+  const key = document.getElementById('key').value.trim()
+  const code = document.getElementById('code').value.trim()
+  const tier = document.getElementById('tier').value
+  const etiqueta = document.getElementById('etiqueta').value.trim() || "(sin etiqueta)"
+  if(!key||!code){ alert("Falta License Key o Access Code"); return }
+  const expiresAt = expiryISO()
+  if(!expiresAt){ alert("Elige una fecha valida"); return }
+
+  const combinedHash = await sha256(`${key}:${code}`)
+  const entry = { keyHash:"", codeHash:"", combinedHash, expiresAt, tier }
+
+  document.getElementById('oKey').textContent = key
+  document.getElementById('oCode').textContent = code
+  document.getElementById('oExp').textContent = expiresAt.slice(0,10)
+  document.getElementById('oBlock').textContent = JSON.stringify(entry,null,2)+","
+  document.getElementById('out').classList.add('show')
+
+  saveHist({ etiqueta, key, code, tier, exp:expiresAt.slice(0,10), expISO:expiresAt, hash:combinedHash })
+}
+
+// Exporta TODAS las credenciales como JSON para subir a tu URL/servidor.
+// La app lee ese JSON y reconoce las credenciales SIN recompilar.
+function exportarJSON(){
+  const h = loadHist()
+  if(!h.length){ alert("No hay credenciales para exportar"); return }
+  const arr = h.map(it => ({ combinedHash: it.hash, expiresAt: it.expISO || (it.exp+"T23:59:59.000Z"), tier: it.tier }))
+  const json = JSON.stringify(arr, null, 2)
+  navigator.clipboard.writeText(json).then(()=>{
+    const t=document.getElementById('toast');t.textContent="JSON copiado — subelo a tu URL";t.classList.add('show');setTimeout(()=>{t.classList.remove('show');t.textContent="Copiado"},1800)
+  })
+  // Tambien descarga el archivo listo para subir.
+  const blob = new Blob([json], {type:"application/json"})
+  const a = document.createElement("a")
+  a.href = URL.createObjectURL(blob); a.download = "zenkai-licenses.json"; a.click()
+}
+
+function loadHist(){ try{ return JSON.parse(localStorage.getItem(HKEY)||"[]") }catch{ return [] } }
+function saveHist(item){ const h=loadHist(); h.unshift(item); localStorage.setItem(HKEY,JSON.stringify(h.slice(0,50))); renderHist() }
+function delHist(i){ const h=loadHist(); h.splice(i,1); localStorage.setItem(HKEY,JSON.stringify(h)); renderHist() }
+function renderHist(){
+  const h=loadHist(), el=document.getElementById('hist')
+  if(!h.length){ el.innerHTML='<div class="empty">Aun no generaste credenciales</div>'; return }
+  el.innerHTML = h.map((it,i)=>`<div class="hist-item">
+    <div><span class="info">${it.etiqueta}</span> <span class="tag">${it.tier}</span><span class="exp">exp ${it.exp}</span><br>
+    <span style="font-size:11px;color:#777">${it.key} / ${it.code}</span></div>
+    <button class="del" onclick="delHist(${i})">✕</button></div>`).join('')
+}
+
+function copy(el){
+  navigator.clipboard.writeText(el.textContent).then(()=>{
+    const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1200)
+  })
+}
+
+// ── Publicacion automatica al Gist (Nivel 2) ──
+const CFG = "zenkai-gist-cfg"
+function saveCfg(){
+  const cfg = { gistId:document.getElementById('gistId').value.trim(), token:document.getElementById('ghToken').value.trim() }
+  localStorage.setItem(CFG, JSON.stringify(cfg))
+  updateRawHint(cfg.gistId)
+}
+function loadCfg(){
+  try{ const c=JSON.parse(localStorage.getItem(CFG)||"{}")
+    if(c.gistId)document.getElementById('gistId').value=c.gistId
+    if(c.token)document.getElementById('ghToken').value=c.token
+    updateRawHint(c.gistId)
+  }catch{}
+}
+function updateRawHint(gistId){
+  const el=document.getElementById('rawHint')
+  if(gistId){ el.innerHTML=`Para la app (LICENSE_SERVER_URL): abre tu Gist, click en el boton <b>Raw</b> del archivo zenkai-licenses.json, y copia esa URL. Pegala UNA vez en license-manager.ts y recompila. (Consejo: quita el codigo largo despues de /raw/ para que siempre lea la ultima version.)` }
+  else el.textContent=""
+}
+function toastMsg(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>{t.classList.remove('show');t.textContent="Copiado"},2200)
+}
+async function publicarGist(){
+  const gistId=document.getElementById('gistId').value.trim()
+  const token=document.getElementById('ghToken').value.trim()
+  if(!gistId||!token){ alert("Configura primero el Gist ID y el Token (Nivel 2, abajo)"); return }
+  const h=loadHist()
+  const arr=h.map(it=>({combinedHash:it.hash, expiresAt:it.expISO||(it.exp+"T23:59:59.000Z"), tier:it.tier}))
+  try{
+    const res=await fetch(`https://api.github.com/gists/${gistId}`,{
+      method:"PATCH",
+      headers:{ "Authorization":"Bearer "+token, "Accept":"application/vnd.github+json", "Content-Type":"application/json" },
+      body:JSON.stringify({ files:{ "zenkai-licenses.json":{ content:JSON.stringify(arr,null,2) } } })
+    })
+    if(res.ok){ toastMsg("✓ Publicado — "+arr.length+" credenciales activas") }
+    else{ const e=await res.json().catch(()=>({})); alert("Error al publicar: "+(e.message||res.status)+"\nRevisa el Gist ID y el token.") }
+  }catch(err){ alert("Error de conexion: "+err.message) }
+}
+
+loadCfg()
+renderHist()
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+Estudia (indexa y busca dentro de) una carpeta COMPLETA que el usuario indique: documentacion, un proyecto de referencia, apuntes, ejemplos de codigo, etc. Es el sistema RAG de Zenkai para carpetas externas.
+
+Cuando usar esta herramienta:
+- El usuario dice "estudia esta carpeta", "aprende de estos archivos", "usa esta documentacion", "mira este proyecto de referencia".
+- Necesitas conocer el contenido de una carpeta que NO es el proyecto actual para responder o programar mejor.
+
+Parametros:
+- path (requerido): ruta absoluta de la carpeta a estudiar.
+- query (opcional): que buscar dentro. Si se omite, devuelve un RESUMEN (que archivos hay, tipos, estructura). Con query, devuelve los fragmentos de codigo/texto mas relevantes con su ruta y numero de linea.
+- maxResults (opcional): cuantos fragmentos devolver (default 8, max 25).
+
+Flujo recomendado:
+1. Primera llamada SIN query → obtienes un overview de la carpeta (que contiene).
+2. Siguientes llamadas CON query → recuperas los fragmentos relevantes para la tarea.
+
+Ignora automaticamente node_modules, .git, dist, build y archivos binarios. Indexa hasta 800 archivos de texto/codigo.
