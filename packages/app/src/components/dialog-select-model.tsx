@@ -35,6 +35,9 @@ import { matchesModelSearch } from "./dialog-select-model-search"
 const isFree = (provider: string, cost: { input: number } | undefined) =>
   provider === "opencode" && (!cost || cost.input === 0)
 
+// Renombra la marca del gateway gratis para no mostrar "opencode" en la UI.
+const providerDisplayName = (name: string) => (name === "OpenCode Zen" ? "ZENKAI Nube (gratis)" : name)
+
 type ModelState = ReturnType<typeof useLocal>["model"]
 type ModelItem = ReturnType<ModelState["list"]>[number]
 
@@ -443,7 +446,7 @@ export function ModelSelectorPopoverV2(props: {
                   {(group) => (
                     <MenuV2.Group>
                       <MenuV2.GroupLabel class="gap-2 px-3">
-                        <span class="min-w-0 truncate">{group.items[0].provider.name}</span>
+                        <span class="min-w-0 truncate">{providerDisplayName(group.items[0].provider.name)}</span>
                       </MenuV2.GroupLabel>
                       <MenuV2.RadioGroup value={current()}>
                         <For each={group.items}>
