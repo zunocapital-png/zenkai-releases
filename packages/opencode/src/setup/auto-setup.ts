@@ -219,8 +219,11 @@ function defaultConfig(model: string): string {
         name: "OpenRouter (nube · modelos GRATIS)",
         models: {
           "deepseek/deepseek-chat-v3-0324:free": { name: "DeepSeek V3 — GRATIS (nube)" },
+          "deepseek/deepseek-r1:free": { name: "DeepSeek R1 — razonamiento, GRATIS (nube)" },
           "qwen/qwen-2.5-coder-32b-instruct:free": { name: "Qwen2.5 Coder 32B — GRATIS (nube)" },
+          "qwen/qwq-32b:free": { name: "QwQ 32B — razonamiento, GRATIS (nube)" },
           "meta-llama/llama-3.3-70b-instruct:free": { name: "Llama 3.3 70B — GRATIS (nube)" },
+          "google/gemini-2.0-flash-exp:free": { name: "Gemini 2.0 Flash — GRATIS (nube)" },
         },
       },
       deepseek: {
@@ -240,6 +243,15 @@ function defaultConfig(model: string): string {
         name: "Groq (nube · gratis, ultrarrápido)",
         models: {
           "llama-3.3-70b-versatile": { name: "Llama 3.3 70B — Groq gratis (nube)" },
+          "qwen-2.5-coder-32b": { name: "Qwen2.5 Coder 32B — Groq gratis (nube)" },
+          "deepseek-r1-distill-llama-70b": { name: "DeepSeek R1 Distill 70B — Groq gratis (nube)" },
+        },
+      },
+      cerebras: {
+        name: "Cerebras (nube · gratis, el más rápido)",
+        models: {
+          "qwen-2.5-coder-32b": { name: "Qwen2.5 Coder 32B — Cerebras gratis (nube)" },
+          "llama-3.3-70b": { name: "Llama 3.3 70B — Cerebras gratis (nube)" },
         },
       },
     },

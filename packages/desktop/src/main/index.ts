@@ -32,6 +32,7 @@ import {
   spawnLocalServer,
   type SidecarListener,
 } from "./server"
+import { injectTeamKeys } from "./team-keys"
 import { setupAutoUpdater, showUpdaterDialog } from "./updater"
 import { safeWebContentsURL } from "./window-state"
 import {
@@ -199,6 +200,9 @@ const main = Effect.gen(function* () {
   }
 
   preferAppEnv(app.getPath("userData"))
+
+  const injectedKeys = yield* Effect.promise(() => injectTeamKeys())
+  if (injectedKeys.length) logger.log("team keys injected", { providers: injectedKeys })
 
   app.on("second-instance", (_event: Event, argv: string[]) => {
     const urls = argv.filter((arg: string) => arg.startsWith("zenkai://"))
