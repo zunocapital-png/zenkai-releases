@@ -214,6 +214,34 @@ function defaultConfig(model: string): string {
           "qwen2.5:7b": { name: "Qwen2.5 7B (local)" },
         },
       },
+      // Nube con modelos GRATIS o casi gratis. Conecta tu API key en "Conectar proveedor".
+      openrouter: {
+        name: "OpenRouter (nube · modelos GRATIS)",
+        models: {
+          "deepseek/deepseek-chat-v3-0324:free": { name: "DeepSeek V3 — GRATIS (nube)" },
+          "qwen/qwen-2.5-coder-32b-instruct:free": { name: "Qwen2.5 Coder 32B — GRATIS (nube)" },
+          "meta-llama/llama-3.3-70b-instruct:free": { name: "Llama 3.3 70B — GRATIS (nube)" },
+        },
+      },
+      deepseek: {
+        name: "DeepSeek (nube · barato, potente)",
+        models: {
+          "deepseek-chat": { name: "DeepSeek V3 (nube)" },
+          "deepseek-reasoner": { name: "DeepSeek R1 — razonamiento (nube)" },
+        },
+      },
+      google: {
+        name: "Google Gemini (nube · tier gratis)",
+        models: {
+          "gemini-2.0-flash": { name: "Gemini 2.0 Flash — gratis/rápido (nube)" },
+        },
+      },
+      groq: {
+        name: "Groq (nube · gratis, ultrarrápido)",
+        models: {
+          "llama-3.3-70b-versatile": { name: "Llama 3.3 70B — Groq gratis (nube)" },
+        },
+      },
     },
     mcp: {
       context7: {
