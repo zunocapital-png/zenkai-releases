@@ -103,7 +103,6 @@ import { legacySessionHref, requireServerKey, sessionHref } from "@/utils/sessio
 import { useUsageExceededDialogs } from "./session/usage-exceeded-dialogs"
 import { createSessionOwnership } from "./session/session-ownership"
 import { createSessionLineage } from "./session/session-lineage"
-import { ThinkingPanel } from "@/components/thinking-panel"
 import { DiffPreview } from "@/components/diff-preview"
 import { AiSuggestions } from "@/components/ai-suggestions"
 
@@ -2080,11 +2079,6 @@ export default function Page() {
             </div>
           </Match>
           <Match when={params.id}>
-            <Show when={sync().data.session_status[params.id ?? ""]?.type === "busy"}>
-              <div class="shrink-0 px-4 pt-3">
-                <ThinkingPanel steps={[]} isActive={true} />
-              </div>
-            </Show>
             <Show when={messagesReady() ? params.id : undefined} keyed>
               {(_id) => (
                 <MessageTimeline

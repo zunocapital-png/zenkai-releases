@@ -62,21 +62,26 @@ const CategoryPill: Component<{ cat: CatKey }> = (p) => (
   </span>
 )
 
-// ─── Acceso: ¿necesita API key? ¿es gratis? — para que se sepa al instante ───
-// Sin key: locales (ollama/lmstudio/jan/llamacpp), el relevo (omniroute) y el gateway (opencode).
-const KEYLESS_PROVIDERS = new Set(["ollama", "lmstudio", "jan", "llamacpp", "llama-cpp", "omniroute", "opencode"])
-// Proveedores de nube con tier gratis (necesitan key pero no cuestan).
-const FREE_TIER_PROVIDERS = new Set(["groq", "google", "cerebras", "nvidia"])
-type Access = "sinapi" | "gratis" | "api"
+// ─── Acceso: todo diferenciado para no adivinar ni tener fallas de auth ───
+// LOCAL = offline, sin key (Ollama/LM Studio/Jan/llama.cpp).
+// SIN API = nube gratis sin key (relevo Auto/omniroute + gateway ZENKAI Nube/opencode).
+// KEY GRATIS = nube gratis PERO hay que conectar una API key gratis (NVIDIA/Groq/Google/:free…).
+// CON API = nube de pago, necesita key.
+const LOCAL_PROVIDERS = new Set(["ollama", "lmstudio", "jan", "llamacpp", "llama-cpp"])
+const KEYLESS_CLOUD = new Set(["omniroute", "opencode"])
+const FREE_TIER_PROVIDERS = new Set(["groq", "google", "google-generative-ai", "cerebras", "nvidia", "github-models", "sambanova"])
+type Access = "local" | "sinapi" | "keyfree" | "keypaid"
 const modelAccess = (providerId: string, modelId: string, cost: { input: number } | undefined): Access => {
-  if (KEYLESS_PROVIDERS.has(providerId)) return "sinapi"
-  const free = /:?free/i.test(modelId) || FREE_TIER_PROVIDERS.has(providerId) || (!!cost && cost.input === 0)
-  return free ? "gratis" : "api"
+  if (LOCAL_PROVIDERS.has(providerId)) return "local"
+  if (KEYLESS_CLOUD.has(providerId)) return "sinapi"
+  if (/:?free/i.test(modelId) || FREE_TIER_PROVIDERS.has(providerId) || (!!cost && cost.input === 0)) return "keyfree"
+  return "keypaid"
 }
 const ACCESS: Record<Access, { label: string; bg: string; fg: string }> = {
-  sinapi: { label: "Sin API", bg: "rgba(74,222,128,0.16)", fg: "#4ade80" }, // verde: no necesita nada
-  gratis: { label: "Gratis", bg: "rgba(74,222,128,0.16)", fg: "#4ade80" }, // gratis pero con key
-  api: { label: "Con API", bg: "rgba(150,150,150,0.14)", fg: "#9a9aa2" }, // necesita key de pago
+  local: { label: "Local", bg: "rgba(56,132,255,0.16)", fg: "#6db3f2" }, // azul: offline, sin key
+  sinapi: { label: "Sin API", bg: "rgba(74,222,128,0.16)", fg: "#4ade80" }, // verde: funciona ya, sin key
+  keyfree: { label: "Key gratis", bg: "rgba(255,170,80,0.18)", fg: "#f2b56d" }, // naranja: necesita conectar key gratis
+  keypaid: { label: "Con API", bg: "rgba(150,150,150,0.14)", fg: "#9a9aa2" }, // gris: necesita key de pago
 }
 const AccessPill: Component<{ providerId: string; modelId: string; cost: { input: number } | undefined }> = (p) => {
   const a = () => modelAccess(p.providerId, p.modelId, p.cost)
