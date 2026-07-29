@@ -200,6 +200,20 @@ function defaultConfig(model: string): string {
     $schema: "https://opencode.ai/config.json",
     model: `ollama/${model}`,
     provider: {
+      // Auto-relevo: enruta solo y engancha el siguiente si uno se agota. Sin key, sin configurar.
+      omniroute: {
+        npm: "@ai-sdk/openai-compatible",
+        name: "ZENKAI Auto (relevo automático)",
+        options: {
+          baseURL: "http://localhost:20128/v1",
+        },
+        models: {
+          auto: { name: "[CODIGO] Auto — el mejor disponible" },
+          "auto/coding": { name: "[CODIGO] Auto Código" },
+          "auto/smart": { name: "[RAZON] Auto Razonamiento" },
+          "auto/fast": { name: "[CHAT] Auto Rápido" },
+        },
+      },
       ollama: {
         npm: "@ai-sdk/openai-compatible",
         name: "Ollama (local)",
@@ -207,51 +221,67 @@ function defaultConfig(model: string): string {
           baseURL: "http://localhost:11434/v1",
         },
         models: {
-          "qwen3:14b": { name: "Qwen3 14B (local, default)" },
-          "qwen3:8b": { name: "Qwen3 8B (local, fallback)" },
-          "qwen3:30b-a3b": { name: "Qwen3 30B-A3B MoE (local, 3B activos)" },
-          "qwen2.5-coder:7b": { name: "Qwen2.5 Coder 7B (local)" },
-          "qwen2.5:7b": { name: "Qwen2.5 7B (local)" },
+          "qwen3:14b": { name: "[CODIGO] Qwen3 14B" },
+          "qwen3:8b": { name: "[CODIGO] Qwen3 8B Rapido" },
+          "qwen3:30b-a3b": { name: "[CODIGO] Qwen3 30B MoE" },
+          "qwen2.5-coder:7b": { name: "[CODIGO] Qwen2.5 Coder 7B" },
+          "qwen2.5:7b": { name: "[CHAT] Qwen2.5 7B" },
         },
       },
       // Nube con modelos GRATIS o casi gratis. Conecta tu API key en "Conectar proveedor".
       openrouter: {
         name: "OpenRouter (nube · modelos GRATIS)",
         models: {
-          "deepseek/deepseek-chat-v3-0324:free": { name: "DeepSeek V3 — GRATIS (nube)" },
-          "deepseek/deepseek-r1:free": { name: "DeepSeek R1 — razonamiento, GRATIS (nube)" },
-          "qwen/qwen-2.5-coder-32b-instruct:free": { name: "Qwen2.5 Coder 32B — GRATIS (nube)" },
-          "qwen/qwq-32b:free": { name: "QwQ 32B — razonamiento, GRATIS (nube)" },
-          "meta-llama/llama-3.3-70b-instruct:free": { name: "Llama 3.3 70B — GRATIS (nube)" },
-          "google/gemini-2.0-flash-exp:free": { name: "Gemini 2.0 Flash — GRATIS (nube)" },
+          "deepseek/deepseek-chat-v3-0324:free": { name: "[CODIGO] DeepSeek V3 Free" },
+          "deepseek/deepseek-r1:free": { name: "[RAZON] DeepSeek R1 Free" },
+          "qwen/qwen-2.5-coder-32b-instruct:free": { name: "[CODIGO] Qwen2.5 Coder 32B Free" },
+          "qwen/qwq-32b:free": { name: "[RAZON] QwQ 32B Free" },
+          "meta-llama/llama-3.3-70b-instruct:free": { name: "[CHAT] Llama 3.3 70B Free" },
+          "google/gemini-2.0-flash-exp:free": { name: "[CHAT] Gemini 2.0 Flash Free" },
+        },
+      },
+      // NVIDIA NIM — modelos grandes GRATIS en la nube (405B, Nemotron 253B). Key gratis en build.nvidia.com
+      nvidia: {
+        npm: "@ai-sdk/openai-compatible",
+        name: "NVIDIA NIM (nube · grandes GRATIS)",
+        options: {
+          baseURL: "https://integrate.api.nvidia.com/v1",
+        },
+        models: {
+          "meta/llama-3.1-405b-instruct": { name: "[CODIGO] Llama 3.1 405B NVIDIA" },
+          "nvidia/llama-3.1-nemotron-ultra-253b-v1": { name: "[RAZON] Nemotron Ultra 253B NVIDIA" },
+          "meta/llama-3.3-70b-instruct": { name: "[CODIGO] Llama 3.3 70B NVIDIA" },
+          "qwen/qwen2.5-coder-32b-instruct": { name: "[CODIGO] Qwen2.5 Coder 32B NVIDIA" },
+          "deepseek-ai/deepseek-r1": { name: "[RAZON] DeepSeek R1 NVIDIA" },
+          "nvidia/llama-3.1-nemotron-70b-instruct": { name: "[CHAT] Nemotron 70B NVIDIA" },
         },
       },
       deepseek: {
         name: "DeepSeek (nube · barato, potente)",
         models: {
-          "deepseek-chat": { name: "DeepSeek V3 (nube)" },
-          "deepseek-reasoner": { name: "DeepSeek R1 — razonamiento (nube)" },
+          "deepseek-chat": { name: "[CODIGO] DeepSeek V3" },
+          "deepseek-reasoner": { name: "[RAZON] DeepSeek R1" },
         },
       },
       google: {
         name: "Google Gemini (nube · tier gratis)",
         models: {
-          "gemini-2.0-flash": { name: "Gemini 2.0 Flash — gratis/rápido (nube)" },
+          "gemini-2.0-flash": { name: "[CHAT] Gemini 2.0 Flash" },
         },
       },
       groq: {
         name: "Groq (nube · gratis, ultrarrápido)",
         models: {
-          "llama-3.3-70b-versatile": { name: "Llama 3.3 70B — Groq gratis (nube)" },
-          "qwen-2.5-coder-32b": { name: "Qwen2.5 Coder 32B — Groq gratis (nube)" },
-          "deepseek-r1-distill-llama-70b": { name: "DeepSeek R1 Distill 70B — Groq gratis (nube)" },
+          "llama-3.3-70b-versatile": { name: "[CHAT] Llama 3.3 70B Groq" },
+          "qwen-2.5-coder-32b": { name: "[CODIGO] Qwen2.5 Coder 32B Groq" },
+          "deepseek-r1-distill-llama-70b": { name: "[RAZON] DeepSeek R1 Distill 70B Groq" },
         },
       },
       cerebras: {
         name: "Cerebras (nube · gratis, el más rápido)",
         models: {
-          "qwen-2.5-coder-32b": { name: "Qwen2.5 Coder 32B — Cerebras gratis (nube)" },
-          "llama-3.3-70b": { name: "Llama 3.3 70B — Cerebras gratis (nube)" },
+          "qwen-2.5-coder-32b": { name: "[CODIGO] Qwen2.5 Coder 32B Cerebras" },
+          "llama-3.3-70b": { name: "[CHAT] Llama 3.3 70B Cerebras" },
         },
       },
     },

@@ -33,6 +33,7 @@ import {
   type SidecarListener,
 } from "./server"
 import { injectTeamKeys } from "./team-keys"
+import { startOmniRoute, stopOmniRoute } from "./omniroute"
 import { setupAutoUpdater, showUpdaterDialog } from "./updater"
 import { safeWebContentsURL } from "./window-state"
 import {
@@ -203,6 +204,11 @@ const main = Effect.gen(function* () {
 
   const injectedKeys = yield* Effect.promise(() => injectTeamKeys())
   if (injectedKeys.length) logger.log("team keys injected", { providers: injectedKeys })
+
+  // Gateway de auto-relevo (failover). No bloquea el arranque; si no hay Node se omite.
+  const omniStatus = yield* Effect.promise(() => startOmniRoute())
+  logger.log("omniroute", { status: omniStatus })
+  app.on("will-quit", () => stopOmniRoute())
 
   app.on("second-instance", (_event: Event, argv: string[]) => {
     const urls = argv.filter((arg: string) => arg.startsWith("zenkai://"))

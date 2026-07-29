@@ -13,7 +13,6 @@ import {
 import { createStore } from "solid-js/store"
 import { useLocal } from "@/context/local"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
-import { popularProviders } from "@/hooks/use-providers"
 import { Button } from "@opencode-ai/ui/button"
 import { IconButton } from "@opencode-ai/ui/icon-button"
 import { ScrollView } from "@opencode-ai/ui/scroll-view"
@@ -35,26 +34,41 @@ import { matchesModelSearch } from "./dialog-select-model-search"
 const isFree = (provider: string, cost: { input: number } | undefined) =>
   provider === "opencode" && (!cost || cost.input === 0)
 
-// Renombra la marca del gateway gratis para no mostrar "opencode" en la UI.
-const providerDisplayName = (name: string) => (name === "OpenCode Zen" ? "ZENKAI Nube (gratis)" : name)
+// ─── Categorías por necesidad (se leen del prefijo [CODIGO]/[RAZON]/[VISION]/[CHAT] del nombre) ───
+type CatKey = "CODIGO" | "RAZON" | "VISION" | "CHAT" | "OTROS"
+const CATEGORY: Record<CatKey, { label: string; bg: string; fg: string }> = {
+  CODIGO: { label: "Código", bg: "rgba(56,132,255,0.16)", fg: "#6db3f2" },
+  RAZON: { label: "Razón", bg: "rgba(160,120,255,0.18)", fg: "#b79bff" },
+  VISION: { label: "Visión", bg: "rgba(60,200,140,0.16)", fg: "#5fd0a0" },
+  CHAT: { label: "Chat", bg: "rgba(255,170,80,0.16)", fg: "#f2b56d" },
+  OTROS: { label: "Modelos", bg: "rgba(150,150,150,0.16)", fg: "#b0b0b0" },
+}
+const CATEGORY_ORDER: CatKey[] = ["CODIGO", "RAZON", "VISION", "CHAT", "OTROS"]
+const modelCategory = (name: string): CatKey => {
+  const tag = /^\s*\[([A-ZÁÉÍÓÚÑ]+)\]/.exec(name)?.[1]
+  if (tag === "CODIGO" || tag === "CÓDIGO") return "CODIGO"
+  if (tag === "RAZON" || tag === "RAZÓN") return "RAZON"
+  if (tag === "VISION" || tag === "VISIÓN") return "VISION"
+  if (tag === "CHAT") return "CHAT"
+  return "OTROS"
+}
+const cleanModelName = (name: string) => name.replace(/^\s*\[[A-ZÁÉÍÓÚÑ]+\]\s*/, "")
+
+// Pill de color por categoría — todos los modelos lo llevan (mismo diseño, distinto color).
+const CategoryPill: Component<{ cat: CatKey }> = (p) => (
+  <span
+    class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
+    style={{ "background-color": CATEGORY[p.cat].bg, color: CATEGORY[p.cat].fg }}
+  >
+    {CATEGORY[p.cat].label}
+  </span>
+)
 
 type ModelState = ReturnType<typeof useLocal>["model"]
 type ModelItem = ReturnType<ModelState["list"]>[number]
 
 const modelKey = (model: ModelItem) => `${model.provider.id}:${model.id}`
 const manageKey = "action:manage"
-
-const sortModelGroups = (a: { category: string; items: ModelItem[] }, b: { category: string; items: ModelItem[] }) => {
-  const aIndex = popularProviders.indexOf(a.category)
-  const bIndex = popularProviders.indexOf(b.category)
-  const aPopular = aIndex >= 0
-  const bPopular = bIndex >= 0
-
-  if (aPopular && !bPopular) return -1
-  if (!aPopular && bPopular) return 1
-  if (aPopular && bPopular) return aIndex - bIndex
-  return a.items[0].provider.name.localeCompare(b.items[0].provider.name)
-}
 
 const ModelList: Component<{
   provider?: string
@@ -83,13 +97,11 @@ const ModelList: Component<{
       current={model.current()}
       filterKeys={["provider.name", "name", "id"]}
       sortBy={(a, b) => a.name.localeCompare(b.name)}
-      groupBy={(x) => x.provider.name}
+      groupBy={(x) => CATEGORY[modelCategory(x.name)].label}
       sortGroupsBy={(a, b) => {
-        const aProvider = a.items[0].provider.id
-        const bProvider = b.items[0].provider.id
-        if (popularProviders.includes(aProvider) && !popularProviders.includes(bProvider)) return -1
-        if (!popularProviders.includes(aProvider) && popularProviders.includes(bProvider)) return 1
-        return popularProviders.indexOf(aProvider) - popularProviders.indexOf(bProvider)
+        const ai = CATEGORY_ORDER.indexOf(modelCategory(a.items[0].name))
+        const bi = CATEGORY_ORDER.indexOf(modelCategory(b.items[0].name))
+        return ai - bi
       }}
       itemWrapper={(item, node) => (
         <Tooltip
@@ -111,7 +123,8 @@ const ModelList: Component<{
     >
       {(i) => (
         <div class="w-full flex items-center gap-x-2 text-13-regular">
-          <span class="truncate">{i.name}</span>
+          <span class="flex-1 truncate">{cleanModelName(i.name)}</span>
+          <CategoryPill cat={modelCategory(i.name)} />
           <Show when={isFree(i.provider.id, i.cost)}>
             <Tag>{language.t("model.tag.free")}</Tag>
           </Show>
@@ -268,11 +281,14 @@ export function ModelSelectorPopoverV2(props: {
     return [...filtered].sort((a, b) => a.name.localeCompare(b.name))
   })
   const groups = createMemo(() => {
-    const byProvider = new Map<string, ModelItem[]>()
+    const byCat = new Map<CatKey, ModelItem[]>()
     for (const item of models()) {
-      byProvider.set(item.provider.id, [...(byProvider.get(item.provider.id) ?? []), item])
+      const cat = modelCategory(item.name)
+      byCat.set(cat, [...(byCat.get(cat) ?? []), item])
     }
-    return Array.from(byProvider, ([category, items]) => ({ category, items })).sort(sortModelGroups)
+    return Array.from(byCat, ([category, items]) => ({ category, items })).sort(
+      (a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category),
+    )
   })
   const keys = () => [...models().map(modelKey), manageKey]
   const current = () => {
@@ -446,7 +462,9 @@ export function ModelSelectorPopoverV2(props: {
                   {(group) => (
                     <MenuV2.Group>
                       <MenuV2.GroupLabel class="gap-2 px-3">
-                        <span class="min-w-0 truncate">{providerDisplayName(group.items[0].provider.name)}</span>
+                        <span class="min-w-0 truncate font-semibold" style={{ color: CATEGORY[group.category].fg }}>
+                          {CATEGORY[group.category].label}
+                        </span>
                       </MenuV2.GroupLabel>
                       <MenuV2.RadioGroup value={current()}>
                         <For each={group.items}>
@@ -477,7 +495,8 @@ export function ModelSelectorPopoverV2(props: {
                                 }}
                                 onSelect={() => selectModel(item)}
                               >
-                                <span class="min-w-0 truncate leading-5">{item.name}</span>
+                                <span class="min-w-0 flex-1 truncate leading-5">{cleanModelName(item.name)}</span>
+                                <CategoryPill cat={modelCategory(item.name)} />
                                 <Show when={isFree(item.provider.id, item.cost)}>
                                   <TagV2 class="shrink-0">{language.t("model.tag.free")}</TagV2>
                                 </Show>

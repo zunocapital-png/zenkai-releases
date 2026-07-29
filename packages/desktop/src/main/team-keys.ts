@@ -20,6 +20,7 @@ const ALLOWED_ENV = new Set([
   "TOGETHER_API_KEY",
   "CEREBRAS_API_KEY",
   "MISTRAL_API_KEY",
+  "NVIDIA_API_KEY",
 ])
 
 export async function injectTeamKeys(): Promise<string[]> {
