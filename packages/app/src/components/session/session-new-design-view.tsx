@@ -13,7 +13,10 @@ export function NewSessionDesignView(props: { children: JSX.Element }) {
               ZENKAI
             </span>
           </div>
-          <div class="mt-8">{props.children}</div>
+          <div class="mt-4 text-center text-[15px] leading-5 text-v2-text-text-muted select-none">
+            ¿En qué trabajamos hoy?
+          </div>
+          <div class="mt-6">{props.children}</div>
         </div>
       </div>
     </div>
