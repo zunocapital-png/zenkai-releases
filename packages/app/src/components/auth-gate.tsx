@@ -5,6 +5,7 @@ import { hashCredentials } from "@/auth/license-data"
 import { validateCredentials, isAuthenticated, isExpired, saveAuth, revalidateStoredAuth } from "@/auth/license-manager"
 
 const REMEMBER_KEY = "zenkai-remember"
+const USERNAME_KEY = "zenkai-username"
 
 // Solicitud de acceso SIN exponer tu correo personal.
 // Registrate GRATIS en https://web3forms.com con tu correo, copia el
@@ -64,6 +65,7 @@ export function AuthGate(props: { children: JSX.Element }) {
 
 function LoginScreen(props: { onSuccess: () => void; mounted: boolean; leaving: boolean }) {
   const saved = loadSaved()
+  const [name, setName] = createSignal(localStorage.getItem(USERNAME_KEY) ?? "")
   const [key, setKey] = createSignal(saved?.key ?? "")
   const [code, setCode] = createSignal(saved?.code ?? "")
   const [loading, setLoading] = createSignal(false)
@@ -135,6 +137,8 @@ function LoginScreen(props: { onSuccess: () => void; mounted: boolean; leaving: 
 
       const combined = await hashCredentials(key().trim(), code().trim())
       saveAuth(combined, result.expiresAt!, result.tier!)
+
+      localStorage.setItem(USERNAME_KEY, name().trim())
 
       if (remember()) {
         localStorage.setItem(REMEMBER_KEY, JSON.stringify({ key: key().trim(), code: code().trim() }))
@@ -376,6 +380,21 @@ function LoginScreen(props: { onSuccess: () => void; mounted: boolean; leaving: 
                 class="flex flex-col gap-3"
                 classList={{ "auth-shake": shake() }}
               >
+                <div class="flex flex-col gap-1">
+                  <label class="font-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: "rgba(236,91,43,0.35)" }}>
+                    <span style={{ color: "rgba(236,91,43,0.2)" }}>&gt;</span> tu_nombre <span style={{ color: "rgba(236,91,43,0.2)" }}>(opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={name()}
+                    onInput={(e) => setName(e.currentTarget.value)}
+                    placeholder="tu nombre"
+                    class="term-input w-full rounded-none px-3 py-2.5 text-sm text-white outline-none font-mono"
+                    autocomplete="off"
+                    spellcheck={false}
+                  />
+                </div>
+
                 <div class="flex flex-col gap-1">
                   <label class="font-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: "rgba(236,91,43,0.35)" }}>
                     <span style={{ color: "rgba(236,91,43,0.2)" }}>&gt;</span> license_key

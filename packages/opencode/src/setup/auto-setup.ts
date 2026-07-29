@@ -286,9 +286,37 @@ function defaultConfig(model: string): string {
       },
     },
     mcp: {
+      // Docs siempre actualizadas de librerías/frameworks (online, sin key).
       context7: {
         type: "local",
         command: ["npx", "-y", "@upstash/context7-mcp"],
+        enabled: true,
+      },
+      // Razonamiento paso a paso estructurado para tareas complejas (offline, sin key). Oficial MCP.
+      "sequential-thinking": {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-sequential-thinking"],
+        enabled: true,
+      },
+      // Memoria persistente tipo knowledge-graph entre sesiones (offline, sin key). Oficial MCP.
+      memory: {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-memory"],
+        enabled: true,
+      },
+      // Leer/escribir archivos con acceso acotado a un directorio (offline, sin key). Oficial MCP.
+      // El último arg es el directorio permitido; por defecto el HOME del usuario.
+      // Cambialo por la ruta de tu proyecto si querés limitar el alcance.
+      filesystem: {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-filesystem", os.homedir()],
+        enabled: true,
+      },
+      // Traer contenido de URLs (HTML/JSON/Markdown/texto) desde la web (online, sin key).
+      // Paquete de comunidad: el oficial @modelcontextprotocol/server-fetch es solo Python (no npm).
+      fetch: {
+        type: "local",
+        command: ["npx", "-y", "@tokenizin/mcp-npx-fetch"],
         enabled: true,
       },
     },

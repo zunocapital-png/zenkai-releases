@@ -7,6 +7,7 @@ import type { Session } from "@opencode-ai/sdk/v2/client"
 import { useSettingsCommand } from "@/components/settings-dialog"
 import { notifySessionTabsRemoved } from "@/components/titlebar-session-events"
 import { ServerConnection } from "@/context/server"
+import { getAuthInfo } from "@/auth/license-manager"
 import { createHomeController } from "@/pages/home/home-controller"
 import { createHomeSessionsController, type HomeSessionRecord } from "@/pages/home/home-sessions-controller"
 import { errorMessage } from "@/pages/layout/helpers"
@@ -23,7 +24,12 @@ function readCollapsed(): boolean {
     return false
   }
 }
-const [leftSidebarCollapsed, setLeftSidebarCollapsed] = createSignal(readCollapsed())
+// Signal COMPARTIDO y robusto ante HMR: se guarda en globalThis para que el titlebar
+// (que importa toggleLeftSidebar) y el LeftSidebar usen SIEMPRE la misma instancia,
+// aunque el hot-reload duplique el módulo en dev.
+const _g = globalThis as unknown as { __zenkaiSidebarSignal?: ReturnType<typeof createSignal<boolean>> }
+const [leftSidebarCollapsed, setLeftSidebarCollapsed] =
+  _g.__zenkaiSidebarSignal ?? (_g.__zenkaiSidebarSignal = createSignal(readCollapsed()))
 export { leftSidebarCollapsed }
 export function toggleLeftSidebar() {
   const next = !leftSidebarCollapsed()
@@ -44,6 +50,13 @@ export function LeftSidebar() {
   const dialog = useDialog()
 
   const [query, setQuery] = createSignal("")
+  const [userName] = createSignal((() => {
+    try {
+      return localStorage.getItem("zenkai-username") ?? ""
+    } catch {
+      return ""
+    }
+  })())
 
   const openHelp = () => {
     void import("@/components/dialog-help-guide").then((x) => {
@@ -233,11 +246,29 @@ export function LeftSidebar() {
           </Show>
         </div>
 
-        {/* Footer compacto: íconos en una fila (Ajustes / Diagnóstico / Ayuda) */}
-        <div class="flex shrink-0 items-center gap-1 border-t border-v2-border-border-muted px-2 py-1.5">
-          <FooterIcon icon="settings-gear" label="Ajustes" onClick={() => openSettings()} />
-          <FooterIcon icon="monitor" label="Diagnóstico" onClick={openDiagnostico} />
-          <FooterIcon icon="help" label="Ayuda" onClick={openHelp} />
+        {/* Footer: perfil + íconos (Ajustes / Diagnóstico / Ayuda) */}
+        <div class="shrink-0 border-t border-v2-border-border-muted">
+          {/* Renglón de perfil */}
+          <div class="flex items-center gap-2 px-3 pt-2 pb-1 select-none">
+            <div
+              class="flex size-7 shrink-0 items-center justify-center rounded-full text-13-medium"
+              style={{ background: "rgba(236,91,43,0.15)", color: "#EC5B2B" }}
+            >
+              {(userName() || "U").charAt(0).toUpperCase()}
+            </div>
+            <div class="min-w-0 flex-1 truncate text-13-regular text-v2-text-text-base">
+              <span class="text-v2-text-text-strong">{userName() || "Usuario"}</span>
+              <Show when={getAuthInfo()?.tier}>
+                <span class="text-v2-text-text-faint"> · {getAuthInfo()?.tier}</span>
+              </Show>
+            </div>
+          </div>
+          {/* Fila de íconos */}
+          <div class="flex items-center gap-1 px-2 pb-1.5">
+            <FooterIcon icon="settings-gear" label="Ajustes" onClick={() => openSettings()} />
+            <FooterIcon icon="monitor" label="Diagnóstico" onClick={openDiagnostico} />
+            <FooterIcon icon="help" label="Ayuda" onClick={openHelp} />
+          </div>
         </div>
       </aside>
     </Show>
