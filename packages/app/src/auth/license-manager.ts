@@ -15,21 +15,30 @@ const AUTH_KEY = "zenkai-auth"
 // ─────────────────────────────────────────────────────────────
 const LICENSE_SERVER_URL = "https://gist.githubusercontent.com/mvlazqueez2000-max/160ab771e40b1b04aaab20a77063a9a6/raw/zenkai-licenses.json"
 
-async function fetchRemoteLicenses(): Promise<LicenseEntry[]> {
-  if (!LICENSE_SERVER_URL) return []
+// Devuelve tambien si el servidor respondio (online), para poder distinguir
+// "revocado" (online + no esta en la lista) de "sin internet" (no bloquear).
+async function fetchRemoteResult(): Promise<{ online: boolean; licenses: LicenseEntry[] }> {
+  if (!LICENSE_SERVER_URL) return { online: false, licenses: [] }
   try {
     const res = await fetch(LICENSE_SERVER_URL, { cache: "no-store", signal: AbortSignal.timeout(8000) })
-    if (!res.ok) return []
+    if (!res.ok) return { online: false, licenses: [] }
     const data = await res.json()
-    if (!Array.isArray(data)) return []
-    return data.filter(
-      (e): e is LicenseEntry =>
-        e && typeof e.combinedHash === "string" && typeof e.expiresAt === "string" && typeof e.tier === "string",
-    )
+    if (!Array.isArray(data)) return { online: true, licenses: [] }
+    return {
+      online: true,
+      licenses: data.filter(
+        (e): e is LicenseEntry =>
+          e && typeof e.combinedHash === "string" && typeof e.expiresAt === "string" && typeof e.tier === "string",
+      ),
+    }
   } catch {
-    // Sin internet o URL caida → usar solo las locales.
-    return []
+    // Sin internet o URL caida.
+    return { online: false, licenses: [] }
   }
+}
+
+async function fetchRemoteLicenses(): Promise<LicenseEntry[]> {
+  return (await fetchRemoteResult()).licenses
 }
 
 interface AuthState {
@@ -76,6 +85,30 @@ export async function validateCredentials(key: string, code: string): Promise<Va
   }
 
   return { valid: false }
+}
+
+// Re-valida la sesion guardada en CADA arranque (Nivel 1 de seguridad):
+//  • Con internet → la lista remota manda: si borraste/venció la credencial en el
+//    Gist, se cierra la sesion al instante (revocacion real, no confia en localStorage).
+//  • Sin internet → se respeta la expiracion de la sesion local (no bloquear legitimos).
+export async function revalidateStoredAuth(): Promise<boolean> {
+  const auth = getAuthInfo()
+  if (!auth) return false
+
+  const { online, licenses: remote } = await fetchRemoteResult()
+  if (!online) {
+    return new Date() < new Date(auth.expiresAt)
+  }
+
+  const all = [...loadLicenses(), ...remote]
+  const match = all.find((l) => l.combinedHash === auth.combinedHash)
+  if (!match || new Date() > new Date(match.expiresAt)) {
+    logout() // revocada o vencida → fuera
+    return false
+  }
+  // Refresca vigencia/tier por si los cambiaste en el servidor.
+  saveAuth(auth.combinedHash, match.expiresAt, match.tier)
+  return true
 }
 
 export function isAuthenticated(): boolean {

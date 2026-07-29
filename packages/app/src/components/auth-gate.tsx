@@ -2,7 +2,7 @@ import { createSignal, onMount, Show, For, type JSX } from "solid-js"
 import { ZenkaiLogoMark } from "./zenkai-logo"
 import { MatrixRain } from "./matrix-rain"
 import { hashCredentials } from "@/auth/license-data"
-import { validateCredentials, isAuthenticated, isExpired, saveAuth } from "@/auth/license-manager"
+import { validateCredentials, isAuthenticated, isExpired, saveAuth, revalidateStoredAuth } from "@/auth/license-manager"
 
 const REMEMBER_KEY = "zenkai-remember"
 
@@ -41,6 +41,13 @@ export function AuthGate(props: { children: JSX.Element }) {
 
   onMount(() => {
     requestAnimationFrame(() => setMounted(true))
+    // Nivel 1: re-valida contra el servidor de licencias en cada arranque.
+    // Si revocaste/venció la credencial (y hay internet), cierra la sesión al instante.
+    if (isAuthenticated()) {
+      void revalidateStoredAuth().then((ok) => {
+        if (!ok) setAuthed(false)
+      })
+    }
   })
 
   function handleSuccess() {
