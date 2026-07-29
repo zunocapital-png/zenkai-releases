@@ -10,6 +10,7 @@ import {
   type HomeSessionRecord,
 } from "@/pages/home/home-sessions-controller"
 import { sessionTitle } from "@/utils/session-title"
+import { ZenkaiLogoMark } from "@/components/zenkai-logo"
 
 const STORAGE_KEY = "zenkai.leftSidebar.collapsed"
 
@@ -50,6 +51,22 @@ export function LeftSidebar() {
   const groups = sessions.data.groups
   const loading = createMemo(() => sessions.data.loading())
 
+  // Dedup: una misma sesión no debe aparecer dos veces (ni entre grupos).
+  const dedupedGroups = createMemo(() => {
+    const seen = new Set<string>()
+    return groups()
+      .map((group) => ({
+        ...group,
+        sessions: group.sessions.filter((record) => {
+          const id = record.session.id
+          if (seen.has(id)) return false
+          seen.add(id)
+          return true
+        }),
+      }))
+      .filter((group) => group.sessions.length > 0)
+  })
+
   return (
     <aside
       class="relative flex h-full shrink-0 flex-col border-r border-v2-border-border-muted bg-v2-background-bg-layer-01 transition-[width] duration-200"
@@ -61,7 +78,10 @@ export function LeftSidebar() {
         classList={{ "justify-between": !collapsed(), "justify-center": collapsed() }}
       >
         <Show when={!collapsed()}>
-          <span class="pl-1 text-13-medium text-v2-text-text-muted select-none">Chats</span>
+          <div class="flex items-center gap-2 pl-1 select-none">
+            <ZenkaiLogoMark size={18} />
+            <span class="text-13-medium tracking-wide text-v2-text-text-strong">ZENKAI</span>
+          </div>
         </Show>
         <Tooltip value={collapsed() ? "Expandir" : "Colapsar"} placement="right">
           <IconButtonV2
@@ -95,11 +115,11 @@ export function LeftSidebar() {
         >
           <button
             type="button"
-            class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-14-medium text-v2-text-text-strong transition-colors hover:bg-v2-overlay-simple-overlay-hover disabled:opacity-40 disabled:pointer-events-none"
+            class="flex w-full items-center gap-2 rounded-lg border border-v2-border-border-muted px-2.5 py-2 text-left text-14-medium text-v2-text-text-strong transition-colors hover:border-[#EC5B2B]/50 hover:bg-[#EC5B2B]/8 disabled:opacity-40 disabled:pointer-events-none"
             disabled={!sessions.session.canCreate()}
             onClick={() => sessions.session.create()}
           >
-            <IconV2 name="edit" size="small" class="text-v2-icon-icon-muted" />
+            <IconV2 name="edit" size="small" style={{ color: "#EC5B2B" }} />
             <span class="min-w-0 flex-1 truncate">Nuevo chat</span>
           </button>
         </Show>
@@ -119,7 +139,7 @@ export function LeftSidebar() {
             }
           >
             <For
-              each={groups()}
+              each={dedupedGroups()}
               fallback={
                 <p class="px-2 pt-2 text-13-regular text-v2-text-text-faint select-none">Sin chats todavía</p>
               }
@@ -197,11 +217,14 @@ function SessionRow(props: {
   return (
     <button
       type="button"
-      class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-14-regular text-v2-text-text-base transition-colors hover:bg-v2-overlay-simple-overlay-hover"
-      classList={{ "bg-v2-overlay-simple-overlay-hover text-v2-text-text-strong": active() }}
+      class="group relative flex w-full items-center rounded-md py-1.5 pl-3 pr-2 text-left text-14-regular text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base"
+      classList={{ "bg-v2-overlay-simple-overlay-hover !text-v2-text-text-strong": active() }}
       title={title()}
       onClick={() => props.sessions.session.open(props.record.session)}
     >
+      <Show when={active()}>
+        <span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full" style={{ "background-color": "#EC5B2B" }} />
+      </Show>
       <span class="min-w-0 flex-1 truncate">{title()}</span>
     </button>
   )
