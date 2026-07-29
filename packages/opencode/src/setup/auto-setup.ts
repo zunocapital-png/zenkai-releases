@@ -221,10 +221,10 @@ function defaultConfig(model: string): string {
           baseURL: "http://localhost:11434/v1",
         },
         models: {
-          "qwen3:14b": { name: "[CODIGO] Qwen3 14B" },
+          // Solo modelos que entran en ~8GB de VRAM (seguros para casi todas las placas).
+          // qwen3:14b y qwen3:30b-a3b se omiten: crashean Ollama en 8GB (0xc0000409).
+          "qwen2.5-coder:7b": { name: "[CODIGO] Qwen2.5 Coder 7B (recomendado)" },
           "qwen3:8b": { name: "[CODIGO] Qwen3 8B Rapido" },
-          "qwen3:30b-a3b": { name: "[CODIGO] Qwen3 30B MoE" },
-          "qwen2.5-coder:7b": { name: "[CODIGO] Qwen2.5 Coder 7B" },
           "qwen2.5:7b": { name: "[CHAT] Qwen2.5 7B" },
         },
       },
@@ -328,7 +328,10 @@ async function pickModelForVRAM(): Promise<string> {
       ])
       const vramMB = parseInt(stdout.trim().split(/\r?\n/)[0] ?? "0", 10)
       if (vramMB > 0 && vramMB < 10_000) {
-        return "qwen3:8b" // < 10GB VRAM, use smaller model
+        return "qwen2.5-coder:7b" // < 10GB VRAM: ~4.7GB, el más seguro que entra en 8GB
+      }
+      if (vramMB >= 10_000 && vramMB < 16_000) {
+        return "qwen3:14b" // 10-16GB VRAM: cabe cómodo
       }
     } catch {
       // nvidia-smi not available, check total system RAM as rough proxy
@@ -338,7 +341,7 @@ async function pickModelForVRAM(): Promise<string> {
   const totalRAM = os.totalmem()
   const totalGB = totalRAM / (1024 ** 3)
   if (totalGB < 12) {
-    return "qwen3:8b"
+    return "qwen2.5-coder:7b"
   }
   return DEFAULT_MODEL
 }

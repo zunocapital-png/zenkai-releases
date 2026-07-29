@@ -49,6 +49,13 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
   const dialog = useDialog()
   const command = useCommand()
   const language = useLanguage()
+  const sdk = useSDK()
+
+  const connectProvider = () => {
+    void import("./dialog-connect-provider").then((x) => {
+      void dialog.show(() => <x.DialogConnectProvider directory={() => sdk().directory} />)
+    })
+  }
 
   return (
     <div class="flex flex-col gap-2">
@@ -59,19 +66,34 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
         attachKeybind={command.keybindParts("file.attach")}
         attachShortcut={command.keybind("file.attach")}
         modelControl={
-          <PromptInputV2ModelControl
-            loading={props.controller.model.loading}
-            paid={props.controller.model.paid}
-            title={language.t("command.model.choose")}
-            keybind={command.keybindParts("model.choose")}
-            model={props.controller.model.selection}
-            providerID={props.controller.model.selection.current()?.provider?.id}
-            modelName={props.controller.model.selection.current() ? "ZENKAI" : language.t("dialog.model.select.title")}
-            onClose={props.controller.restoreFocus}
-            onUnpaidClick={() =>
-              dialog.show(() => <DialogSelectModelUnpaidV2 model={props.controller.model.selection} />)
-            }
-          />
+          <>
+            <PromptInputV2ModelControl
+              loading={props.controller.model.loading}
+              paid={props.controller.model.paid}
+              title={language.t("command.model.choose")}
+              keybind={command.keybindParts("model.choose")}
+              model={props.controller.model.selection}
+              providerID={props.controller.model.selection.current()?.provider?.id}
+              modelName={props.controller.model.selection.current() ? "ZENKAI" : language.t("dialog.model.select.title")}
+              onClose={props.controller.restoreFocus}
+              onUnpaidClick={() =>
+                dialog.show(() => <DialogSelectModelUnpaidV2 model={props.controller.model.selection} />)
+              }
+            />
+            <TooltipV2 placement="top" gutter={4} value="Conectar una API key">
+              <ButtonV2
+                data-action="prompt-connect-provider"
+                data-control-type="dialog"
+                variant="ghost-muted"
+                size="normal"
+                class="shrink-0 ![font-weight:440]"
+                style={{ height: "28px" }}
+                onClick={connectProvider}
+              >
+                🔌 Conectar API
+              </ButtonV2>
+            </TooltipV2>
+          </>
         }
       />
       <div class="flex items-center justify-end px-1">

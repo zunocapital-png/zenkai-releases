@@ -2062,7 +2062,21 @@ export default function Page() {
       <Show when={!isDesktop() && !!params.id && settings.general.newLayoutDesigns() && !mobileTabsBottom()}>
         {mobileTabs(true)}
       </Show>
-      <div class="flex-1 min-h-0 overflow-hidden">
+      <div class="relative flex-1 min-h-0 overflow-hidden">
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 z-0 flex items-center justify-center select-none"
+          style={{
+            "font-family": '"Press Start 2P", monospace',
+            "font-size": "clamp(3rem, 10vw, 8rem)",
+            color: "var(--color-text-base, #e8e8ea)",
+            opacity: "0.04",
+            "letter-spacing": "0.1em",
+          }}
+        >
+          ZENKAI
+        </div>
+        <div class="relative z-[1] h-full min-h-0">
         <Switch>
           <Match when={params.id && mobileChanges()}>
             <div class="relative h-full overflow-hidden">
@@ -2124,6 +2138,7 @@ export default function Page() {
             <NewSessionView worktree={newSessionWorktree()} />
           </Match>
         </Switch>
+        </div>
       </div>
 
       <Show when={!!params.id && reviewDiffs().length > 0}>

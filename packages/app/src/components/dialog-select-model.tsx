@@ -110,6 +110,18 @@ type ModelItem = ReturnType<ModelState["list"]>[number]
 const modelKey = (model: ModelItem) => `${model.provider.id}:${model.id}`
 const manageKey = "action:manage"
 
+// Solo mostramos modelos USABLES ya: locales (Ollama…), sin API (Auto/gateway) o de nube CON key conectada.
+// Los de nube sin conectar se agregan desde "Conectar proveedor" — así el selector no marea ni falla con Unauthorized.
+const isUsableModel = (
+  providerId: string,
+  modelId: string,
+  cost: { input: number } | undefined,
+  connectedIds: Set<string>,
+) => {
+  const a = modelAccess(providerId, modelId, cost)
+  return a === "local" || a === "sinapi" || connectedIds.has(providerId)
+}
+
 const ModelList: Component<{
   provider?: string
   class?: string
@@ -117,14 +129,18 @@ const ModelList: Component<{
   action?: JSX.Element
   model?: ModelState
 }> = (props) => {
-  const model = props.model ?? useLocal().model
+  const local = useLocal()
+  const model = props.model ?? local.model
+  const providers = useProviders(() => decode64(local.slug()))
+  const connectedIds = createMemo(() => new Set(providers.connected().map((x) => x.id)))
   const language = useLanguage()
 
   const models = createMemo(() =>
     model
       .list()
       .filter((m) => model.visible({ modelID: m.id, providerID: m.provider.id }))
-      .filter((m) => (props.provider ? m.provider.id === props.provider : true)),
+      .filter((m) => (props.provider ? m.provider.id === props.provider : true))
+      .filter((m) => isUsableModel(m.provider.id, m.id, m.cost, connectedIds())),
   )
 
   return (
@@ -293,7 +309,10 @@ export function ModelSelectorPopoverV2(props: {
   triggerProps?: ModelSelectorTriggerProps
   onClose?: () => void
 }) {
-  const model = props.model ?? useLocal().model
+  const local = useLocal()
+  const model = props.model ?? local.model
+  const providers = useProviders(() => decode64(local.slug()))
+  const connectedIds = createMemo(() => new Set(providers.connected().map((x) => x.id)))
   const language = useLanguage()
   const dialog = useDialog()
   const [store, setStore] = createStore({ open: false, search: "", active: "" })
@@ -305,7 +324,8 @@ export function ModelSelectorPopoverV2(props: {
     model
       .list()
       .filter((item) => model.visible({ modelID: item.id, providerID: item.provider.id }))
-      .filter((item) => (props.provider ? item.provider.id === props.provider : true)),
+      .filter((item) => (props.provider ? item.provider.id === props.provider : true))
+      .filter((item) => isUsableModel(item.provider.id, item.id, item.cost, connectedIds())),
   )
   const models = createMemo(() => {
     const search = store.search.trim()
