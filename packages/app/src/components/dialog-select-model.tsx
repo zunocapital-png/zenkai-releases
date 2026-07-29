@@ -16,12 +16,10 @@ import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { Button } from "@opencode-ai/ui/button"
 import { IconButton } from "@opencode-ai/ui/icon-button"
 import { ScrollView } from "@opencode-ai/ui/scroll-view"
-import { Tag } from "@opencode-ai/ui/tag"
 import { Dialog } from "@opencode-ai/ui/dialog"
 import { List } from "@opencode-ai/ui/list"
 import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { Icon } from "@opencode-ai/ui/v2/icon"
-import { Tag as TagV2 } from "@opencode-ai/ui/v2/badge-v2"
 import { MenuV2 } from "@opencode-ai/ui/v2/menu-v2"
 import { TooltipV2 } from "@opencode-ai/ui/v2/tooltip-v2"
 import { ModelTooltip } from "./model-tooltip"
@@ -63,6 +61,34 @@ const CategoryPill: Component<{ cat: CatKey }> = (p) => (
     {CATEGORY[p.cat].label}
   </span>
 )
+
+// ─── Acceso: ¿necesita API key? ¿es gratis? — para que se sepa al instante ───
+// Sin key: locales (ollama/lmstudio/jan/llamacpp), el relevo (omniroute) y el gateway (opencode).
+const KEYLESS_PROVIDERS = new Set(["ollama", "lmstudio", "jan", "llamacpp", "llama-cpp", "omniroute", "opencode"])
+// Proveedores de nube con tier gratis (necesitan key pero no cuestan).
+const FREE_TIER_PROVIDERS = new Set(["groq", "google", "cerebras", "nvidia"])
+type Access = "sinapi" | "gratis" | "api"
+const modelAccess = (providerId: string, modelId: string, cost: { input: number } | undefined): Access => {
+  if (KEYLESS_PROVIDERS.has(providerId)) return "sinapi"
+  const free = /:?free/i.test(modelId) || FREE_TIER_PROVIDERS.has(providerId) || (!!cost && cost.input === 0)
+  return free ? "gratis" : "api"
+}
+const ACCESS: Record<Access, { label: string; bg: string; fg: string }> = {
+  sinapi: { label: "Sin API", bg: "rgba(74,222,128,0.16)", fg: "#4ade80" }, // verde: no necesita nada
+  gratis: { label: "Gratis", bg: "rgba(74,222,128,0.16)", fg: "#4ade80" }, // gratis pero con key
+  api: { label: "Con API", bg: "rgba(150,150,150,0.14)", fg: "#9a9aa2" }, // necesita key de pago
+}
+const AccessPill: Component<{ providerId: string; modelId: string; cost: { input: number } | undefined }> = (p) => {
+  const a = () => modelAccess(p.providerId, p.modelId, p.cost)
+  return (
+    <span
+      class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
+      style={{ "background-color": ACCESS[a()].bg, color: ACCESS[a()].fg }}
+    >
+      {ACCESS[a()].label}
+    </span>
+  )
+}
 
 type ModelState = ReturnType<typeof useLocal>["model"]
 type ModelItem = ReturnType<ModelState["list"]>[number]
@@ -124,13 +150,8 @@ const ModelList: Component<{
       {(i) => (
         <div class="w-full flex items-center gap-x-2 text-13-regular">
           <span class="flex-1 truncate">{cleanModelName(i.name)}</span>
+          <AccessPill providerId={i.provider.id} modelId={i.id} cost={i.cost} />
           <CategoryPill cat={modelCategory(i.name)} />
-          <Show when={isFree(i.provider.id, i.cost)}>
-            <Tag>{language.t("model.tag.free")}</Tag>
-          </Show>
-          <Show when={i.latest}>
-            <Tag>{language.t("model.tag.latest")}</Tag>
-          </Show>
         </div>
       )}
     </List>
@@ -496,13 +517,8 @@ export function ModelSelectorPopoverV2(props: {
                                 onSelect={() => selectModel(item)}
                               >
                                 <span class="min-w-0 flex-1 truncate leading-5">{cleanModelName(item.name)}</span>
+                                <AccessPill providerId={item.provider.id} modelId={item.id} cost={item.cost} />
                                 <CategoryPill cat={modelCategory(item.name)} />
-                                <Show when={isFree(item.provider.id, item.cost)}>
-                                  <TagV2 class="shrink-0">{language.t("model.tag.free")}</TagV2>
-                                </Show>
-                                <Show when={item.latest}>
-                                  <TagV2 class="shrink-0">{language.t("model.tag.latest")}</TagV2>
-                                </Show>
                               </MenuV2.RadioItem>
                             </TooltipV2>
                           )}
