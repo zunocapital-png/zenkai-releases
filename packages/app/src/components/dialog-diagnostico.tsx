@@ -1,6 +1,15 @@
 import { createSignal, onMount, For, Show } from "solid-js"
 import { Dialog } from "@opencode-ai/ui/dialog"
 
+// Modelos locales recomendados: livianos y que entran en la mayoría de las PCs (7-8B).
+// Cada uno se descarga con Ollama (`/api/pull`) mostrando progreso real.
+const MODELOS_RECOMENDADOS: { id: string; nombre: string; nota: string; tam: string }[] = [
+  { id: "qwen2.5-coder:7b", nombre: "Qwen2.5 Coder 7B", nota: "Programar — el mejor para código local", tam: "~4.7 GB" },
+  { id: "qwen3:8b", nombre: "Qwen3 8B", nota: "Razonamiento y chat general", tam: "~5.2 GB" },
+  { id: "llama3.1:8b", nombre: "Llama 3.1 8B", nota: "Uso general equilibrado", tam: "~4.9 GB" },
+  { id: "qwen2.5vl:7b", nombre: "Qwen2.5 VL 7B", nota: "Visión — entiende imágenes", tam: "~6.0 GB" },
+]
+
 // Panel de diagnóstico: chequea que todo esté conectado y lo muestra en español.
 type Estado = "ok" | "warn" | "error" | "loading"
 
@@ -45,11 +54,66 @@ async function pingJson(url: string): Promise<any | null> {
   }
 }
 
+// Progreso de una descarga: 0..100, o -1 = error, undefined = no iniciada.
+type Descarga = { pct: number; estado: string; error?: string }
+
 export function DialogDiagnostico() {
   const [ollama, setOllama] = createSignal<Estado>("loading")
   const [modelosOllama, setModelosOllama] = createSignal<string[]>([])
   const [auto, setAuto] = createSignal<Estado>("loading")
   const [chequeando, setChequeando] = createSignal(false)
+  const [descargas, setDescargas] = createSignal<Record<string, Descarga>>({})
+
+  // Un modelo cuenta como instalado si su id coincide con el tag descargado (con o sin ":latest").
+  const instalado = (id: string) =>
+    modelosOllama().some((m) => m === id || m.split(":")[0] === id.split(":")[0])
+
+  async function descargar(id: string) {
+    setDescargas((d) => ({ ...d, [id]: { pct: 0, estado: "Iniciando…" } }))
+    try {
+      const res = await fetch("http://localhost:11434/api/pull", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ model: id, stream: true }),
+      })
+      if (!res.ok || !res.body) throw new Error("no-stream")
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ""
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split("\n")
+        buffer = lines.pop() ?? ""
+        for (const line of lines) {
+          if (!line.trim()) continue
+          let obj: any
+          try {
+            obj = JSON.parse(line)
+          } catch {
+            continue
+          }
+          if (obj.error) {
+            setDescargas((d) => ({ ...d, [id]: { pct: -1, estado: "Error", error: String(obj.error) } }))
+            return
+          }
+          const pct = obj.total ? Math.round(((obj.completed ?? 0) / obj.total) * 100) : undefined
+          setDescargas((d) => ({
+            ...d,
+            [id]: { pct: pct ?? d[id]?.pct ?? 0, estado: String(obj.status ?? "Descargando…") },
+          }))
+        }
+      }
+      setDescargas((d) => ({ ...d, [id]: { pct: 100, estado: "Listo" } }))
+      void check()
+    } catch (e) {
+      setDescargas((d) => ({
+        ...d,
+        [id]: { pct: -1, estado: "Error", error: "No se pudo descargar. ¿Ollama está prendido?" },
+      }))
+    }
+  }
 
   async function check() {
     setChequeando(true)
@@ -116,6 +180,69 @@ export function DialogDiagnostico() {
             </Show>
           </Show>
         </Fila>
+
+        {/* 1.b Descargar modelos locales (solo si Ollama corre) */}
+        <Show when={ollama() === "ok"}>
+          <div class="flex flex-col gap-2.5 rounded-lg border border-border-base bg-surface-raised p-4">
+            <div class="flex items-center gap-2.5">
+              <span class="text-16-medium">📦</span>
+              <span class="text-14-medium text-text-strong">Descargar modelos locales</span>
+            </div>
+            <p class="pl-[26px] text-13-regular text-text-muted">
+              Gratis, corren en tu PC sin internet ni API. Elegí uno y se descarga solo.
+            </p>
+            <div class="flex flex-col gap-2 pl-[26px]">
+              <For each={MODELOS_RECOMENDADOS}>
+                {(m) => {
+                  const d = () => descargas()[m.id]
+                  return (
+                    <div class="flex flex-col gap-1.5 rounded-md border border-border-base bg-surface-base p-3">
+                      <div class="flex items-center gap-3">
+                        <div class="flex min-w-0 flex-1 flex-col">
+                          <span class="text-13-medium text-text-strong">{m.nombre}</span>
+                          <span class="text-12-regular text-text-muted">
+                            {m.nota} · {m.tam}
+                          </span>
+                        </div>
+                        <Show
+                          when={!instalado(m.id)}
+                          fallback={<span class="shrink-0 text-13-medium text-green-400">✅ Instalado</span>}
+                        >
+                          <button
+                            type="button"
+                            disabled={d() && d().pct >= 0 && d().pct < 100}
+                            onClick={() => void descargar(m.id)}
+                            class="shrink-0 rounded-md border border-border-base bg-surface-raised px-3 py-1.5 text-12-medium text-text-strong hover:bg-surface-hover disabled:opacity-50"
+                          >
+                            {d() ? (d().pct === -1 ? "Reintentar" : "Descargando…") : "Descargar"}
+                          </button>
+                        </Show>
+                      </div>
+                      <Show when={d() && !instalado(m.id)}>
+                        <div class="flex flex-col gap-1">
+                          <Show
+                            when={d().pct !== -1}
+                            fallback={<span class="text-12-regular text-red-400">{d().error}</span>}
+                          >
+                            <div class="h-1.5 w-full overflow-hidden rounded-full bg-border-base">
+                              <div
+                                class="h-full rounded-full bg-orange-500 transition-all"
+                                style={{ width: `${Math.max(2, d().pct)}%` }}
+                              />
+                            </div>
+                            <span class="text-12-regular text-text-muted">
+                              {d().estado} {d().pct > 0 ? `· ${d().pct}%` : ""}
+                            </span>
+                          </Show>
+                        </div>
+                      </Show>
+                    </div>
+                  )
+                }}
+              </For>
+            </div>
+          </div>
+        </Show>
 
         {/* 2. ZENKAI Auto */}
         <Fila

@@ -895,6 +895,7 @@ function ProviderConnection(props: {
     const [formStore, setFormStore] = createStore({
       value: "",
       error: undefined as string | undefined,
+      verifying: false,
     })
 
     onMount(() => {
@@ -915,11 +916,19 @@ function ProviderConnection(props: {
       }
 
       setFormStore("error", undefined)
-      await serverSDK().api.integration.connect.key({
-        integrationID: props.provider,
-        location: location(),
-        key: apiKey,
-      })
+      setFormStore("verifying", true)
+      try {
+        await serverSDK().api.integration.connect.key({
+          integrationID: props.provider,
+          location: location(),
+          key: apiKey,
+        })
+      } catch (e) {
+        setFormStore("verifying", false)
+        setFormStore("error", formatError(e, language.t("provider.connect.apiKey.invalid")))
+        return
+      }
+      setFormStore("verifying", false)
       await complete()
     }
 
@@ -974,8 +983,8 @@ function ProviderConnection(props: {
                 </div>
               )}
             </Show>
-            <ButtonV2 type="submit" variant="contrast" data-action="provider-connect-submit">
-              {language.t("common.continue")}
+            <ButtonV2 type="submit" variant="contrast" data-action="provider-connect-submit" disabled={formStore.verifying}>
+              {formStore.verifying ? language.t("provider.connect.apiKey.verifying") : language.t("common.continue")}
             </ButtonV2>
           </form>
         </div>
@@ -1016,8 +1025,8 @@ function ProviderConnection(props: {
             validationState={formStore.error ? "invalid" : undefined}
             error={formStore.error}
           />
-          <Button class="w-auto" type="submit" size="large" variant="primary">
-            {language.t("common.continue")}
+          <Button class="w-auto" type="submit" size="large" variant="primary" disabled={formStore.verifying}>
+            {formStore.verifying ? language.t("provider.connect.apiKey.verifying") : language.t("common.continue")}
           </Button>
         </form>
       </div>

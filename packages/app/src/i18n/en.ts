@@ -139,6 +139,8 @@ export const dict = {
   "provider.connect.apiKey.label": "{{provider}} API key",
   "provider.connect.apiKey.placeholder": "API key",
   "provider.connect.apiKey.required": "API key is required",
+  "provider.connect.apiKey.verifying": "Verifying…",
+  "provider.connect.apiKey.invalid": "The key didn't work. Check that it's complete and from the right provider.",
   "provider.connect.zenkaiZen.line1":
     "Zenkai Zen gives you access to a curated set of reliable optimized models for coding agents.",
   "provider.connect.zenkaiZen.line2":
