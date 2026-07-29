@@ -44,8 +44,6 @@ export function LeftSidebar() {
   const dialog = useDialog()
 
   const [query, setQuery] = createSignal("")
-  // Fila con el menú "…" abierto (solo una a la vez).
-  const [menuFor, setMenuFor] = createSignal<string | null>(null)
 
   const openHelp = () => {
     void import("@/components/dialog-help-guide").then((x) => {
@@ -224,8 +222,6 @@ export function LeftSidebar() {
                       <SessionRow
                         record={record}
                         sessions={sessions}
-                        menuOpen={() => menuFor() === record.session.id}
-                        setMenuOpen={(open) => setMenuFor(open ? record.session.id : null)}
                         onRename={(title) => renameSession(record.session, title)}
                         onDelete={() => deleteSession(record.session)}
                       />
@@ -237,30 +233,27 @@ export function LeftSidebar() {
           </Show>
         </div>
 
-        {/* Footer: Ajustes / Diagnóstico / Ayuda */}
-        <div class="flex shrink-0 flex-col gap-0.5 border-t border-v2-border-border-muted p-2">
-          <FooterButton icon="settings-gear" label="Ajustes" onClick={() => openSettings()} />
-          <FooterButton icon="monitor" label="Diagnóstico" onClick={openDiagnostico} />
-          <FooterButton icon="help" label="Ayuda" onClick={openHelp} />
+        {/* Footer compacto: íconos en una fila (Ajustes / Diagnóstico / Ayuda) */}
+        <div class="flex shrink-0 items-center gap-1 border-t border-v2-border-border-muted px-2 py-1.5">
+          <FooterIcon icon="settings-gear" label="Ajustes" onClick={() => openSettings()} />
+          <FooterIcon icon="monitor" label="Diagnóstico" onClick={openDiagnostico} />
+          <FooterIcon icon="help" label="Ayuda" onClick={openHelp} />
         </div>
       </aside>
     </Show>
   )
 }
 
-function FooterButton(props: {
-  icon: "settings-gear" | "help" | "monitor"
-  label: string
-  onClick: () => void
-}) {
+function FooterIcon(props: { icon: "settings-gear" | "help" | "monitor"; label: string; onClick: () => void }) {
   return (
     <button
       type="button"
-      class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-14-regular text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-strong"
+      title={props.label}
+      aria-label={props.label}
+      class="flex size-8 items-center justify-center rounded-md text-v2-icon-icon-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-strong"
       onClick={props.onClick}
     >
-      <IconV2 name={props.icon} size="small" class="text-v2-icon-icon-muted" />
-      <span class="min-w-0 flex-1 truncate">{props.label}</span>
+      <IconV2 name={props.icon} size="small" />
     </button>
   )
 }
@@ -268,8 +261,6 @@ function FooterButton(props: {
 function SessionRow(props: {
   record: HomeSessionRecord
   sessions: ReturnType<typeof createHomeSessionsController>
-  menuOpen: () => boolean
-  setMenuOpen: (open: boolean) => void
   onRename: (title: string) => void
   onDelete: () => void
 }) {
@@ -279,7 +270,6 @@ function SessionRow(props: {
   const [draft, setDraft] = createSignal("")
 
   const startRename = () => {
-    props.setMenuOpen(false)
     setDraft(title())
     setEditing(true)
   }
@@ -289,7 +279,6 @@ function SessionRow(props: {
     props.onRename(draft())
   }
   const confirmDelete = () => {
-    props.setMenuOpen(false)
     const ok = typeof window === "undefined" ? true : window.confirm(`¿Borrar "${title()}"? Esta acción no se puede deshacer.`)
     if (ok) props.onDelete()
   }
@@ -337,53 +326,31 @@ function SessionRow(props: {
           {title()}
         </button>
 
-        {/* Botón de acciones "…" (aparece al hover o si el menú está abierto) */}
-        <div
-          class="shrink-0 pr-1 transition-opacity"
-          classList={{
-            "opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto": !props.menuOpen(),
-            "opacity-100 pointer-events-auto": props.menuOpen(),
-          }}
-        >
+        {/* Acciones inline al hover: renombrar / borrar (sin desplegable, no se corta) */}
+        <div class="flex shrink-0 items-center gap-0.5 pr-1 opacity-0 transition-opacity group-hover:opacity-100">
           <button
             type="button"
+            title="Renombrar"
+            aria-label="Renombrar chat"
             class="flex size-6 items-center justify-center rounded-md text-v2-icon-icon-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-strong"
-            aria-label="Acciones del chat"
-            onClick={(e) => {
-              e.stopPropagation()
-              props.setMenuOpen(!props.menuOpen())
-            }}
-          >
-            <IconV2 name="outline-dots" size="small" />
-          </button>
-        </div>
-      </Show>
-
-      {/* Menú contextual: Renombrar / Borrar */}
-      <Show when={props.menuOpen() && !editing()}>
-        <div class="fixed inset-0 z-40" onClick={() => props.setMenuOpen(false)} />
-        <div class="absolute right-1 top-8 z-50 flex w-40 flex-col gap-0.5 rounded-lg border border-v2-border-border-muted bg-v2-background-bg-layer-02 p-1 shadow-lg">
-          <button
-            type="button"
-            class="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-14-regular text-v2-text-text-base transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-strong"
             onClick={(e) => {
               e.stopPropagation()
               startRename()
             }}
           >
-            <IconV2 name="edit" size="small" class="text-v2-icon-icon-muted" />
-            <span>Renombrar</span>
+            <IconV2 name="edit" size="small" />
           </button>
           <button
             type="button"
-            class="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-14-regular text-v2-status-text-danger transition-colors hover:bg-v2-overlay-simple-overlay-hover"
+            title="Borrar"
+            aria-label="Borrar chat"
+            class="flex size-6 items-center justify-center rounded-md text-v2-icon-icon-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-status-text-danger"
             onClick={(e) => {
               e.stopPropagation()
               confirmDelete()
             }}
           >
             <IconV2 name="close" size="small" />
-            <span>Borrar</span>
           </button>
         </div>
       </Show>

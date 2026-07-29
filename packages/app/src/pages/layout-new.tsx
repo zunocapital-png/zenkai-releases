@@ -43,13 +43,16 @@ export default function NewLayout(props: ParentProps) {
             : undefined
         }
       />
-      <main class="flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-row items-stretch contain-strict">
+      {/* Fila de altura completa: el sidebar llega hasta el fondo; el chat + barra dev quedan a su derecha. */}
+      <div class="flex-1 min-h-0 min-w-0 flex flex-row items-stretch">
         <LeftSidebar />
-        <div class="flex-1 min-h-0 min-w-0 flex flex-col items-start overflow-x-hidden">
-          <Suspense>{props.children}</Suspense>
+        <div class="flex-1 min-h-0 min-w-0 flex flex-col overflow-x-hidden">
+          <main class="flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-col items-start contain-strict">
+            <Suspense>{props.children}</Suspense>
+          </main>
+          {import.meta.env.DEV && state.debugTools && <DebugBar inline />}
         </div>
-      </main>
-      {import.meta.env.DEV && state.debugTools && <DebugBar inline />}
+      </div>
       <TabsInfoPopup />
       <ToastRegion v2 />
     </div>
