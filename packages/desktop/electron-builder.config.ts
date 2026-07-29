@@ -45,7 +45,7 @@ const getBase = (appId: string): Configuration => ({
   // por tu usuario. Publica cada versión con: bun run package:win --publish always
   publish: {
     provider: "github",
-    owner: "mvlazqueez2000-max",
+    owner: "zunocapital-png",
     repo: "zenkai-releases",
     releaseType: "release",
   },
