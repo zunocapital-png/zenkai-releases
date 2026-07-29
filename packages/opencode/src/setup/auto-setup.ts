@@ -198,7 +198,7 @@ async function pullModelViaCLI(ollamaPath: string, model: string): Promise<boole
 function defaultConfig(model: string): string {
   const config = {
     $schema: "https://opencode.ai/config.json",
-    model: `ollama/${model}`,
+    model: "omniroute/auto",
     provider: {
       // Auto-relevo: enruta solo y engancha el siguiente si uno se agota. Sin key, sin configurar.
       omniroute: {
