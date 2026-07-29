@@ -12,6 +12,7 @@ import {
 } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLocal } from "@/context/local"
+import { useProviders } from "@/hooks/use-providers"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { Button } from "@opencode-ai/ui/button"
 import { IconButton } from "@opencode-ai/ui/icon-button"
@@ -70,7 +71,7 @@ const CategoryPill: Component<{ cat: CatKey }> = (p) => (
 const LOCAL_PROVIDERS = new Set(["ollama", "lmstudio", "jan", "llamacpp", "llama-cpp"])
 const KEYLESS_CLOUD = new Set(["omniroute", "opencode"])
 const FREE_TIER_PROVIDERS = new Set(["groq", "google", "google-generative-ai", "cerebras", "nvidia", "github-models", "sambanova"])
-type Access = "local" | "sinapi" | "keyfree" | "keypaid"
+type Access = "local" | "sinapi" | "keyfree" | "keypaid" | "conectado"
 const modelAccess = (providerId: string, modelId: string, cost: { input: number } | undefined): Access => {
   if (LOCAL_PROVIDERS.has(providerId)) return "local"
   if (KEYLESS_CLOUD.has(providerId)) return "sinapi"
@@ -82,15 +83,23 @@ const ACCESS: Record<Access, { label: string; bg: string; fg: string }> = {
   sinapi: { label: "Sin API", bg: "rgba(74,222,128,0.16)", fg: "#4ade80" }, // verde: funciona ya, sin key
   keyfree: { label: "Key gratis", bg: "rgba(255,170,80,0.18)", fg: "#f2b56d" }, // naranja: necesita conectar key gratis
   keypaid: { label: "Con API", bg: "rgba(150,150,150,0.14)", fg: "#9a9aa2" }, // gris: necesita key de pago
+  conectado: { label: "Conectado", bg: "rgba(74,222,128,0.16)", fg: "#4ade80" }, // verde: key ya conectada
 }
 const AccessPill: Component<{ providerId: string; modelId: string; cost: { input: number } | undefined }> = (p) => {
-  const a = () => modelAccess(p.providerId, p.modelId, p.cost)
+  const local = useLocal()
+  const providers = useProviders(() => decode64(local.slug()))
+  // Estado reactivo: si el proveedor necesita key y YA está conectada, muestra "Conectado".
+  const shown = (): Access => {
+    const a = modelAccess(p.providerId, p.modelId, p.cost)
+    if ((a === "keyfree" || a === "keypaid") && providers.connected().some((x) => x.id === p.providerId)) return "conectado"
+    return a
+  }
   return (
     <span
       class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
-      style={{ "background-color": ACCESS[a()].bg, color: ACCESS[a()].fg }}
+      style={{ "background-color": ACCESS[shown()].bg, color: ACCESS[shown()].fg }}
     >
-      {ACCESS[a()].label}
+      {ACCESS[shown()].label}
     </span>
   )
 }
