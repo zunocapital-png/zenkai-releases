@@ -163,7 +163,7 @@ const localeMatchers: Array<{ locale: Locale; match: (language: string) => boole
 ]
 
 function detectLocale(): Locale {
-  if (typeof navigator !== "object") return "en"
+  if (typeof navigator !== "object") return "es"
 
   const languages = navigator.languages?.length ? navigator.languages : [navigator.language]
   for (const language of languages) {
@@ -173,7 +173,7 @@ function detectLocale(): Locale {
     if (match) return match.locale
   }
 
-  return "en"
+  return "es"
 }
 
 export function normalizeLocale(value: string): Locale {
