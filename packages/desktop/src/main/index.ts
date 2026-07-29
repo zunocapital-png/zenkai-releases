@@ -34,6 +34,7 @@ import {
 } from "./server"
 import { injectTeamKeys } from "./team-keys"
 import { startOmniRoute, stopOmniRoute } from "./omniroute"
+import { ensureOllama } from "./ollama"
 import { setupAutoUpdater, showUpdaterDialog } from "./updater"
 import { safeWebContentsURL } from "./window-state"
 import {
@@ -209,6 +210,10 @@ const main = Effect.gen(function* () {
   const omniStatus = yield* Effect.promise(() => startOmniRoute())
   logger.log("omniroute", { status: omniStatus })
   app.on("will-quit", () => stopOmniRoute())
+
+  // Modelos locales: garantiza Ollama instalado y PRENDIDO (nunca apagado).
+  const ollamaStatus = yield* Effect.promise(() => ensureOllama())
+  logger.log("ollama", { status: ollamaStatus })
 
   app.on("second-instance", (_event: Event, argv: string[]) => {
     const urls = argv.filter((arg: string) => arg.startsWith("zenkai://"))
