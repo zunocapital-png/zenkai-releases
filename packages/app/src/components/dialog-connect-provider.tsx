@@ -28,6 +28,101 @@ import {
   Switch,
 } from "solid-js"
 import { createStore, produce } from "solid-js/store"
+
+// ─── Guía in-app para principiantes: cómo sacar la key gratis de cada proveedor ───
+const PROVIDER_GUIDE: Record<string, { url: string; free: boolean; steps: string[] }> = {
+  openrouter: {
+    url: "openrouter.ai/keys",
+    free: true,
+    steps: [
+      "Abrí tu navegador y entrá a openrouter.ai → creá cuenta (es gratis).",
+      "Entrá a Keys → tocá 'Create Key' → ponele un nombre.",
+      "Copiá la key (empieza con 'sk-or-'). Se muestra una sola vez.",
+      "Volvé acá, pegala abajo y tocá Continuar.",
+    ],
+  },
+  groq: {
+    url: "console.groq.com/keys",
+    free: true,
+    steps: [
+      "Entrá a console.groq.com/keys → creá cuenta gratis.",
+      "Tocá 'Create API Key'.",
+      "Copiá la key (empieza con 'gsk_').",
+      "Volvé acá, pegala abajo y tocá Continuar.",
+    ],
+  },
+  google: {
+    url: "aistudio.google.com/app/apikey",
+    free: true,
+    steps: [
+      "Entrá a aistudio.google.com/app/apikey → iniciá sesión con Google.",
+      "Tocá 'Create API key'.",
+      "Copiá la key.",
+      "Volvé acá, pegala abajo y tocá Continuar.",
+    ],
+  },
+  nvidia: {
+    url: "build.nvidia.com",
+    free: true,
+    steps: [
+      "Entrá a build.nvidia.com → creá cuenta (con Google sirve).",
+      "Elegí un modelo → tocá 'Get API Key' / 'Build with this NIM'.",
+      "Copiá la key (empieza con 'nvapi-').",
+      "Volvé acá, pegala abajo y tocá Continuar.",
+    ],
+  },
+  cerebras: {
+    url: "cloud.cerebras.ai",
+    free: true,
+    steps: [
+      "Entrá a cloud.cerebras.ai → creá cuenta gratis.",
+      "Andá a API Keys → creá una nueva.",
+      "Copiá la key.",
+      "Volvé acá, pegala abajo y tocá Continuar.",
+    ],
+  },
+  deepseek: {
+    url: "platform.deepseek.com",
+    free: false,
+    steps: [
+      "Entrá a platform.deepseek.com → creá cuenta y cargá un saldo mínimo.",
+      "Andá a API Keys → 'Create'.",
+      "Copiá la key.",
+      "Volvé acá, pegala abajo y tocá Continuar.",
+    ],
+  },
+  mistral: {
+    url: "console.mistral.ai/api-keys",
+    free: true,
+    steps: [
+      "Entrá a console.mistral.ai/api-keys → creá cuenta.",
+      "Creá una API key nueva.",
+      "Copiá la key.",
+      "Volvé acá, pegala abajo y tocá Continuar.",
+    ],
+  },
+}
+
+function ApiKeyGuideBox(props: { id: string }) {
+  const guide = PROVIDER_GUIDE[props.id]
+  return (
+    <Show when={guide}>
+      {(g) => (
+        <div class="flex flex-col gap-2 rounded-md border border-v2-border-border-muted bg-v2-background-bg-layer-02 p-3 text-[12px] leading-4 text-v2-text-text-muted">
+          <div class="font-[530] text-v2-text-text-base">
+            🔑 ¿No tenés la key? Conseguila {g().free ? "GRATIS" : ""} en 4 pasos:
+          </div>
+          <ol class="flex list-decimal flex-col gap-1 pl-4">
+            <For each={g().steps}>{(s) => <li>{s}</li>}</For>
+          </ol>
+          <div class="mt-1">
+            Dirección: <span class="select-all font-mono text-v2-text-text-base">{g().url}</span>
+          </div>
+        </div>
+      )}
+    </Show>
+  )
+}
 import { useQueryClient } from "@tanstack/solid-query"
 import { useParams } from "@solidjs/router"
 import { Link } from "@/components/link"
@@ -833,7 +928,12 @@ function ProviderConnection(props: {
         <div class="flex flex-col gap-5 px-3 text-[13px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
           <Show
             when={provider().id === "opencode"}
-            fallback={language.t("provider.connect.apiKey.description", { provider: provider().name })}
+            fallback={
+              <div class="flex flex-col gap-4">
+                <div>{language.t("provider.connect.apiKey.description", { provider: provider().name })}</div>
+                <ApiKeyGuideBox id={provider().id} />
+              </div>
+            }
           >
             <div class="flex flex-col gap-5">
               <div>{language.t("provider.connect.opencodeZen.line1")}</div>
