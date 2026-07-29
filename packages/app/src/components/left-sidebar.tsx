@@ -1,10 +1,17 @@
 import { Icon as IconV2 } from "@opencode-ai/ui/v2/icon"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { createMemo, createSignal, For, Show } from "solid-js"
+import { produce } from "solid-js/store"
+import { Binary } from "@opencode-ai/core/util/binary"
+import type { Session } from "@opencode-ai/sdk/v2/client"
 import { useSettingsCommand } from "@/components/settings-dialog"
+import { notifySessionTabsRemoved } from "@/components/titlebar-session-events"
+import { ServerConnection } from "@/context/server"
 import { createHomeController } from "@/pages/home/home-controller"
 import { createHomeSessionsController, type HomeSessionRecord } from "@/pages/home/home-sessions-controller"
+import { errorMessage } from "@/pages/layout/helpers"
 import { sessionTitle } from "@/utils/session-title"
+import { showToast } from "@/utils/toast"
 import { ZenkaiLogoMark } from "@/components/zenkai-logo"
 
 // ─── Estado colapsado COMPARTIDO (el toggle vive en el titlebar) ───
@@ -36,10 +43,18 @@ export function LeftSidebar() {
   const openSettings = useSettingsCommand()
   const dialog = useDialog()
 
+  const [query, setQuery] = createSignal("")
+  // Fila con el menú "…" abierto (solo una a la vez).
+  const [menuFor, setMenuFor] = createSignal<string | null>(null)
+
   const openHelp = () => {
     void import("@/components/dialog-help-guide").then((x) => {
       void dialog.show(() => <x.DialogHelpGuide />)
     })
+  }
+
+  const openDiagnostico = () => {
+    void import("@/components/dialog-diagnostico").then((x) => dialog.show(() => <x.DialogDiagnostico />))
   }
 
   const loading = createMemo(() => sessions.data.loading())
@@ -59,6 +74,79 @@ export function LeftSidebar() {
       }))
       .filter((group) => group.sessions.length > 0)
   })
+
+  // Filtro por título (case-insensitive); descarta grupos que queden vacíos.
+  const filteredGroups = createMemo(() => {
+    const q = query().trim().toLowerCase()
+    if (!q) return dedupedGroups()
+    return dedupedGroups()
+      .map((group) => ({
+        ...group,
+        sessions: group.sessions.filter((record) =>
+          (sessionTitle(record.session.title) || "Nuevo chat").toLowerCase().includes(q),
+        ),
+      }))
+      .filter((group) => group.sessions.length > 0)
+  })
+
+  // Quita la sesión del store local para reflejar el cambio al instante.
+  const removeFromStore = (session: Session) => {
+    const ctx = home.server.focusedContext()
+    if (!ctx) return
+    const [, setStore] = ctx.sync.child(session.directory)
+    setStore(
+      produce((draft) => {
+        const match = Binary.search(draft.session, session.id, (item) => item.id)
+        if (match.found) draft.session.splice(match.index, 1)
+      }),
+    )
+  }
+
+  const deleteSession = async (session: Session) => {
+    const conn = home.server.focused()
+    const ctx = home.server.focusedContext()
+    if (!conn || !ctx) return
+    try {
+      await ctx.sdk.client.session.update({
+        sessionID: session.id,
+        directory: session.directory,
+        time: { archived: Date.now() },
+      })
+      removeFromStore(session)
+      notifySessionTabsRemoved({
+        server: ServerConnection.key(conn),
+        directory: session.directory,
+        sessionIDs: [session.id],
+      })
+    } catch (cause) {
+      showToast({
+        title: "No se pudo borrar el chat",
+        description: errorMessage(cause, "No se pudo borrar el chat"),
+      })
+    }
+  }
+
+  const renameSession = async (session: Session, title: string) => {
+    const ctx = home.server.focusedContext()
+    if (!ctx) return
+    const next = title.trim()
+    if (!next || next === sessionTitle(session.title)) return
+    try {
+      await ctx.sdk.client.session.update({ sessionID: session.id, directory: session.directory, title: next })
+      const [, setStore] = ctx.sync.child(session.directory)
+      setStore(
+        produce((draft) => {
+          const match = Binary.search(draft.session, session.id, (item) => item.id)
+          if (match.found) draft.session[match.index].title = next
+        }),
+      )
+    } catch (cause) {
+      showToast({
+        title: "No se pudo renombrar el chat",
+        description: errorMessage(cause, "No se pudo renombrar el chat"),
+      })
+    }
+  }
 
   return (
     <Show when={!leftSidebarCollapsed()}>
@@ -82,6 +170,30 @@ export function LeftSidebar() {
           </button>
         </div>
 
+        {/* Buscador de chats */}
+        <div class="shrink-0 px-2 pb-2">
+          <div class="flex items-center gap-2 rounded-lg border border-v2-border-border-muted bg-v2-background-bg-layer-02 px-2.5 py-1.5 focus-within:border-v2-border-border-base">
+            <IconV2 name="magnifying-glass" size="small" class="shrink-0 text-v2-icon-icon-muted" />
+            <input
+              type="text"
+              value={query()}
+              onInput={(e) => setQuery(e.currentTarget.value)}
+              placeholder="Buscar chats…"
+              class="min-w-0 flex-1 bg-transparent text-14-regular text-v2-text-text-base placeholder:text-v2-text-text-faint focus:outline-none"
+            />
+            <Show when={query()}>
+              <button
+                type="button"
+                class="shrink-0 text-v2-icon-icon-muted transition-colors hover:text-v2-text-text-strong"
+                aria-label="Limpiar búsqueda"
+                onClick={() => setQuery("")}
+              >
+                <IconV2 name="xmark-small" size="small" />
+              </button>
+            </Show>
+          </div>
+        </div>
+
         {/* Historial */}
         <div class="min-h-0 flex-1 overflow-y-auto px-2">
           <Show
@@ -95,24 +207,40 @@ export function LeftSidebar() {
             }
           >
             <For
-              each={dedupedGroups()}
-              fallback={<p class="px-2 pt-2 text-13-regular text-v2-text-text-faint select-none">Sin chats todavía</p>}
+              each={filteredGroups()}
+              fallback={
+                <p class="px-2 pt-2 text-13-regular text-v2-text-text-faint select-none">
+                  {query().trim() ? "Sin resultados" : "Sin chats todavía"}
+                </p>
+              }
             >
               {(group) => (
                 <div class="flex flex-col gap-0.5 pb-2">
                   <div class="select-none px-2 pt-2 pb-0.5 text-[11px] font-medium uppercase tracking-wider text-v2-text-text-faint">
                     {group.title}
                   </div>
-                  <For each={group.sessions}>{(record) => <SessionRow record={record} sessions={sessions} />}</For>
+                  <For each={group.sessions}>
+                    {(record) => (
+                      <SessionRow
+                        record={record}
+                        sessions={sessions}
+                        menuOpen={() => menuFor() === record.session.id}
+                        setMenuOpen={(open) => setMenuFor(open ? record.session.id : null)}
+                        onRename={(title) => renameSession(record.session, title)}
+                        onDelete={() => deleteSession(record.session)}
+                      />
+                    )}
+                  </For>
                 </div>
               )}
             </For>
           </Show>
         </div>
 
-        {/* Footer: Ajustes / Ayuda */}
+        {/* Footer: Ajustes / Diagnóstico / Ayuda */}
         <div class="flex shrink-0 flex-col gap-0.5 border-t border-v2-border-border-muted p-2">
           <FooterButton icon="settings-gear" label="Ajustes" onClick={() => openSettings()} />
+          <FooterButton icon="monitor" label="Diagnóstico" onClick={openDiagnostico} />
           <FooterButton icon="help" label="Ayuda" onClick={openHelp} />
         </div>
       </aside>
@@ -120,7 +248,11 @@ export function LeftSidebar() {
   )
 }
 
-function FooterButton(props: { icon: "settings-gear" | "help"; label: string; onClick: () => void }) {
+function FooterButton(props: {
+  icon: "settings-gear" | "help" | "monitor"
+  label: string
+  onClick: () => void
+}) {
   return (
     <button
       type="button"
@@ -133,16 +265,39 @@ function FooterButton(props: { icon: "settings-gear" | "help"; label: string; on
   )
 }
 
-function SessionRow(props: { record: HomeSessionRecord; sessions: ReturnType<typeof createHomeSessionsController> }) {
+function SessionRow(props: {
+  record: HomeSessionRecord
+  sessions: ReturnType<typeof createHomeSessionsController>
+  menuOpen: () => boolean
+  setMenuOpen: (open: boolean) => void
+  onRename: (title: string) => void
+  onDelete: () => void
+}) {
   const title = createMemo(() => sessionTitle(props.record.session.title) || "Nuevo chat")
   const active = createMemo(() => props.sessions.tab.isOpen(props.record))
+  const [editing, setEditing] = createSignal(false)
+  const [draft, setDraft] = createSignal("")
+
+  const startRename = () => {
+    props.setMenuOpen(false)
+    setDraft(title())
+    setEditing(true)
+  }
+  const commitRename = () => {
+    if (!editing()) return
+    setEditing(false)
+    props.onRename(draft())
+  }
+  const confirmDelete = () => {
+    props.setMenuOpen(false)
+    const ok = typeof window === "undefined" ? true : window.confirm(`¿Borrar "${title()}"? Esta acción no se puede deshacer.`)
+    if (ok) props.onDelete()
+  }
+
   return (
-    <button
-      type="button"
-      class="group relative flex w-full items-center rounded-md py-1.5 pl-3 pr-2 text-left text-14-regular text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base"
-      classList={{ "bg-v2-overlay-simple-overlay-hover !text-v2-text-text-strong": active() }}
-      title={title()}
-      onClick={() => props.sessions.session.open(props.record.session)}
+    <div
+      class="group relative flex w-full items-center rounded-md text-14-regular text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base"
+      classList={{ "bg-v2-overlay-simple-overlay-hover !text-v2-text-text-strong": active() && !editing() }}
     >
       <Show when={active()}>
         <span
@@ -150,7 +305,88 @@ function SessionRow(props: { record: HomeSessionRecord; sessions: ReturnType<typ
           style={{ "background-color": "#EC5B2B" }}
         />
       </Show>
-      <span class="min-w-0 flex-1 truncate">{title()}</span>
-    </button>
+
+      <Show
+        when={!editing()}
+        fallback={
+          <input
+            type="text"
+            value={draft()}
+            autofocus
+            onInput={(e) => setDraft(e.currentTarget.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                commitRename()
+              } else if (e.key === "Escape") {
+                e.preventDefault()
+                setEditing(false)
+              }
+            }}
+            class="min-w-0 flex-1 rounded-md border border-v2-border-border-base bg-v2-background-bg-layer-02 py-1 pl-3 pr-2 text-14-regular text-v2-text-text-strong focus:outline-none"
+          />
+        }
+      >
+        <button
+          type="button"
+          class="min-w-0 flex-1 truncate py-1.5 pl-3 pr-2 text-left"
+          title={title()}
+          onClick={() => props.sessions.session.open(props.record.session)}
+        >
+          {title()}
+        </button>
+
+        {/* Botón de acciones "…" (aparece al hover o si el menú está abierto) */}
+        <div
+          class="shrink-0 pr-1 transition-opacity"
+          classList={{
+            "opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto": !props.menuOpen(),
+            "opacity-100 pointer-events-auto": props.menuOpen(),
+          }}
+        >
+          <button
+            type="button"
+            class="flex size-6 items-center justify-center rounded-md text-v2-icon-icon-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-strong"
+            aria-label="Acciones del chat"
+            onClick={(e) => {
+              e.stopPropagation()
+              props.setMenuOpen(!props.menuOpen())
+            }}
+          >
+            <IconV2 name="outline-dots" size="small" />
+          </button>
+        </div>
+      </Show>
+
+      {/* Menú contextual: Renombrar / Borrar */}
+      <Show when={props.menuOpen() && !editing()}>
+        <div class="fixed inset-0 z-40" onClick={() => props.setMenuOpen(false)} />
+        <div class="absolute right-1 top-8 z-50 flex w-40 flex-col gap-0.5 rounded-lg border border-v2-border-border-muted bg-v2-background-bg-layer-02 p-1 shadow-lg">
+          <button
+            type="button"
+            class="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-14-regular text-v2-text-text-base transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-strong"
+            onClick={(e) => {
+              e.stopPropagation()
+              startRename()
+            }}
+          >
+            <IconV2 name="edit" size="small" class="text-v2-icon-icon-muted" />
+            <span>Renombrar</span>
+          </button>
+          <button
+            type="button"
+            class="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-14-regular text-v2-status-text-danger transition-colors hover:bg-v2-overlay-simple-overlay-hover"
+            onClick={(e) => {
+              e.stopPropagation()
+              confirmDelete()
+            }}
+          >
+            <IconV2 name="close" size="small" />
+            <span>Borrar</span>
+          </button>
+        </div>
+      </Show>
+    </div>
   )
 }
