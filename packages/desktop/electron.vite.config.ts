@@ -91,6 +91,12 @@ const require = __cjs_mod__.createRequire(import.meta.url);
     },
   },
   renderer: {
+    // El renderer (app SolidJS) lee import.meta.env.VITE_OPENCODE_CHANNEL para decidir
+    // canal (badge DEV, layouts v2 vs legacy, workspace bar). Sin esto quedaba undefined
+    // → se comportaba como "dev" aunque el build fuera prod.
+    define: {
+      "import.meta.env.VITE_OPENCODE_CHANNEL": JSON.stringify(channel),
+    },
     plugins: [appPlugin, sentry],
     publicDir: "../../../app/public",
     root: "src/renderer",
