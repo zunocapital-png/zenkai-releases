@@ -28,6 +28,7 @@ import { playSoundById, SOUND_OPTIONS } from "@/utils/sound"
 import { Link } from "../link"
 import { SettingsListV2 } from "./parts/list"
 import { SettingsRowV2 } from "./parts/row"
+import { logout } from "@/auth/license-manager"
 import { LayoutRetirementNotice, LayoutTransitionToggle } from "./interface-transition"
 import "./settings-v2.css"
 
@@ -354,6 +355,19 @@ export const SettingsGeneralV2: Component<{
             </div>
           </SettingsRowV2>
         </Show>
+
+        <SettingsRowV2 title="Cerrar sesión" description="Salí de tu cuenta y volvé a la pantalla de acceso.">
+          <ButtonV2
+            variant="contrast"
+            data-action="settings-logout"
+            onClick={() => {
+              logout()
+              window.location.reload()
+            }}
+          >
+            Cerrar sesión
+          </ButtonV2>
+        </SettingsRowV2>
       </SettingsListV2>
     </div>
   )

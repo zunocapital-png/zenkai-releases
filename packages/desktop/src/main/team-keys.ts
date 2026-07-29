@@ -8,7 +8,7 @@
 //   { "OPENROUTER_API_KEY": "sk-or-...", "GROQ_API_KEY": "gsk_...", "DEEPSEEK_API_KEY": "..." }
 // Los nombres deben coincidir con las env vars que espera cada proveedor en models.dev.
 const TEAM_KEYS_URL =
-  "https://gist.githubusercontent.com/zunocapital-png/784533b97781eb672c2596f9a6bd03a3/raw/zenkai-team-keys.json"
+  "https://gist.githubusercontent.com/zunocapital-png/4f1c6f69eba1ff5e20f7a9a0e272c4fe/raw/zenkai-team-keys.json"
 
 // Solo se aceptan nombres de env var conocidos de proveedores (evita inyectar basura arbitraria).
 const ALLOWED_ENV = new Set([

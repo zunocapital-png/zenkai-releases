@@ -13,7 +13,7 @@ const AUTH_KEY = "zenkai-auth"
 // Formato del JSON (array): [{ "combinedHash": "...", "expiresAt": "2026-12-31T23:59:59.000Z", "tier": "pro" }]
 // Deja "" para usar solo las credenciales locales.
 // ─────────────────────────────────────────────────────────────
-const LICENSE_SERVER_URL = "https://gist.githubusercontent.com/zunocapital-png/784533b97781eb672c2596f9a6bd03a3/raw/zenkai-licenses.json"
+const LICENSE_SERVER_URL = "https://gist.githubusercontent.com/zunocapital-png/4f1c6f69eba1ff5e20f7a9a0e272c4fe/raw/zenkai-licenses.json"
 
 // Devuelve tambien si el servidor respondio (online), para poder distinguir
 // "revocado" (online + no esta en la lista) de "sin internet" (no bloquear).
