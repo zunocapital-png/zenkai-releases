@@ -3,6 +3,7 @@ import { createStore } from "solid-js/store"
 import { useNavigate } from "@solidjs/router"
 import { DebugBar } from "@/components/debug-bar"
 import { TabsInfoPopup } from "@/components/help-button"
+import { LeftSidebar } from "@/components/left-sidebar"
 import { Titlebar, type TitlebarUpdate } from "@/components/titlebar"
 import { usePlatform } from "@/context/platform"
 import { setNavigate } from "@/utils/notification-click"
@@ -42,8 +43,11 @@ export default function NewLayout(props: ParentProps) {
             : undefined
         }
       />
-      <main class="flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-col items-start contain-strict">
-        <Suspense>{props.children}</Suspense>
+      <main class="flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-row items-stretch contain-strict">
+        <LeftSidebar />
+        <div class="flex-1 min-h-0 min-w-0 flex flex-col items-start overflow-x-hidden">
+          <Suspense>{props.children}</Suspense>
+        </div>
       </main>
       {import.meta.env.DEV && state.debugTools && <DebugBar inline />}
       <TabsInfoPopup />
