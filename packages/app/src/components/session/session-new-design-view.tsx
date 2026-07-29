@@ -13,13 +13,13 @@ export function NewSessionDesignView(props: { children: JSX.Element }) {
       <div class="absolute inset-x-0 top-[21%] flex justify-center px-6">
         <div class={NEW_SESSION_CONTENT_WIDTH}>
           <div
-            class="flex items-center justify-center gap-3.5 select-none text-v2-background-bg-inverse"
-            style={{ filter: "drop-shadow(0 0 26px rgba(236,91,43,0.28))" }}
+            class="flex items-center justify-center gap-4 select-none text-v2-background-bg-inverse"
+            style={{ filter: "drop-shadow(0 0 34px rgba(236,91,43,0.32))" }}
           >
-            <ZenkaiLogoMark size={60} animate />
+            <ZenkaiLogoMark size={88} animate />
             <span
               class="tracking-[0.18em]"
-              style={{ "font-family": '"Press Start 2P", monospace', "font-size": "clamp(2rem, 4.6vw, 3.25rem)" }}
+              style={{ "font-family": '"Press Start 2P", monospace', "font-size": "clamp(2.75rem, 6.5vw, 4.75rem)" }}
             >
               ZENKAI
             </span>
