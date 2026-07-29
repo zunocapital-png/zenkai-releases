@@ -1,19 +1,14 @@
 import { Icon as IconV2 } from "@opencode-ai/ui/v2/icon"
-import { IconButtonV2 } from "@opencode-ai/ui/v2/icon-button-v2"
-import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { createMemo, createSignal, For, Show } from "solid-js"
 import { useSettingsCommand } from "@/components/settings-dialog"
 import { createHomeController } from "@/pages/home/home-controller"
-import {
-  createHomeSessionsController,
-  type HomeSessionRecord,
-} from "@/pages/home/home-sessions-controller"
+import { createHomeSessionsController, type HomeSessionRecord } from "@/pages/home/home-sessions-controller"
 import { sessionTitle } from "@/utils/session-title"
 import { ZenkaiLogoMark } from "@/components/zenkai-logo"
 
+// ─── Estado colapsado COMPARTIDO (el toggle vive en el titlebar) ───
 const STORAGE_KEY = "zenkai.leftSidebar.collapsed"
-
 function readCollapsed(): boolean {
   try {
     return localStorage.getItem(STORAGE_KEY) === "1"
@@ -21,26 +16,25 @@ function readCollapsed(): boolean {
     return false
   }
 }
+const [leftSidebarCollapsed, setLeftSidebarCollapsed] = createSignal(readCollapsed())
+export { leftSidebarCollapsed }
+export function toggleLeftSidebar() {
+  const next = !leftSidebarCollapsed()
+  setLeftSidebarCollapsed(next)
+  try {
+    localStorage.setItem(STORAGE_KEY, next ? "1" : "0")
+  } catch {
+    /* ignore */
+  }
+}
 
-// Panel lateral izquierdo fijo estilo Claude: nuevo chat, historial por fecha,
-// y accesos a Ajustes / Ayuda. Reusa los controllers del home para navegar y
-// obtener el índice de sesiones recientes del servidor enfocado.
+// Panel lateral izquierdo fijo estilo Claude. Cuando está colapsado desaparece por
+// completo (sin rail) — se reabre desde el botón del titlebar.
 export function LeftSidebar() {
   const home = createHomeController()
   const sessions = createHomeSessionsController(home)
   const openSettings = useSettingsCommand()
   const dialog = useDialog()
-
-  const [collapsed, setCollapsed] = createSignal(readCollapsed())
-  const toggle = () => {
-    const next = !collapsed()
-    setCollapsed(next)
-    try {
-      localStorage.setItem(STORAGE_KEY, next ? "1" : "0")
-    } catch {
-      /* ignore */
-    }
-  }
 
   const openHelp = () => {
     void import("@/components/dialog-help-guide").then((x) => {
@@ -48,13 +42,12 @@ export function LeftSidebar() {
     })
   }
 
-  const groups = sessions.data.groups
   const loading = createMemo(() => sessions.data.loading())
-
   // Dedup: una misma sesión no debe aparecer dos veces (ni entre grupos).
   const dedupedGroups = createMemo(() => {
     const seen = new Set<string>()
-    return groups()
+    return sessions.data
+      .groups()
       .map((group) => ({
         ...group,
         sessions: group.sessions.filter((record) => {
@@ -68,51 +61,16 @@ export function LeftSidebar() {
   })
 
   return (
-    <aside
-      class="relative flex h-full shrink-0 flex-col border-r border-v2-border-border-muted bg-v2-background-bg-layer-01 transition-[width] duration-200"
-      classList={{ "w-[260px]": !collapsed(), "w-[52px]": collapsed() }}
-    >
-      {/* Header: título + colapsar */}
-      <div
-        class="flex h-12 shrink-0 items-center gap-1 px-2"
-        classList={{ "justify-between": !collapsed(), "justify-center": collapsed() }}
-      >
-        <Show when={!collapsed()}>
-          <div class="flex items-center gap-2 pl-1 select-none">
-            <ZenkaiLogoMark size={18} />
-            <span class="text-13-medium tracking-wide text-v2-text-text-strong">ZENKAI</span>
-          </div>
-        </Show>
-        <Tooltip value={collapsed() ? "Expandir" : "Colapsar"} placement="right">
-          <IconButtonV2
-            variant="ghost"
-            size="small"
-            icon={<IconV2 name="sidebar-right" size="small" />}
-            aria-label={collapsed() ? "Expandir panel" : "Colapsar panel"}
-            onClick={toggle}
-          />
-        </Tooltip>
-      </div>
+    <Show when={!leftSidebarCollapsed()}>
+      <aside class="relative flex h-full w-[260px] shrink-0 flex-col border-r border-v2-border-border-muted bg-v2-background-bg-layer-01">
+        {/* Header: marca */}
+        <div class="flex h-12 shrink-0 items-center px-3 select-none">
+          <ZenkaiLogoMark size={18} />
+          <span class="ml-2 text-13-medium tracking-wide text-v2-text-text-strong">ZENKAI</span>
+        </div>
 
-      {/* Nuevo chat */}
-      <div class="shrink-0 px-2 pb-2">
-        <Show
-          when={!collapsed()}
-          fallback={
-            <div class="flex justify-center">
-              <Tooltip value="Nuevo chat" placement="right">
-                <IconButtonV2
-                  variant="ghost"
-                  size="small"
-                  icon={<IconV2 name="edit" size="small" />}
-                  aria-label="Nuevo chat"
-                  disabled={!sessions.session.canCreate()}
-                  onClick={() => sessions.session.create()}
-                />
-              </Tooltip>
-            </div>
-          }
-        >
+        {/* Nuevo chat */}
+        <div class="shrink-0 px-2 pb-2">
           <button
             type="button"
             class="flex w-full items-center gap-2 rounded-lg border border-v2-border-border-muted px-2.5 py-2 text-left text-14-medium text-v2-text-text-strong transition-colors hover:border-[#EC5B2B]/50 hover:bg-[#EC5B2B]/8 disabled:opacity-40 disabled:pointer-events-none"
@@ -122,12 +80,10 @@ export function LeftSidebar() {
             <IconV2 name="edit" size="small" style={{ color: "#EC5B2B" }} />
             <span class="min-w-0 flex-1 truncate">Nuevo chat</span>
           </button>
-        </Show>
-      </div>
+        </div>
 
-      {/* Historial */}
-      <div class="min-h-0 flex-1 overflow-y-auto no-scrollbar px-2">
-        <Show when={!collapsed()}>
+        {/* Historial */}
+        <div class="min-h-0 flex-1 overflow-y-auto px-2">
           <Show
             when={!loading()}
             fallback={
@@ -140,9 +96,7 @@ export function LeftSidebar() {
           >
             <For
               each={dedupedGroups()}
-              fallback={
-                <p class="px-2 pt-2 text-13-regular text-v2-text-text-faint select-none">Sin chats todavía</p>
-              }
+              fallback={<p class="px-2 pt-2 text-13-regular text-v2-text-text-faint select-none">Sin chats todavía</p>}
             >
               {(group) => (
                 <div class="flex flex-col gap-0.5 pb-2">
@@ -154,44 +108,15 @@ export function LeftSidebar() {
               )}
             </For>
           </Show>
-        </Show>
-      </div>
+        </div>
 
-      {/* Footer: Ajustes / Ayuda */}
-      <div
-        class="shrink-0 border-t border-v2-border-border-muted p-2"
-        classList={{ "flex flex-col gap-0.5": !collapsed(), "flex flex-col items-center gap-1": collapsed() }}
-      >
-        <Show
-          when={!collapsed()}
-          fallback={
-            <>
-              <Tooltip value="Ajustes" placement="right">
-                <IconButtonV2
-                  variant="ghost"
-                  size="small"
-                  icon={<IconV2 name="settings-gear" size="small" />}
-                  aria-label="Ajustes"
-                  onClick={() => openSettings()}
-                />
-              </Tooltip>
-              <Tooltip value="Ayuda" placement="right">
-                <IconButtonV2
-                  variant="ghost"
-                  size="small"
-                  icon={<IconV2 name="help" size="small" />}
-                  aria-label="Ayuda"
-                  onClick={openHelp}
-                />
-              </Tooltip>
-            </>
-          }
-        >
+        {/* Footer: Ajustes / Ayuda */}
+        <div class="flex shrink-0 flex-col gap-0.5 border-t border-v2-border-border-muted p-2">
           <FooterButton icon="settings-gear" label="Ajustes" onClick={() => openSettings()} />
           <FooterButton icon="help" label="Ayuda" onClick={openHelp} />
-        </Show>
-      </div>
-    </aside>
+        </div>
+      </aside>
+    </Show>
   )
 }
 
@@ -208,10 +133,7 @@ function FooterButton(props: { icon: "settings-gear" | "help"; label: string; on
   )
 }
 
-function SessionRow(props: {
-  record: HomeSessionRecord
-  sessions: ReturnType<typeof createHomeSessionsController>
-}) {
+function SessionRow(props: { record: HomeSessionRecord; sessions: ReturnType<typeof createHomeSessionsController> }) {
   const title = createMemo(() => sessionTitle(props.record.session.title) || "Nuevo chat")
   const active = createMemo(() => props.sessions.tab.isOpen(props.record))
   return (
@@ -223,7 +145,10 @@ function SessionRow(props: {
       onClick={() => props.sessions.session.open(props.record.session)}
     >
       <Show when={active()}>
-        <span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full" style={{ "background-color": "#EC5B2B" }} />
+        <span
+          class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full"
+          style={{ "background-color": "#EC5B2B" }}
+        />
       </Show>
       <span class="min-w-0 flex-1 truncate">{title()}</span>
     </button>

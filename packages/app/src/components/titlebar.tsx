@@ -1,3 +1,4 @@
+import { toggleLeftSidebar } from "@/components/left-sidebar"
 import { createEffect, createMemo, createResource, createSignal, Match, onMount, Show, Switch, untrack } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLocation, useNavigate, useParams } from "@solidjs/router"
@@ -391,6 +392,17 @@ export function Titlebar(props: { update?: TitlebarUpdate; debugTools?: { visibl
                 <Show when={windows() || linux()}>
                   <WindowsAppMenu command={command} platform={platform} variant="v2" />
                 </Show>
+                <TooltipV2 placement="bottom" value="Mostrar/ocultar panel" class="shrink-0">
+                  <IconButtonV2
+                    type="button"
+                    variant="ghost-muted"
+                    size="large"
+                    class="!w-9 shrink-0"
+                    icon={<IconV2 name="sidebar-right" />}
+                    onClick={toggleLeftSidebar}
+                    aria-label="Mostrar u ocultar el panel lateral"
+                  />
+                </TooltipV2>
                 <TitlebarTabStrip
                   tabs={tabsStore}
                   currentTab={currentTab}
