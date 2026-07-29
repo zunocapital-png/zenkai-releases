@@ -31,6 +31,36 @@ export const roots = (store: SessionStore) =>
 
 export const sortedRootSessions = (store: SessionStore, now: number) => roots(store).sort(sortSessions(now))
 
+// Agrupa sesiones (ya ordenadas por recencia) en tramos de fecha estilo Claude.
+// Devuelve solo los tramos con contenido, en orden cronológico.
+export function groupSessionsByDate(
+  sessions: Session[],
+  now: number,
+): Array<{ key: string; label: string; items: Session[] }> {
+  const start = new Date(now)
+  start.setHours(0, 0, 0, 0)
+  const t0 = start.getTime()
+  const day = 86_400_000
+  const groups: Record<string, { key: string; label: string; items: Session[] }> = {
+    today: { key: "today", label: "Hoy", items: [] },
+    yesterday: { key: "yesterday", label: "Ayer", items: [] },
+    week: { key: "week", label: "Últimos 7 días", items: [] },
+    month: { key: "month", label: "Últimos 30 días", items: [] },
+    older: { key: "older", label: "Más antiguos", items: [] },
+  }
+  for (const s of sessions) {
+    const ts = s.time.updated ?? s.time.created
+    if (ts >= t0) groups.today.items.push(s)
+    else if (ts >= t0 - day) groups.yesterday.items.push(s)
+    else if (ts >= t0 - 7 * day) groups.week.items.push(s)
+    else if (ts >= t0 - 30 * day) groups.month.items.push(s)
+    else groups.older.items.push(s)
+  }
+  return ["today", "yesterday", "week", "month", "older"]
+    .map((k) => groups[k])
+    .filter((g) => g.items.length > 0)
+}
+
 export const latestRootSession = (stores: SessionStore[], now: number) =>
   stores.flatMap(roots).sort(sortSessions(now))[0]
 

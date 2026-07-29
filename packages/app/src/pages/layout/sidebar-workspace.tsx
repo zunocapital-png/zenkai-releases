@@ -20,7 +20,7 @@ import { useServerSync, useQueryOptions } from "@/context/server-sync"
 import { useLanguage } from "@/context/language"
 import { pathKey } from "@/utils/path-key"
 import { NewSessionItem, SessionItem, SessionSkeleton } from "./sidebar-items"
-import { sortedRootSessions } from "./helpers"
+import { sortedRootSessions, groupSessionsByDate } from "./helpers"
 import { useIsFetching } from "@tanstack/solid-query"
 
 type InlineEditorComponent = (props: {
@@ -246,7 +246,10 @@ const WorkspaceSessionList = (props: {
   hasMore: Accessor<boolean>
   loadMore: () => Promise<void>
   language: ReturnType<typeof useLanguage>
-}): JSX.Element => (
+}): JSX.Element => {
+  // Agrupa el historial por tramos de fecha (Hoy / Ayer / Últimos 7 días…) estilo Claude.
+  const grouped = createMemo(() => groupSessionsByDate(props.sessions(), Date.now()))
+  return (
   <nav class="flex flex-col gap-1">
     <Show when={props.showNew()}>
       <NewSessionItem
@@ -259,20 +262,29 @@ const WorkspaceSessionList = (props: {
     <Show when={props.loading()}>
       <SessionSkeleton />
     </Show>
-    <For each={props.sessions()}>
-      {(session) => (
-        <SessionItem
-          session={session}
-          list={props.sessions()}
-          navList={props.ctx.navList}
-          slug={props.slug()}
-          mobile={props.mobile}
-          showChild
-          sidebarExpanded={props.ctx.sidebarExpanded}
-          clearHoverProjectSoon={props.ctx.clearHoverProjectSoon}
-          prefetchSession={props.ctx.prefetchSession}
-          archiveSession={props.ctx.archiveSession}
-        />
+    <For each={grouped()}>
+      {(group) => (
+        <div class="flex flex-col gap-1">
+          <div class="select-none px-2 pt-2 pb-0.5 text-[11px] font-medium uppercase tracking-wider text-text-weak">
+            {group.label}
+          </div>
+          <For each={group.items}>
+            {(session) => (
+              <SessionItem
+                session={session}
+                list={props.sessions()}
+                navList={props.ctx.navList}
+                slug={props.slug()}
+                mobile={props.mobile}
+                showChild
+                sidebarExpanded={props.ctx.sidebarExpanded}
+                clearHoverProjectSoon={props.ctx.clearHoverProjectSoon}
+                prefetchSession={props.ctx.prefetchSession}
+                archiveSession={props.ctx.archiveSession}
+              />
+            )}
+          </For>
+        </div>
       )}
     </For>
     <Show when={props.hasMore()}>
@@ -291,7 +303,8 @@ const WorkspaceSessionList = (props: {
       </div>
     </Show>
   </nav>
-)
+  )
+}
 
 export const SortableWorkspace = (props: {
   ctx: WorkspaceSidebarContext
