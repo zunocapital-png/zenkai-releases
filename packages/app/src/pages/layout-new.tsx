@@ -13,7 +13,7 @@ export default function NewLayout(props: ParentProps) {
   const platform = usePlatform()
   const navigate = useNavigate()
   setNavigate(navigate)
-  const [state, setState] = createStore({ debugTools: true })
+  const [state, setState] = createStore({ debugTools: false })
 
   createEffect(() => setV2Toast(true))
 

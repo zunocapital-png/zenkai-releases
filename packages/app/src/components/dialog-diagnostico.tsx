@@ -1,8 +1,5 @@
-import { createSignal, createMemo, onMount, For, Show } from "solid-js"
+import { createSignal, onMount, For, Show } from "solid-js"
 import { Dialog } from "@opencode-ai/ui/dialog"
-import { useLocal } from "@/context/local"
-import { useProviders } from "@/hooks/use-providers"
-import { decode64 } from "@/utils/base64"
 
 // Panel de diagnóstico: chequea que todo esté conectado y lo muestra en español.
 type Estado = "ok" | "warn" | "error" | "loading"
@@ -49,15 +46,10 @@ async function pingJson(url: string): Promise<any | null> {
 }
 
 export function DialogDiagnostico() {
-  const local = useLocal()
-  const providers = useProviders(() => decode64(local.slug()))
-
   const [ollama, setOllama] = createSignal<Estado>("loading")
   const [modelosOllama, setModelosOllama] = createSignal<string[]>([])
   const [auto, setAuto] = createSignal<Estado>("loading")
   const [chequeando, setChequeando] = createSignal(false)
-
-  const conectados = createMemo(() => providers.connected())
 
   async function check() {
     setChequeando(true)
@@ -140,22 +132,10 @@ export function DialogDiagnostico() {
 
         {/* 3. Proveedores de nube */}
         <Fila
-          estado={conectados().length > 0 ? "ok" : "warn"}
-          titulo={
-            conectados().length > 0
-              ? `Proveedores de nube conectados (${conectados().length})`
-              : "Ningún proveedor de nube conectado"
-          }
-          detalle={conectados().length === 0 ? "Usá el botón 'Conectar API' para agregar una key." : undefined}
-        >
-          <Show when={conectados().length > 0}>
-            <ul class="flex flex-col gap-1">
-              <For each={conectados()}>
-                {(p) => <li class="text-13-regular text-text-base">{p.name ?? p.id}</li>}
-              </For>
-            </ul>
-          </Show>
-        </Fila>
+          estado="warn"
+          titulo="Proveedores de nube"
+          detalle="Conectá tus keys con el botón 'Conectar API'. Podés ver los conectados en Ajustes → Proveedores."
+        />
 
         {/* Botón re-chequear */}
         <div class="mt-1 flex justify-end">
