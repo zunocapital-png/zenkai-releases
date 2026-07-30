@@ -30,6 +30,7 @@ import { PromptInputV2, type PromptInputV2Suggestion } from "@opencode-ai/sessio
 import { PermissionsModeMenu } from "@/components/permissions-mode-menu"
 import { PreflightModelo } from "@/components/preflight-modelo"
 import { BannerPermisoPendiente } from "@/components/banner-permiso-pendiente"
+import { WidgetContexto } from "@/components/widget-contexto"
 import {
   createPromptInputV2Controller,
   createPromptInputV2State,
@@ -194,7 +195,9 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
           </>
         }
       />
-      <div class="flex items-center justify-end px-1">
+      <div class="flex items-center justify-end gap-2 px-1">
+        {/* Contexto usado (aparece solo si >40%). Discreto en esquina inferior. */}
+        <WidgetContexto />
         <PermissionsModeMenu />
       </div>
     </div>

@@ -146,11 +146,79 @@ function upstreams(): Upstream[] {
   return list
 }
 
+// Clasifica el prompt del usuario en 3 modos: "coding" (código, refactor, bugs),
+// "smart" (razonamiento profundo, análisis, planeación) o "fast" (chat corto,
+// preguntas simples). Es un fallback SIMPLE cuando el usuario pidió "auto" a
+// secas — sirve para elegir el mejor modelo local disponible según la tarea.
+// Es una heurística chata a propósito: no queremos que la IA piense antes de
+// pensar. Si falla, cae en el default de PREFERENCIA.
+function clasificarPrompt(texto: string): "coding" | "smart" | "fast" {
+  const t = texto.toLowerCase()
+  const codigoKw = ["código", "codigo", "refactor", "función", "funcion", "bug", "typescript", "javascript", "python", "rust", "componente", "hook", "clase", "test", "async", "await", "diff", "commit", "compilar"]
+  const razonKw = ["explicá", "explica", "por qué", "por que", "analiza", "analizá", "planeá", "planea", "compará", "compara", "estrategia", "arquitectura", "diseñá", "diseño de", "trade-off", "pros y contras"]
+  if (codigoKw.some((k) => t.includes(k))) return "coding"
+  if (razonKw.some((k) => t.includes(k))) return "smart"
+  if (t.length < 60) return "fast"
+  return "coding" // default: mediados largos = probablemente código
+}
+
+// Preferencia POR MODO — cuando el usuario pidió auto/coding, /smart o /fast,
+// arrancamos por modelos que sabemos que son buenos en ese frente.
+const PREFERENCIA_POR_MODO: Record<"coding" | "smart" | "fast" | "default", string[]> = {
+  coding: ["qwen2.5-coder", "qwen3", "qwen2.5", "llama3.1", "deepseek"],
+  smart: ["qwen3", "deepseek", "qwen2.5", "llama3.1"],
+  fast: ["qwen3:8b", "qwen2.5:7b", "qwen2.5-coder:7b", "llama3.1"],
+  default: ["qwen2.5-coder", "qwen3", "qwen2.5", "llama3.1", "deepseek", "mistral", "gemma"],
+}
+
+function elegirModeloPorModo(tags: string[], modo: "coding" | "smart" | "fast" | "default"): string | undefined {
+  for (const pref of PREFERENCIA_POR_MODO[modo]) {
+    const hit = tags.find((t) => t.startsWith(pref))
+    if (hit) return hit
+  }
+  return tags[0]
+}
+
 // Modelo concreto a usar en un upstream para el pedido dado.
-async function resolverModelo(u: Upstream, pedido: string): Promise<string | undefined> {
+async function resolverModelo(u: Upstream, pedido: string, payload?: unknown): Promise<string | undefined> {
   if (pedido !== "auto" && !pedido.startsWith("auto/")) return pedido
-  if (u.kind === "ollama") return elegirModelo(await tagsOllama())
+  if (u.kind === "ollama") {
+    // Si viene "auto/coding" / "auto/smart" / "auto/fast", usamos el modo explícito.
+    // Si viene "auto" a secas, clasificamos el último mensaje del usuario.
+    let modo: "coding" | "smart" | "fast" | "default" = "default"
+    if (pedido === "auto/coding") modo = "coding"
+    else if (pedido === "auto/smart") modo = "smart"
+    else if (pedido === "auto/fast") modo = "fast"
+    else if (pedido === "auto") {
+      const ultimo = extractLastUserContent(payload)
+      if (ultimo) modo = clasificarPrompt(ultimo)
+    }
+    return elegirModeloPorModo(await tagsOllama(), modo)
+  }
   return u.model // los upstreams de nube traen su modelo fijo
+}
+
+// Extrae el último mensaje del usuario del payload OpenAI-compatible para
+// clasificar la tarea. Devuelve string vacío si no encuentra.
+function extractLastUserContent(payload: unknown): string {
+  try {
+    const p = payload as { messages?: Array<{ role?: string; content?: unknown }> }
+    const msgs = p?.messages ?? []
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i]
+      if (m?.role !== "user") continue
+      if (typeof m.content === "string") return m.content
+      if (Array.isArray(m.content)) {
+        return m.content
+          .filter((c: unknown) => (c as { type?: string })?.type === "text")
+          .map((c: unknown) => (c as { text?: string })?.text ?? "")
+          .join(" ")
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return ""
 }
 
 async function handleChat(req: http.IncomingMessage, res: http.ServerResponse) {
@@ -168,7 +236,7 @@ async function handleChat(req: http.IncomingMessage, res: http.ServerResponse) {
 
   for (const u of candidatos) {
     if (Date.now() < (breaker.get(u.name) ?? 0)) continue // circuito abierto -> saltar sin esperar
-    const modelo = await resolverModelo(u, pedido)
+    const modelo = await resolverModelo(u, pedido, payload)
     if (!modelo) continue // p.ej. Ollama sin modelos -> probar el siguiente upstream
     const headers: Record<string, string> = { "content-type": "application/json" }
     if (u.key) headers["authorization"] = `Bearer ${u.key}`

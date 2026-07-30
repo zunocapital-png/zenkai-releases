@@ -284,6 +284,33 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     )
   }
 
+  // Comandos ZENKAI de acceso rápido — abren los flujos más usados sin salir
+  // del compositor. Todos con prefijo español para el usuario final.
+  const zenkaiAyuda = () => {
+    void openDialog(
+      () => import("@/components/dialog-help-guide"),
+      (x) => dialog.show(() => <x.DialogHelpGuide />),
+    )
+  }
+  const zenkaiImagen = () => {
+    void openDialog(
+      () => import("@/components/dialog-imagenes"),
+      (x) => dialog.show(() => <x.DialogImagenes />),
+    )
+  }
+  const zenkaiQueSonMcp = () => {
+    void openDialog(
+      () => import("@/components/dialog-que-son-mcp"),
+      (x) => dialog.show(() => <x.DialogQueSonMcp />),
+    )
+  }
+  const zenkaiDisenos = () => {
+    void openDialog(
+      () => import("@/components/dialog-galeria-diseno"),
+      (x) => dialog.show(() => <x.DialogGaleriaDiseno />),
+    )
+  }
+
   const toggleAutoAccept = () => {
     const sessionID = params.id
     if (sessionID) permission.toggleAutoAccept(sessionID, sdk().directory)
@@ -577,6 +604,35 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       keybind: "mod+;",
       slash: "mcp",
       onSelect: chooseMcp,
+    }),
+    // Slash commands ZENKAI en español (acceso rápido a los flujos comunes).
+    mcpCommand({
+      id: "zenkai.imagen",
+      title: "Generar imagen",
+      description: "Crear una imagen con SD local o API cloud",
+      slash: "imagen",
+      onSelect: zenkaiImagen,
+    }),
+    mcpCommand({
+      id: "zenkai.disenos",
+      title: "Galería de diseños",
+      description: "Plantillas listas para usar como prompt",
+      slash: "disenos",
+      onSelect: zenkaiDisenos,
+    }),
+    mcpCommand({
+      id: "zenkai.ayuda",
+      title: "Guía de uso",
+      description: "Cómo usar ZENKAI y qué hace cada zona",
+      slash: "ayuda",
+      onSelect: zenkaiAyuda,
+    }),
+    mcpCommand({
+      id: "zenkai.que-son-mcp",
+      title: "¿Qué son los MCP?",
+      description: "Explicación en criollo con ejemplos",
+      slash: "que-son-mcp",
+      onSelect: zenkaiQueSonMcp,
     }),
   ]
 

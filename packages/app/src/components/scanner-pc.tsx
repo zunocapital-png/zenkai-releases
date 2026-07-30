@@ -52,9 +52,14 @@ export function ScannerPC(props: { onResultado?: (r: ResultadoScan) => void; onC
 
   // Ejecuta cada fase con delay visible y actualiza logs con lo real que descubre.
   const correr = async () => {
-    // Kick-off del hardware en paralelo con la animación: cuando termine, cargamos
-    // datos reales; si no termina a tiempo, quedan undefined y avisamos.
-    const hwPromise = (platform.analyzeHardware?.().catch(() => undefined) ?? Promise.resolve(undefined))
+    // Kick-off del hardware YA — antes iba en race dentro del loop y si tardaba
+    // >50ms se perdían los logs de esa fase. Ahora se resuelve una única vez y
+    // los datos están disponibles a partir de cuando lleguen; las fases dibujan
+    // el log solo cuando el dato existe.
+    let hw: { ramGB?: number; vramGB?: number | null; freeRamGB?: number; cpuCores?: number } | undefined
+    void (platform.analyzeHardware?.().catch(() => undefined) ?? Promise.resolve(undefined)).then((v) => {
+      hw = v as typeof hw
+    })
 
     let acumulado = 0
     for (let i = 0; i < FASES.length; i++) {
@@ -72,41 +77,39 @@ export function ScannerPC(props: { onResultado?: (r: ResultadoScan) => void; onC
       }
       acumulado += fase.duracionMs
 
-      // Al final de cada fase específica, si el HW ya está, mostramos el dato real.
-      const hw = await Promise.race([
-        hwPromise,
-        new Promise<undefined>((r) => setTimeout(() => r(undefined), 50)),
-      ])
+      // Al final de cada fase, dibujamos el log correspondiente si el HW ya está.
       if (hw && !cancelado) {
         const _ram = hw.ramGB ?? 0
         const _vram = hw.vramGB ?? null
         const _free = hw.freeRamGB
         if (fase.clave === "ram") pushLog(`  → RAM total: ${_ram.toFixed(1)} GB`)
         if (fase.clave === "vram") pushLog(`  → VRAM detectada: ${_vram ? `${_vram.toFixed(1)} GB` : "no dedicada"}`)
-        if (fase.clave === "cpu") pushLog(`  → Núcleos: ${(hw as { cpuCores?: number }).cpuCores ?? "—"}`)
+        if (fase.clave === "cpu") pushLog(`  → Núcleos: ${hw.cpuCores ?? "—"}`)
         if (fase.clave === "budget") pushLog(`  → Presupuesto: ${presupuestoGB(_ram, _vram, _free).toFixed(1)} GB`)
         if (fase.clave === "model") {
           const m = modeloRecomendado(presupuestoGB(_ram, _vram, _free))
           pushLog(`  → Recomendado: ${m?.id ?? "sin sugerencia"}`)
         }
+      } else if (!hw && fase.clave === "model" && !cancelado) {
+        // El HW no llegó a tiempo: avisamos con un log honesto en vez de vacío.
+        pushLog("  → No pudimos leer el hardware. Podés continuar sin escaneo.")
       }
     }
 
     setProgreso(1)
-    const hw = await hwPromise
     if (cancelado) return
     const r: ResultadoScan = {
       ramGB: hw?.ramGB,
       vramGB: hw?.vramGB ?? undefined,
       freeRamGB: hw?.freeRamGB,
-      cpuCores: (hw as { cpuCores?: number } | undefined)?.cpuCores,
+      cpuCores: hw?.cpuCores,
       modeloSugerido: hw
         ? modeloRecomendado(presupuestoGB(hw.ramGB ?? 0, hw.vramGB ?? null, hw.freeRamGB))
         : undefined,
     }
     setResultado(r)
     props.onResultado?.(r)
-    pushLog("✔ Scan completado.")
+    pushLog(hw ? "✔ Scan completado." : "✔ Podés continuar sin escaneo.")
   }
 
   onMount(() => {
