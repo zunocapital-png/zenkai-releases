@@ -42,14 +42,22 @@ function portInUse(port: number, timeoutMs = 600): Promise<boolean> {
 // Modelos locales instalados, en orden de preferencia para "auto" (código primero).
 const PREFERENCIA = ["qwen2.5-coder", "qwen3", "qwen2.5", "llama3.1", "deepseek", "mistral", "gemma"]
 
+// Cache corto de tags: en "auto" resolverModelo y handleModels piden /api/tags seguido;
+// un TTL de 5s evita un roundtrip HTTP extra (con su timeout) por cada request.
+let tagsCache: { at: number; tags: string[] } | undefined
+const TAGS_TTL_MS = 5_000
+
 async function tagsOllama(): Promise<string[]> {
+  if (tagsCache && Date.now() - tagsCache.at < TAGS_TTL_MS) return tagsCache.tags
   try {
     const res = await fetch(`${OLLAMA}/api/tags`, { signal: AbortSignal.timeout(2000) })
-    if (!res.ok) return []
+    if (!res.ok) return tagsCache?.tags ?? []
     const data = (await res.json()) as { models?: Array<{ name?: string }> }
-    return (data.models ?? []).map((m) => m?.name).filter((n): n is string => typeof n === "string")
+    const tags = (data.models ?? []).map((m) => m?.name).filter((n): n is string => typeof n === "string")
+    tagsCache = { at: Date.now(), tags }
+    return tags
   } catch {
-    return []
+    return tagsCache?.tags ?? []
   }
 }
 

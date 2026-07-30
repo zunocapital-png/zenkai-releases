@@ -107,10 +107,14 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("computer-use-get", () => existsSync(computerAllowFile()))
   ipcMain.handle("computer-use-set", (_event: IpcMainInvokeEvent, allowed: boolean) => {
-    const file = computerAllowFile()
-    if (allowed) writeFileSync(file, "1")
-    else if (existsSync(file)) rmSync(file)
-    return existsSync(file)
+    try {
+      const file = computerAllowFile()
+      if (allowed) writeFileSync(file, "1")
+      else if (existsSync(file)) rmSync(file)
+      return existsSync(file)
+    } catch {
+      return false // no propagar el error de fs al renderer
+    }
   })
   ipcMain.handle("store-get", (_event: IpcMainInvokeEvent, name: string, key: string) => {
     try {
@@ -123,15 +127,27 @@ export function registerIpcHandlers(deps: Deps) {
     }
   })
   ipcMain.handle("store-set", (_event: IpcMainInvokeEvent, name: string, key: string, value: string) => {
-    getStore(name).set(key, value)
+    try {
+      getStore(name).set(key, value)
+    } catch {
+      /* fs lleno/bloqueado: no tumbar el renderer */
+    }
   })
   ipcMain.handle("store-delete", (_event: IpcMainInvokeEvent, name: string, key: string) => {
-    getStore(name).delete(key)
-    void removeStoreFileIfEmpty(name)
+    try {
+      getStore(name).delete(key)
+      void removeStoreFileIfEmpty(name)
+    } catch {
+      /* noop */
+    }
   })
   ipcMain.handle("store-clear", (_event: IpcMainInvokeEvent, name: string) => {
-    getStore(name).clear()
-    void removeStoreFileIfEmpty(name)
+    try {
+      getStore(name).clear()
+      void removeStoreFileIfEmpty(name)
+    } catch {
+      /* noop */
+    }
   })
   ipcMain.handle("store-keys", (_event: IpcMainInvokeEvent, name: string) => {
     const store = getStore(name)

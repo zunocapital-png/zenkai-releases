@@ -21,6 +21,10 @@ export function DialogBienvenida() {
   const [ollamaOk, setOllamaOk] = createSignal<boolean | undefined>(undefined)
   const [instalados, setInstalados] = createSignal<string[]>([])
   const [descargas, setDescargas] = createSignal<Record<string, Descarga>>({})
+  // Un AbortController por descarga; al cerrar el diálogo abortamos las que sigan vivas
+  // (antes el stream seguía corriendo y escribía sobre un componente desmontado).
+  const aborters: Record<string, AbortController> = {}
+  onCleanup(() => Object.values(aborters).forEach((a) => a.abort()))
 
   async function refrescar() {
     const vivo = await ollamaVivo()
@@ -49,15 +53,20 @@ export function DialogBienvenida() {
   }
 
   async function descargar(id: string) {
+    const ac = new AbortController()
+    aborters[id] = ac
     try {
-      await descargarModeloOllama(id, (d) => setDescargas((prev) => ({ ...prev, [id]: d })))
+      await descargarModeloOllama(id, (d) => setDescargas((prev) => ({ ...prev, [id]: d })), ac.signal)
       await refrescar()
       void sincronizarConZenkai()
     } catch (e) {
+      if (ac.signal.aborted) return // cancelado al cerrar: no tocar estado
       setDescargas((prev) => ({
         ...prev,
         [id]: { pct: -1, estado: "Error", error: e instanceof Error ? e.message : "No se pudo descargar." },
       }))
+    } finally {
+      delete aborters[id]
     }
   }
 
@@ -140,7 +149,7 @@ export function DialogBienvenida() {
                               />
                             </div>
                             <span class="text-12-regular text-text-muted">
-                              {d().estado} {d().pct > 0 ? `· ${d().pct}%` : ""}
+                              {d().estado} {d().pct > 0 ? `· ${d().pct}%` : ""} {d().detalle ? `· ${d().detalle}` : ""}
                             </span>
                           </Show>
                         </div>

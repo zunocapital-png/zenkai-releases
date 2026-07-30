@@ -1421,6 +1421,7 @@ const layer = Layer.effect(
         // modelo instalado que falte, consultando el propio Ollama (/api/tags). Así todo
         // lo que se descargue aparece en el selector sin editar el config a mano.
         yield* Effect.promise(async () => {
+          if (!isProviderAllowed("ollama" as ProviderV2.ID)) return // deshabilitado: no gastar el fetch
           const ollamaEntry = configProviders.find(([id]) => id === "ollama")
           if (!ollamaEntry) return
           const [, ollamaProvider] = ollamaEntry
@@ -1446,6 +1447,7 @@ const layer = Layer.effect(
         // gateway tenga disponibles aparecen en el selector, además del "auto". Con
         // tope para no inundar el selector con cientos de modelos.
         yield* Effect.promise(async () => {
+          if (!isProviderAllowed("omniroute" as ProviderV2.ID)) return // deshabilitado: no gastar el fetch
           const omniEntry = configProviders.find(([id]) => id === "omniroute")
           if (!omniEntry) return
           const [, omniProvider] = omniEntry

@@ -1,6 +1,6 @@
 import { Icon as IconV2 } from "@opencode-ai/ui/v2/icon"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
-import { createMemo, createSignal, For, Show } from "solid-js"
+import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js"
 import { produce } from "solid-js/store"
 import { Binary } from "@opencode-ai/core/util/binary"
 import type { Session } from "@opencode-ai/sdk/v2/client"
@@ -48,13 +48,21 @@ export function LeftSidebar() {
   const dialog = useDialog()
 
   const [query, setQuery] = createSignal("")
-  const [userName] = createSignal((() => {
+  const leerNombre = () => {
     try {
       return localStorage.getItem("zenkai-username") ?? ""
     } catch {
       return ""
     }
-  })())
+  }
+  const [userName, setUserName] = createSignal(leerNombre())
+  // Revalidamos al volver a la ventana: si el usuario cambió su nombre en Ajustes, el
+  // avatar/footer se actualizan (antes se leía una sola vez y quedaba obsoleto).
+  onMount(() => {
+    const refrescar = () => setUserName(leerNombre())
+    window.addEventListener("focus", refrescar)
+    onCleanup(() => window.removeEventListener("focus", refrescar))
+  })
 
   const openHelp = () => {
     void import("@/components/dialog-help-guide").then((x) => {
@@ -310,7 +318,7 @@ function SessionRow(props: {
           <input
             type="text"
             value={draft()}
-            autofocus
+            ref={(el) => queueMicrotask(() => { el.focus(); el.select() })}
             onInput={(e) => setDraft(e.currentTarget.value)}
             onBlur={commitRename}
             onKeyDown={(e) => {

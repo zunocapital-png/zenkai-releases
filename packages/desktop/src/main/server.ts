@@ -19,6 +19,7 @@ export type SidecarListener = { stop: () => Promise<void> }
 const SIDECAR_SERVICE_NAME = "zenkai server"
 const SIDECAR_START_STALL_TIMEOUT = 60_000
 const SIDECAR_STOP_TIMEOUT = 6_000
+const SIDECAR_HEALTH_TIMEOUT = 60_000 // tope para que /api/health pase tras el 'ready'
 
 type SpawnLocalServerOptions = {
   userDataPath: string
@@ -167,7 +168,17 @@ export async function spawnLocalServer(
       }
     }
 
-    await Promise.race([ready(), gone])
+    // Deadline duro: si el sidecar arranca ('ready') pero /api/health nunca pasa, no colgamos
+    // el arranque para siempre — fallamos con un error accionable.
+    let deadlineTimer: NodeJS.Timeout
+    const deadline = new Promise<never>((_, reject) => {
+      deadlineTimer = setTimeout(
+        () => reject(new Error(`Sidecar health check no pasó en ${SIDECAR_HEALTH_TIMEOUT}ms: ${url}`)),
+        SIDECAR_HEALTH_TIMEOUT,
+      )
+    })
+
+    await Promise.race([ready(), gone, deadline]).finally(() => clearTimeout(deadlineTimer))
   })()
 
   let stopping: Promise<void> | undefined

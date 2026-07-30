@@ -538,7 +538,14 @@ function PromptInputV2ModelControl(props: {
     </>
   )
   return (
-    <Show when={!props.loading}>
+    <Show
+      when={!props.loading}
+      fallback={
+        // Placeholder mientras carga: reserva el ancho para que el control no aparezca de
+        // golpe (evita el salto de layout del composer).
+        <div class="h-7 w-[150px] shrink-0 animate-pulse rounded-md bg-v2-background-bg-layer-02" />
+      }
+    >
       <TooltipV2
         placement="top"
         gutter={4}

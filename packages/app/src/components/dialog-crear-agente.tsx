@@ -95,6 +95,14 @@ export function DialogCrearAgente() {
     if (!slug()) return setError("Poné un nombre (solo letras y números).")
     if (!prompt().trim()) return setError("Escribí las instrucciones del agente.")
 
+    // Colisión de slug: 'Revisor de código' y 'Revisor de codigo' generan el mismo id y se
+    // pisarían sin aviso. Pedimos confirmación antes de sobrescribir.
+    const existentes = serverSync().data.config.agent as Record<string, unknown> | undefined
+    if (existentes && slug() in existentes) {
+      const ok = typeof window === "undefined" || window.confirm(`Ya existe un agente "${slug()}". ¿Reemplazarlo?`)
+      if (!ok) return
+    }
+
     setGuardando(true)
     try {
       await serverSync().updateConfig({

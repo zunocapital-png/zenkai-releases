@@ -61,9 +61,15 @@ function overlap(content: string, message: string): number {
 }
 
 // Devuelve todos si son <= limit; si no, los mas relevantes al mensaje.
+// Schwartzian: calculamos el score UNA vez por memoria (antes se recomputaba dentro del
+// comparador, re-tokenizando el mensaje O(n log n) veces).
 function topRelevant(memories: Memory[], message: string, limit: number): Memory[] {
   if (memories.length <= limit) return memories
-  return [...memories].sort((a, b) => overlap(b.content, message) - overlap(a.content, message)).slice(0, limit)
+  return memories
+    .map((m) => ({ m, score: overlap(m.content, message) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((x) => x.m)
 }
 
 function formatSection(title: string, memories: Memory[]): string {

@@ -12,7 +12,8 @@ type Tarea = { id: string; name: string; prompt: string; everyMinutes: number; e
 function nuevoId(nombre: string): string {
   return `${nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 20)}-${Math.abs(hashStr(nombre + Math.random()))}`
 }
-// Hash simple sin Math.random en la semilla del id (evita colisiones legibles).
+// Hash simple; se le agrega Math.random como sal para que dos tareas con el mismo nombre
+// no colisionen en el id.
 function hashStr(s: string): number {
   let h = 0
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
@@ -25,9 +26,13 @@ export function DialogTareasProgramadas() {
   const [nombre, setNombre] = createSignal("")
   const [prompt, setPrompt] = createSignal("")
   const [minutos, setMinutos] = createSignal(60)
+  const [error, setError] = createSignal<string | undefined>(undefined)
+  // Si el usuario ya guardó algo antes de que resuelva la lectura inicial, no la pisamos.
+  let tocado = false
 
   onMount(() => {
     void platform.scheduledGet?.().then((json) => {
+      if (tocado) return
       try {
         const t = JSON.parse(json)
         if (Array.isArray(t)) setTareas(t)
@@ -38,13 +43,18 @@ export function DialogTareasProgramadas() {
   })
 
   async function guardar(lista: Tarea[]) {
+    tocado = true
     setTareas(lista)
     await platform.scheduledSet?.(JSON.stringify(lista))
   }
 
   function agregar(e: SubmitEvent) {
     e.preventDefault()
-    if (!nombre().trim() || !prompt().trim() || !(minutos() > 0)) return
+    if (!nombre().trim() || !prompt().trim() || !(minutos() > 0)) {
+      setError("Completá nombre, qué recordar y un intervalo mayor a 0.")
+      return
+    }
+    setError(undefined)
     const t: Tarea = {
       id: nuevoId(nombre().trim()),
       name: nombre().trim(),
@@ -114,6 +124,9 @@ export function DialogTareasProgramadas() {
               Agregar
             </button>
           </div>
+          <Show when={error()}>
+            <span class="text-12-regular text-red-400">{error()}</span>
+          </Show>
         </form>
 
         {/* Lista */}

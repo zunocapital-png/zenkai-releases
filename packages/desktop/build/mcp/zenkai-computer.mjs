@@ -274,6 +274,10 @@ async function handle(msg) {
   if (id !== undefined) send({ jsonrpc: "2.0", id, error: { code: -32601, message: `Método no soportado: ${method}` } })
 }
 
+// Cola serial: encadenamos los mensajes para que dos tools/call (clic/teclado) no corran
+// en paralelo y se pisen el mouse/teclado ni lancen PowerShells que compiten.
+let cola = Promise.resolve()
+
 const rl = readline.createInterface({ input: process.stdin })
 rl.on("line", (line) => {
   const t = line.trim()
@@ -284,5 +288,5 @@ rl.on("line", (line) => {
   } catch {
     return
   }
-  void handle(msg)
+  cola = cola.then(() => handle(msg)).catch(() => {})
 })

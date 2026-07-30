@@ -72,7 +72,7 @@ export function DialogDiagnostico() {
   const [analizando, setAnalizando] = createSignal(false)
   const [controlPc, setControlPc] = createSignal(false)
 
-  onMount(() => void platform.computerUseGet?.().then((v) => setControlPc(!!v)))
+  onMount(() => void platform.computerUseGet?.().then((v) => setControlPc(!!v)).catch(() => {}))
   async function toggleControlPc() {
     const next = !controlPc()
     const res = await platform.computerUseSet?.(next)
@@ -220,10 +220,11 @@ export function DialogDiagnostico() {
               fallback={
                 <button
                   type="button"
+                  disabled={!!d() && d()!.pct === 100}
                   onClick={() => void descargar(m.id)}
-                  class="shrink-0 rounded-md border border-border-base bg-surface-raised px-3 py-1.5 text-12-medium text-text-strong hover:bg-surface-hover"
+                  class="shrink-0 rounded-md border border-border-base bg-surface-raised px-3 py-1.5 text-12-medium text-text-strong hover:bg-surface-hover disabled:opacity-50"
                 >
-                  {d() ? (d()!.pct === -1 ? "Reintentar" : "Descargar") : "Descargar"}
+                  {d() ? (d()!.pct === -1 ? "Reintentar" : d()!.pct === 100 ? "Finalizando…" : "Descargar") : "Descargar"}
                 </button>
               }
             >
@@ -437,7 +438,18 @@ export function DialogDiagnostico() {
               </span>
               <Show when={customActivo()}>
                 <div class="flex flex-col gap-1 rounded-md border border-border-base bg-surface-base p-3">
-                  <span class="font-mono text-12-regular text-text-strong">{customActivo()}</span>
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-12-regular text-text-strong">{customActivo()}</span>
+                    <Show when={descargas()[customActivo()!]?.pct === -1}>
+                      <button
+                        type="button"
+                        onClick={() => void descargar(customActivo()!)}
+                        class="ml-auto shrink-0 rounded-md border border-border-base px-2.5 py-1 text-12-medium text-text-strong hover:bg-surface-hover"
+                      >
+                        Reintentar
+                      </button>
+                    </Show>
+                  </div>
                   {barraProgreso(() => descargas()[customActivo()!])}
                 </div>
               </Show>
