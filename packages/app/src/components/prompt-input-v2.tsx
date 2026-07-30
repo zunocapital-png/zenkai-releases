@@ -1,6 +1,5 @@
 import { ImagePreview } from "@opencode-ai/ui/image-preview"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
-import { ProviderIcon } from "@opencode-ai/ui/provider-icon"
 import { ButtonV2 } from "@opencode-ai/ui/v2/button-v2"
 import { Icon } from "@opencode-ai/ui/v2/icon"
 import { KeybindV2 } from "@opencode-ai/ui/v2/keybind-v2"
@@ -73,7 +72,13 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
               title={language.t("command.model.choose")}
               keybind={command.keybindParts("model.choose")}
               model={props.controller.model.selection}
-              providerID={props.controller.model.selection.current()?.provider?.id}
+              providerID={(() => {
+                // Marcador NEUTRO (no el id real): ProviderIcon resolvería el logo de
+                // Anthropic/OpenAI y filtraría branding. Solo distinguimos local vs nube.
+                const pid = props.controller.model.selection.current()?.provider?.id
+                if (!pid) return undefined
+                return pid === "ollama" || pid === "omniroute" ? "__local__" : "__cloud__"
+              })()}
               modelName={(() => {
                 const pid = props.controller.model.selection.current()?.provider?.id
                 if (!pid) return language.t("dialog.model.select.title")
@@ -520,11 +525,10 @@ function PromptInputV2ModelControl(props: {
     <>
       <Show when={props.providerID}>
         {(providerID) => (
-          <ProviderIcon
-            id={providerID()}
-            class="size-4 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity duration-150"
-            style={{ "will-change": "opacity", transform: "translateZ(0)" }}
-          />
+          // Ícono NEUTRO por marcador local/nube; nunca el logo del proveedor real (branding).
+          <span class="size-4 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-center">
+            <Icon name={providerID() === "__local__" ? "monitor" : "server"} />
+          </span>
         )}
       </Show>
       <span class="truncate leading-4">{props.modelName}</span>

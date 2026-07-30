@@ -1,96 +1,137 @@
-import { createSignal, Match, Show, Switch } from "solid-js"
+import { Match, Show, Switch } from "solid-js"
+import { MatrixRain } from "@/components/matrix-rain"
 import { usePlatform } from "@/context/platform"
 
-// Aviso de actualización PRO estilo ZENKAI. La app es local, pero cada release se publica
-// en GitHub (zenkai-releases): el updater chequea cada 10 min, descarga en segundo plano y,
-// cuando la nueva versión queda lista, este banner invita a reiniciar para instalarla.
+// Aviso de actualización OBLIGATORIA con la identidad original de ZENKAI: lluvia matrix
+// naranja de fondo y panel pixelado (8-bit). La app es local, pero cada release se publica
+// en GitHub: el updater chequea, descarga en segundo plano y este overlay BLOQUEA el uso
+// hasta reiniciar e instalar. Nunca se muestra el número de versión (a nadie le importa;
+// solo "hay una nueva y es obligatoria").
 //
-// Flujo de estados (updater-controller): checking -> downloading{version} -> ready{version}.
-// Mostramos "descargando" (barra indeterminada) e "instalá ahora" (CTA de reinicio).
-// "Después" oculta el banner para ESA versión; vuelve a aparecer en el próximo arranque.
+// Flujo (updater-controller): downloading -> ready -> installing. Sin "Después": es obligatoria.
 export function UpdateBanner() {
   const platform = usePlatform()
-  const [descartada, setDescartada] = createSignal<string | undefined>(undefined)
 
   const estado = () => platform.updater?.state()
-  const versionLista = () => {
-    const s = estado()
-    return s?.status === "ready" ? s.version : undefined
-  }
-  const mostrarLista = () => {
-    const v = versionLista()
-    return !!v && descartada() !== v
-  }
   const descargando = () => estado()?.status === "downloading"
+  const lista = () => estado()?.status === "ready"
   const instalando = () => estado()?.status === "installing"
+  const bloquear = () => descargando() || lista() || instalando()
 
   const instalar = () => void platform.updater?.install()
 
+  // Marco pixelado: esquinas recortadas estilo 8-bit (mismo notch para frame e interior).
+  const notch =
+    "polygon(0 5px,5px 5px,5px 0,calc(100% - 5px) 0,calc(100% - 5px) 5px,100% 5px,100% calc(100% - 5px),calc(100% - 5px) calc(100% - 5px),calc(100% - 5px) 100%,5px 100%,5px calc(100% - 5px),0 calc(100% - 5px))"
+  const mono = "'JetBrainsMono Nerd Font Mono', ui-monospace, 'Courier New', monospace"
+
   return (
-    <Show when={mostrarLista() || descargando() || instalando()}>
-      <style>{`@keyframes zenkai-slide{0%{transform:translateX(-120%)}100%{transform:translateX(240%)}}`}</style>
-      <div class="pointer-events-none fixed bottom-4 right-4 z-[60] flex max-w-[92vw] justify-end">
-        <Switch>
-          {/* Descarga en curso: pill discreta con barra indeterminada naranja. */}
-          <Match when={descargando()}>
-            <div class="pointer-events-auto flex items-center gap-3 rounded-xl border border-border-base bg-surface-raised px-4 py-3 shadow-xl">
-              <div class="relative h-1.5 w-24 overflow-hidden rounded-full bg-surface-base">
-                <div class="absolute inset-y-0 w-1/2 animate-[zenkai-slide_1.1s_ease-in-out_infinite] rounded-full bg-orange-500" />
-              </div>
-              <span class="text-13-medium text-text-strong">Descargando actualización…</span>
-            </div>
-          </Match>
+    <Show when={bloquear()}>
+      <style>{`
+        @keyframes zk-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+        @keyframes zk-bar{0%{transform:translateX(-120%)}100%{transform:translateX(340%)}}
+        .zk-btn{transition:transform .06s steps(2),box-shadow .06s steps(2)}
+        .zk-btn:hover{transform:translate(2px,2px)}
+        .zk-btn:hover{box-shadow:2px 2px 0 #6f2810 !important}
+        .zk-btn:active{transform:translate(4px,4px);box-shadow:0 0 0 #6f2810 !important}
+      `}</style>
+      <div class="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-[#0a0806]">
+        <MatrixRain opacity={0.22} fontSize={16} speed={90} />
 
-          {/* Instalando: reiniciando para aplicar. */}
-          <Match when={instalando()}>
-            <div class="pointer-events-auto flex items-center gap-3 rounded-xl border border-border-base bg-surface-raised px-4 py-3 shadow-xl">
-              <span class="h-2 w-2 animate-pulse rounded-full bg-orange-500" />
-              <span class="text-13-medium text-text-strong">Instalando y reiniciando…</span>
+        {/* Marco pixelado naranja */}
+        <div
+          style={{
+            position: "relative",
+            padding: "4px",
+            background: "#EC5B2B",
+            "clip-path": notch,
+            "box-shadow": "0 0 0 2px #0a0806, 6px 6px 0 rgba(0,0,0,0.55)",
+            width: "440px",
+            "max-width": "90vw",
+          }}
+        >
+          <div
+            style={{
+              background: "#12100e",
+              "clip-path": notch,
+              padding: "32px 30px",
+              "font-family": mono,
+              "text-align": "center",
+            }}
+          >
+            {/* Wordmark ZENKAI (identidad terminal) */}
+            <div
+              style={{
+                "font-family": mono,
+                "font-weight": "700",
+                "letter-spacing": "6px",
+                "font-size": "26px",
+                color: "#EC5B2B",
+                "text-shadow": "2px 2px 0 #6f2810",
+                "margin-bottom": "4px",
+              }}
+            >
+              ZENKAI
+              <span style={{ animation: "zk-blink 1s steps(1) infinite", color: "#FFB080" }}>_</span>
             </div>
-          </Match>
 
-          {/* Lista para instalar: tarjeta con CTA de reinicio. */}
-          <Match when={mostrarLista()}>
-            <div class="pointer-events-auto w-[340px] max-w-[92vw] overflow-hidden rounded-2xl border border-orange-500/40 bg-surface-raised shadow-2xl">
-              <div class="h-1 w-full bg-gradient-to-r from-orange-500 to-orange-400" />
-              <div class="flex flex-col gap-3 p-4">
-                <div class="flex items-start gap-3">
-                  <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-orange-500">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M12 3v12" />
-                      <path d="m7 10 5 5 5-5" />
-                      <path d="M5 21h14" />
-                    </svg>
-                  </div>
-                  <div class="flex min-w-0 flex-col gap-0.5">
-                    <span class="text-14-medium text-text-strong">
-                      ZENKAI {versionLista()} está lista
-                    </span>
-                    <span class="text-12-regular text-text-muted">
-                      Ya se descargó en tu equipo. Reiniciá para usar la última versión.
-                    </span>
-                  </div>
+            <Switch>
+              {/* Descargando: sin salida. */}
+              <Match when={descargando()}>
+                <div style={{ color: "#FFB080", "font-size": "12px", "letter-spacing": "2px", "margin-bottom": "16px" }}>
+                  &gt; ACTUALIZANDO SISTEMA
                 </div>
-                <div class="flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setDescartada(versionLista())}
-                    class="rounded-lg px-3 py-1.5 text-12-medium text-text-muted hover:bg-surface-hover hover:text-text-strong"
-                  >
-                    Después
-                  </button>
-                  <button
-                    type="button"
-                    onClick={instalar}
-                    class="rounded-lg bg-orange-500 px-3.5 py-1.5 text-12-medium text-white shadow hover:bg-orange-600"
-                  >
-                    Reiniciar ahora
-                  </button>
+                <p style={{ color: "#c9b9ac", "font-size": "13px", "line-height": "1.6", margin: "0 0 18px" }}>
+                  Descargando la nueva versión. No cierres la app.
+                </p>
+                <div style={{ position: "relative", height: "12px", background: "#000", overflow: "hidden", border: "2px solid #EC5B2B" }}>
+                  <div style={{ position: "absolute", top: "0", bottom: "0", width: "28%", background: "#EC5B2B", animation: "zk-bar 1.1s steps(12) infinite" }} />
                 </div>
-              </div>
-            </div>
-          </Match>
-        </Switch>
+              </Match>
+
+              {/* Instalando. */}
+              <Match when={instalando()}>
+                <div style={{ color: "#FFB080", "font-size": "12px", "letter-spacing": "2px", "margin-bottom": "14px" }}>
+                  &gt; INSTALANDO
+                </div>
+                <p style={{ color: "#c9b9ac", "font-size": "13px", "line-height": "1.6", margin: "0" }}>
+                  Reiniciando ZENKAI con la última versión…
+                </p>
+              </Match>
+
+              {/* Lista: única acción. */}
+              <Match when={lista()}>
+                <div style={{ color: "#FFB080", "font-size": "12px", "letter-spacing": "2px", "margin-bottom": "12px" }}>
+                  &gt; ACTUALIZACIÓN OBLIGATORIA
+                </div>
+                <p style={{ color: "#c9b9ac", "font-size": "13px", "line-height": "1.6", margin: "0 0 22px" }}>
+                  Hay una nueva versión de ZENKAI lista en tu equipo. Para seguir usándola, reiniciá para instalarla.
+                </p>
+                <button
+                  type="button"
+                  onClick={instalar}
+                  class="zk-btn"
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    background: "#EC5B2B",
+                    color: "#0a0806",
+                    "font-family": mono,
+                    "font-weight": "700",
+                    "font-size": "14px",
+                    "letter-spacing": "1px",
+                    border: "none",
+                    cursor: "pointer",
+                    "clip-path": notch,
+                    "box-shadow": "4px 4px 0 #6f2810",
+                  }}
+                >
+                  [ ACTUALIZAR Y REINICIAR ]
+                </button>
+              </Match>
+            </Switch>
+          </div>
+        </div>
       </div>
     </Show>
   )

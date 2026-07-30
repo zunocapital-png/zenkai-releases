@@ -7,6 +7,7 @@ import {
   MODELOS_RECOMENDADOS,
   type Descarga,
   listarModelosOllama,
+  ollamaVivo,
   estaInstalado,
   descargarModeloOllama,
 } from "@/utils/ollama-local"
@@ -22,18 +23,14 @@ export function DialogBienvenida() {
   const [descargas, setDescargas] = createSignal<Record<string, Descarga>>({})
 
   async function refrescar() {
-    const modelos = await listarModelosOllama()
-    setInstalados(modelos)
-    setOllamaOk(true)
+    const vivo = await ollamaVivo()
+    setOllamaOk(vivo)
+    if (vivo) setInstalados(await listarModelosOllama())
   }
 
   onMount(() => {
     // Damos un margen a que Ollama termine de prenderse/instalarse tras el setup.
-    void listarModelosOllama().then((m) => {
-      setInstalados(m)
-      // Si /api/tags respondió (aunque sea []), Ollama está vivo.
-      setOllamaOk(true)
-    })
+    void refrescar()
     const t = setTimeout(() => void refrescar(), 4000)
     onCleanup(() => clearTimeout(t))
   })

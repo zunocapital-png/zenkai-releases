@@ -179,6 +179,17 @@ function fmtTiempo(seg: number): string {
   return `${Math.round(seg)}s`
 }
 
+// ¿Ollama está vivo? true si /api/tags responde, false si está apagado/no instalado.
+// listarModelosOllama devuelve [] en ambos casos, así que esto los distingue.
+export async function ollamaVivo(): Promise<boolean> {
+  try {
+    const res = await fetch(`${OLLAMA_HOST}/api/tags`, { signal: AbortSignal.timeout(3000) })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 // Lista los modelos ya descargados (tags) desde Ollama. [] si está apagado.
 export async function listarModelosOllama(): Promise<string[]> {
   try {

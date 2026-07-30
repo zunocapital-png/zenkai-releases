@@ -25,8 +25,9 @@ function allowed() {
   return !!ALLOW_FILE && existsSync(ALLOW_FILE)
 }
 
-// Corre un script de PowerShell y resuelve su stdout.
-function powershell(script) {
+// Corre un script de PowerShell y resuelve su stdout. Con timeout: un PS colgado NO
+// puede dejar el tools/call pendiente para siempre (mataría al cliente MCP).
+function powershell(script, timeoutMs = 20000) {
   return new Promise((resolve, reject) => {
     const ps = spawn(
       "powershell",
@@ -35,12 +36,32 @@ function powershell(script) {
     )
     let out = ""
     let err = ""
+    let done = false
+    const finish = (fn, arg) => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      fn(arg)
+    }
+    const timer = setTimeout(() => {
+      try {
+        ps.kill()
+      } catch {
+        /* ya murió */
+      }
+      finish(reject, new Error(`PowerShell excedió ${timeoutMs}ms`))
+    }, timeoutMs)
     ps.stdout.on("data", (d) => (out += d))
     ps.stderr.on("data", (d) => (err += d))
-    ps.once("error", reject)
-    ps.once("close", (code) => (code === 0 ? resolve(out) : reject(new Error(err || `exit ${code}`))))
+    ps.once("error", (e) => finish(reject, e))
+    ps.once("close", (code) => (code === 0 ? finish(resolve, out) : finish(reject, new Error(err || `exit ${code}`))))
   })
 }
+
+// Origen del área de captura (VirtualScreen). El screenshot da coords con (0,0) = origen,
+// pero SetCursorPos usa coords ABSOLUTAS del escritorio virtual: hay que sumar el origen,
+// que es negativo si hay un monitor a la izquierda/arriba del primario.
+let origin = { x: 0, y: 0 }
 
 // ── Acciones de bajo nivel (PowerShell + Win32) ──
 
@@ -63,24 +84,31 @@ $g = [System.Drawing.Graphics]::FromImage($bmp);
 $g.CopyFromScreen($b.X, $b.Y, 0, 0, $bmp.Size);
 $ms = New-Object System.IO.MemoryStream;
 $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png);
-[Console]::Out.Write("$($b.Width)x$($b.Height)|" + [System.Convert]::ToBase64String($ms.ToArray()));
+[Console]::Out.Write("$($b.X)|$($b.Y)|$($b.Width)x$($b.Height)|" + [System.Convert]::ToBase64String($ms.ToArray()));
 `
   const out = (await powershell(script)).trim()
-  const sep = out.indexOf("|")
-  const meta = sep > 0 ? out.slice(0, sep) : ""
-  const b64 = sep > 0 ? out.slice(sep + 1) : out
-  return { image: b64, size: meta } // meta = "WIDTHxHEIGHT" para mapear coordenadas
+  const parts = out.split("|")
+  // Formato: X|Y|WxH|base64. Guardamos el origen para mapear los clics siguientes.
+  if (parts.length >= 4) {
+    origin = { x: parseInt(parts[0], 10) || 0, y: parseInt(parts[1], 10) || 0 }
+    return { image: parts.slice(3).join("|"), size: parts[2] }
+  }
+  return { image: out, size: "" }
 }
 
+// Convierte coords del screenshot (0,0 = esquina de la captura) a coords absolutas.
+const ax = (x) => (x | 0) + origin.x
+const ay = (y) => (y | 0) + origin.y
+
 async function moveMouse(x, y) {
-  await powershell(`${CURSOR_SETUP} [void]$U::SetCursorPos(${x | 0}, ${y | 0});`)
+  await powershell(`${CURSOR_SETUP} [void]$U::SetCursorPos(${ax(x)}, ${ay(y)});`)
 }
 async function click(x, y, button = "left") {
   // 0x02/0x04 left down/up ; 0x08/0x10 right down/up
   const down = button === "right" ? "0x08" : "0x02"
   const up = button === "right" ? "0x10" : "0x04"
   await powershell(
-    `${CURSOR_SETUP} [void]$U::SetCursorPos(${x | 0}, ${y | 0}); $U::mouse_event(${down},0,0,0,[System.IntPtr]::Zero); Start-Sleep -Milliseconds 40; $U::mouse_event(${up},0,0,0,[System.IntPtr]::Zero);`,
+    `${CURSOR_SETUP} [void]$U::SetCursorPos(${ax(x)}, ${ay(y)}); $U::mouse_event(${down},0,0,0,[System.IntPtr]::Zero); Start-Sleep -Milliseconds 40; $U::mouse_event(${up},0,0,0,[System.IntPtr]::Zero);`,
   )
 }
 async function scroll(amount) {
@@ -88,12 +116,12 @@ async function scroll(amount) {
 }
 async function doubleClick(x, y) {
   await powershell(
-    `${CURSOR_SETUP} [void]$U::SetCursorPos(${x | 0}, ${y | 0}); $U::mouse_event(0x02,0,0,0,[System.IntPtr]::Zero); $U::mouse_event(0x04,0,0,0,[System.IntPtr]::Zero); Start-Sleep -Milliseconds 60; $U::mouse_event(0x02,0,0,0,[System.IntPtr]::Zero); $U::mouse_event(0x04,0,0,0,[System.IntPtr]::Zero);`,
+    `${CURSOR_SETUP} [void]$U::SetCursorPos(${ax(x)}, ${ay(y)}); $U::mouse_event(0x02,0,0,0,[System.IntPtr]::Zero); $U::mouse_event(0x04,0,0,0,[System.IntPtr]::Zero); Start-Sleep -Milliseconds 60; $U::mouse_event(0x02,0,0,0,[System.IntPtr]::Zero); $U::mouse_event(0x04,0,0,0,[System.IntPtr]::Zero);`,
   )
 }
 async function drag(x1, y1, x2, y2) {
   await powershell(
-    `${CURSOR_SETUP} [void]$U::SetCursorPos(${x1 | 0}, ${y1 | 0}); $U::mouse_event(0x02,0,0,0,[System.IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void]$U::SetCursorPos(${x2 | 0}, ${y2 | 0}); Start-Sleep -Milliseconds 80; $U::mouse_event(0x04,0,0,0,[System.IntPtr]::Zero);`,
+    `${CURSOR_SETUP} [void]$U::SetCursorPos(${ax(x1)}, ${ay(y1)}); $U::mouse_event(0x02,0,0,0,[System.IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void]$U::SetCursorPos(${ax(x2)}, ${ay(y2)}); Start-Sleep -Milliseconds 80; $U::mouse_event(0x04,0,0,0,[System.IntPtr]::Zero);`,
   )
 }
 async function typeText(text) {

@@ -77,7 +77,9 @@ export function DialogCrearAgente() {
   const serverSync = useServerSync()
 
   const [nombre, setNombre] = createSignal("")
-  const [modelo, setModelo] = createSignal(OPCIONES_MODELO[1]?.value ?? "omniroute/auto")
+  // Default = ZENKAI Auto: siempre funciona aunque el usuario no haya bajado ningún modelo
+  // local (antes defaulteaba a un local de ~4.7 GB que probablemente no está instalado).
+  const [modelo, setModelo] = createSignal(OPCIONES_MODELO[0]?.value ?? "omniroute/auto")
   const [descripcion, setDescripcion] = createSignal("")
   const [prompt, setPrompt] = createSignal("")
   const [modo, setModo] = createSignal<"all" | "primary" | "subagent">("all")
