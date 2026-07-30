@@ -191,9 +191,12 @@ export async function listarModelosOllama(): Promise<string[]> {
   }
 }
 
-// Un modelo cuenta como instalado si coincide el tag exacto o el nombre base.
+// Un modelo cuenta como instalado si coincide el tag EXACTO (tolerando ':latest' implícito).
+// No basta el nombre base: qwen2.5-coder:1.5b y :7b comparten base pero son modelos distintos.
 export function estaInstalado(id: string, instalados: string[]): boolean {
-  return instalados.some((m) => m === id || m.split(":")[0] === id.split(":")[0])
+  const norm = (s: string) => (s.includes(":") ? s : `${s}:latest`)
+  const objetivo = norm(id)
+  return instalados.some((m) => norm(m) === objetivo)
 }
 
 // Descarga un modelo con Ollama (/api/pull) reportando progreso en vivo.

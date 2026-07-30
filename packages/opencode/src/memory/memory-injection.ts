@@ -1,4 +1,4 @@
-import { getMemories, searchMemories, type Memory } from "./memory-store"
+import { getMemories, type Memory } from "./memory-store"
 
 export async function getRelevantMemories(
   userMessage: string,
@@ -6,15 +6,18 @@ export async function getRelevantMemories(
 ): Promise<string> {
   const sections: string[] = []
 
-  const [userMems, feedbackMems, factMems, projectMems] = await Promise.all([
-    getMemories("user"),
-    getMemories("feedback"),
-    getMemories("fact"),
-    projectPath ? getMemories("project") : Promise.resolve([]),
-  ])
+  // Una sola lectura del directorio; particionamos por tipo en memoria (antes eran 4
+  // readdir + re-parse de TODOS los .json por mensaje).
+  const all = await getMemories()
+  const userMems = all.filter((m) => m.type === "user")
+  const feedbackMems = all.filter((m) => m.type === "feedback")
+  const factMems = all.filter((m) => m.type === "fact")
 
+  // Un tag matchea el proyecto solo si es un SEGMENTO de la ruta (no substring laxo:
+  // tag '' matcheaba siempre y 'app' matcheaba cualquier ruta que contenga "app").
+  const segmentos = new Set(projectPath ? projectPath.split(/[\\/]/).filter(Boolean) : [])
   const filteredProject = projectPath
-    ? projectMems.filter((m) => m.tags.some((t) => projectPath.includes(t)))
+    ? all.filter((m) => m.type === "project" && m.tags.some((t) => t !== "" && segmentos.has(t)))
     : []
 
   // User/feedback/project son preferencias globales: se inyectan SIEMPRE (deben aplicar

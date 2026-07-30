@@ -185,17 +185,20 @@ export async function buildSmartContext(
 
   if (options.includeMemory !== false) {
     promises.push(
-      getRelevantMemories(query, projectPath).then((memText) => {
-        if (memText) {
-          items.push({
-            type: "memory",
-            label: "Persistent Memory",
-            content: memText,
-            tokens: estimateTokens(memText),
-            relevance: 0.8,
-          })
-        }
-      }),
+      getRelevantMemories(query, projectPath)
+        .then((memText) => {
+          if (memText) {
+            items.push({
+              type: "memory",
+              label: "Persistent Memory",
+              content: memText,
+              tokens: estimateTokens(memText),
+              relevance: 0.8,
+            })
+          }
+        })
+        // Un fallo de fs en memorias no debe tumbar TODO el ensamblado de contexto (RAG + archivos).
+        .catch(() => {}),
     )
   }
 

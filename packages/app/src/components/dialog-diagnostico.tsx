@@ -147,7 +147,10 @@ export function DialogDiagnostico() {
   }
 
   async function borrar(m: ModeloLocal) {
-    const inst = modelosOllama().find((x) => x === m.id || x.split(":")[0] === m.id.split(":")[0])
+    // Match por tag EXACTO (tolerando ':latest' implícito): nunca borrar por nombre base,
+    // o el diálogo confirma "borrar 7B" y termina borrando otra variante del disco.
+    const norm = (s: string) => (s.includes(":") ? s : `${s}:latest`)
+    const inst = modelosOllama().find((x) => norm(x) === norm(m.id))
     if (!inst) return
     if (typeof window !== "undefined" && !window.confirm(`¿Borrar ${m.nombre} del disco? (${m.tam})`)) return
     try {

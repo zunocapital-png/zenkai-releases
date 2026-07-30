@@ -5,6 +5,7 @@ import { DebugBar } from "@/components/debug-bar"
 import { TabsInfoPopup } from "@/components/help-button"
 import { LeftSidebar } from "@/components/left-sidebar"
 import { Titlebar, type TitlebarUpdate } from "@/components/titlebar"
+import { UpdateBanner } from "@/components/update-banner"
 import { usePlatform } from "@/context/platform"
 import { setNavigate } from "@/utils/notification-click"
 import { setV2Toast, ToastRegion } from "@/utils/toast"
@@ -55,6 +56,7 @@ export default function NewLayout(props: ParentProps) {
       </div>
       <TabsInfoPopup />
       <ToastRegion v2 />
+      <UpdateBanner />
     </div>
   )
 }

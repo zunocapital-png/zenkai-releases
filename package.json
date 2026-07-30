@@ -157,5 +157,5 @@
     "effect@4.0.0-beta.83": "patches/effect@4.0.0-beta.83.patch",
     "@tanstack/virtual-core@3.17.3": "patches/@tanstack%2Fvirtual-core@3.17.3.patch"
   },
-  "version": "1.18.40"
+  "version": "1.18.46"
 }

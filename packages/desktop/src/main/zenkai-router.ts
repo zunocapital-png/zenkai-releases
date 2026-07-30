@@ -135,18 +135,25 @@ async function handleChat(req: http.IncomingMessage, res: http.ServerResponse) {
     if (!modelo) continue // p.ej. Ollama sin modelos -> probar el siguiente upstream
     const headers: Record<string, string> = { "content-type": "application/json" }
     if (u.key) headers["authorization"] = `Bearer ${u.key}`
+    // Watchdog de PRIMER BYTE: el timeout SOLO debe matar la espera de headers, NO el
+    // stream de tokens. AbortSignal.timeout aborta toda la operación (incluido el body),
+    // así que usamos un AbortController propio y limpiamos el timer al llegar los headers.
+    const ac = new AbortController()
+    const watchdog = setTimeout(() => ac.abort(), PRIMER_BYTE_MS)
     let upstream: Response
     try {
       upstream = await fetch(`${u.base}/chat/completions`, {
         method: "POST",
         headers,
         body: JSON.stringify({ ...payload, model: modelo }),
-        signal: AbortSignal.timeout(PRIMER_BYTE_MS), // watchdog: sin respuesta a tiempo -> failover
+        signal: ac.signal,
       })
     } catch {
+      clearTimeout(watchdog)
       breaker.set(u.name, Date.now() + COOLDOWN_MS) // caído/timeout -> cooldown
       continue
     }
+    clearTimeout(watchdog) // llegaron los headers: a partir de acá el stream puede tardar lo que sea
     if (upstream.status >= 500 || upstream.status === 429) {
       breaker.set(u.name, Date.now() + COOLDOWN_MS) // agotado/caído -> cooldown
       continue
@@ -155,8 +162,14 @@ async function handleChat(req: http.IncomingMessage, res: http.ServerResponse) {
     res.writeHead(upstream.status, {
       "content-type": upstream.headers.get("content-type") ?? "application/json",
     })
-    if (upstream.body) Readable.fromWeb(upstream.body as any).pipe(res)
-    else res.end(await upstream.text())
+    if (upstream.body) {
+      const stream = Readable.fromWeb(upstream.body as any)
+      // Si el upstream corta feo, cerramos la respuesta sin tirar el proceso.
+      stream.on("error", () => res.destroyed || res.end())
+      // Si el cliente se desconecta a mitad, abortamos el upstream para liberar Ollama.
+      res.on("close", () => ac.abort())
+      stream.pipe(res)
+    } else res.end(await upstream.text())
     return
   }
 
@@ -181,8 +194,15 @@ export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
       if (req.method === "GET" && (url === "/" || url.startsWith("/health"))) return sendJson(res, 200, { ok: true })
       sendJson(res, 404, { error: { message: "No encontrado" } })
     })
-    server.on("error", () => {})
-    await new Promise<void>((resolve) => server!.listen(ZENKAI_ROUTER_PORT, "127.0.0.1", resolve))
+    // El listen puede fallar (EADDRINUSE por TOCTOU tras portInUse): resolvemos en 'listening'
+    // y rechazamos en 'error', si no el arranque quedaría colgado para siempre.
+    await new Promise<void>((resolve, reject) => {
+      server!.once("error", reject)
+      server!.listen(ZENKAI_ROUTER_PORT, "127.0.0.1", () => {
+        server!.on("error", () => {}) // ya escuchando: no tumbar el proceso por errores post-listen
+        resolve()
+      })
+    })
     return "started"
   } catch {
     return "skipped"

@@ -55,12 +55,19 @@ export function getScheduledTasks(): ScheduledTask[] {
 
 export function setScheduledTasks(tasks: ScheduledTask[]): void {
   getStore(STORE).set(KEY, JSON.stringify(tasks))
-  reloadScheduler()
+  // Sembramos lastFired de tareas nuevas para que guardar NO dispare el catch-up al instante.
+  const last = getLast()
+  const ahora = Date.now()
+  const ids = new Set(tasks.map((t) => t.id))
+  for (const t of tasks) if (last[t.id] == null) last[t.id] = ahora
+  for (const id of Object.keys(last)) if (!ids.has(id)) delete last[id] // purgar tareas borradas
+  getStore(STORE).set(LAST_KEY, JSON.stringify(last))
+  reloadScheduler(false) // rearmar timers sin catch-up (eso es solo del arranque)
 }
 
-// Reconstruye los timers a partir de las tareas guardadas. Recupera la corrida perdida:
-// si la app estuvo cerrada más de un intervalo, dispara una vez al arrancar.
-export function reloadScheduler(): void {
+// Reconstruye los timers a partir de las tareas guardadas. Con catchUp=true (solo al arrancar)
+// recupera la corrida perdida: si la app estuvo cerrada más de un intervalo, dispara una vez.
+export function reloadScheduler(catchUp = false): void {
   for (const t of timers) clearInterval(t)
   timers = []
   const last = getLast()
@@ -68,13 +75,13 @@ export function reloadScheduler(): void {
   for (const task of getScheduledTasks()) {
     if (!task.enabled || !(task.everyMinutes > 0)) continue
     const ms = Math.max(1, task.everyMinutes) * 60_000
-    if (ahora - (last[task.id] ?? 0) >= ms) dispararTarea(task) // catch-up de la perdida
+    if (catchUp && ahora - (last[task.id] ?? 0) >= ms) dispararTarea(task) // catch-up de la perdida
     timers.push(setInterval(() => dispararTarea(task), ms))
   }
 }
 
 export function startScheduler(): void {
-  reloadScheduler()
+  reloadScheduler(true)
 }
 
 export function stopScheduler(): void {
