@@ -10,6 +10,7 @@ import { useLanguage } from "@/context/language"
 import { ServerConnection } from "@/context/server"
 import { SessionTabAvatarView } from "@/pages/layout/session-tab-avatar"
 import { sessionTitle } from "@/utils/session-title"
+import { ZenkaiLogoMark } from "@/components/zenkai-logo"
 import { shouldOpenSessionInBackground } from "../home-session-open"
 import {
   HomeSessionStatusController,
@@ -22,6 +23,20 @@ import {
 const SHOW_HOME_SESSION_ARCHIVE = false
 const HOME_SECTION_LABEL = "text-v2-text-text-muted [font-weight:440]"
 const HOME_SESSION_SEARCH_RESULTS_ID = "home-session-search-results"
+
+// Hero branded del inicio: usa el LOGO OFICIAL de ZENKAI (mismo ZenkaiLogoMark + fuente pixel
+// "Press Start 2P" que auth-gate/splash), centrado. No inventamos otro estilo — es el mismo.
+function ZenkaiHero() {
+  return (
+    <div class="flex select-none flex-col items-center gap-3 pb-8 pt-4">
+      <div class="flex items-center gap-4">
+        <ZenkaiLogoMark size={64} animate />
+        <h1 class="zenkai-wordmark text-4xl tracking-[0.25em]">ZENKAI</h1>
+      </div>
+      <span class="text-13-regular text-v2-text-text-faint">Tu IA local + nube, en un solo lugar</span>
+    </div>
+  )
+}
 
 // Middle-click or Cmd+click on macOS (Ctrl+click elsewhere) opens a session
 // tab in the background without navigating, matching browser conventions.
@@ -80,6 +95,7 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
       aria-label={props.language.t("sidebar.project.recentSessions")}
     >
       <div class="sticky top-0 z-30 shrink-0 bg-v2-background-bg-base pb-3 pt-6 lg:pt-12" onWheel={props.onWheel}>
+        <ZenkaiHero />
         <HomeSessionSearch {...props} />
         <Show when={props.groups().length > 0 && props.canCreateSession()}>
           <div class="pointer-events-none absolute right-0 top-[84px] z-20 flex lg:top-[108px]">

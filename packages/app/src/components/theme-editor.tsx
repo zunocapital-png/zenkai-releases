@@ -186,32 +186,10 @@ export const ThemeEditor: Component<{
         </div>
       </div>
 
+      {/* Fuente y tamaño se manejan en Ajustes → General (evitamos duplicado con Themes).
+          Acá solo dejamos radio de borde, que es específico del theme (no de la fuente global). */}
       <div class="flex flex-col gap-3">
-        <div class="text-xs font-medium uppercase tracking-wider text-[var(--v2-text-text-faint)]">Typography</div>
-        <div class="flex items-center gap-3">
-          <label class="text-sm text-[var(--v2-text-text-muted)]">Font Family</label>
-          <select
-            value={theme().fontFamily}
-            onChange={(e) => setTheme((prev) => ({ ...prev, fontFamily: e.currentTarget.value }))}
-            class="flex-1 rounded-lg border border-[var(--v2-border-border-muted)] bg-[var(--v2-background-bg-base)] px-3 py-1.5 text-sm text-[var(--v2-text-text-base)]"
-          >
-            <For each={FONT_FAMILIES}>
-              {(font) => <option value={font}>{font.split(",")[0].replace(/'/g, "")}</option>}
-            </For>
-          </select>
-        </div>
-        <div class="flex items-center gap-3">
-          <label class="text-sm text-[var(--v2-text-text-muted)]">Font Size</label>
-          <input
-            type="range"
-            min={10}
-            max={20}
-            value={theme().fontSize}
-            onInput={(e) => setTheme((prev) => ({ ...prev, fontSize: parseInt(e.currentTarget.value) }))}
-            class="flex-1 accent-[#EC5B2B]"
-          />
-          <span class="w-10 text-right text-sm text-[var(--v2-text-text-base)]">{theme().fontSize}px</span>
-        </div>
+        <div class="text-xs font-medium uppercase tracking-wider text-[var(--v2-text-text-faint)]">Estilo</div>
         <div class="flex items-center gap-3">
           <label class="text-sm text-[var(--v2-text-text-muted)]">Border Radius</label>
           <input

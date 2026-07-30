@@ -144,12 +144,7 @@ export function HomeProjectsView(props: HomeProjectsViewProps) {
           </div>
         </Show>
       </ScrollView>
-      <HomeUtilityNav
-        class="mb-8 mt-4 hidden shrink-0 lg:flex"
-        onOpenSettings={props.onOpenSettings}
-        onOpenHelp={props.onOpenHelp}
-        language={props.language}
-      />
+      {/* Ajustes/Ayuda ya están en el sidebar del footer — se removieron de acá para evitar duplicados */}
     </aside>
   )
 }

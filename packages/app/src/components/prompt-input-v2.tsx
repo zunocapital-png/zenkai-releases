@@ -60,8 +60,10 @@ const IcoSkills = () =>
   svg(<><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></>)
 const IcoPalette = () =>
   svg(<><circle cx="12" cy="12" r="9" /><circle cx="8.5" cy="10" r="1" /><circle cx="12" cy="8" r="1" /><circle cx="15.5" cy="10" r="1" /></>)
+const IcoPlugins = () =>
+  svg(<><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></>)
 
-function ComposerMasMenu(props: { onConectar: () => void; onImagen: () => void; onSkills: () => void; onDisenos: () => void }) {
+function ComposerMasMenu(props: { onConectar: () => void; onImagen: () => void; onSkills: () => void; onDisenos: () => void; onPlugins: () => void }) {
   const [open, setOpen] = createSignal(false)
   const item = (icon: JSX.Element, label: string, desc: string, onClick: () => void) => (
     <button
@@ -94,6 +96,7 @@ function ComposerMasMenu(props: { onConectar: () => void; onImagen: () => void; 
           {item(<IcoPlug />, "Conectar API", "Conectá una key de nube", props.onConectar)}
           {item(<IcoImage />, "Generar imagen", "Local o por API de nube", props.onImagen)}
           {item(<IcoSkills />, "Skills (MCP)", "Más capacidades para la IA", props.onSkills)}
+          {item(<IcoPlugins />, "Plugins", "Extensiones de ZENKAI", props.onPlugins)}
           {item(<IcoPalette />, "Galería de diseño", "Web, app, 3D con preview", props.onDisenos)}
         </div>
       </Show>
@@ -120,6 +123,9 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
   }
   const openDisenos = () => {
     void import("./dialog-galeria-diseno").then((x) => dialog.show(() => <x.DialogGaleriaDiseno />))
+  }
+  const openPlugins = () => {
+    void import("./settings-v2/dialog-settings-v2").then((x) => dialog.show(() => <x.DialogSettings defaultValue="plugins" />))
   }
 
   // Transparencia del Auto: cuando el proveedor es "omniroute" (ZENKAI Auto), resolvemos y
@@ -175,6 +181,7 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
               onImagen={openImagenes}
               onSkills={openMcp}
               onDisenos={openDisenos}
+              onPlugins={openPlugins}
             />
           </>
         }

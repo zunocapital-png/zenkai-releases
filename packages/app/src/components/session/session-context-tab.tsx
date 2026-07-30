@@ -278,8 +278,8 @@ export function SessionContextTab() {
       }}
       onScroll={handleScroll}
     >
-      <div class="px-5 pt-3 pb-6 flex flex-col gap-6">
-        <div class="grid grid-cols-2 @[40rem]:grid-cols-3 gap-x-4 gap-y-3">
+      <div class="px-4 pt-2 pb-4 flex flex-col gap-3">
+        <div class="grid grid-cols-2 @[28rem]:grid-cols-3 @[52rem]:grid-cols-4 gap-x-3 gap-y-2">
           <For each={stats}>
             {(stat) => <Stat label={language.t(stat.label as Parameters<typeof language.t>[0])} value={stat.value()} />}
           </For>
