@@ -74,7 +74,13 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
               keybind={command.keybindParts("model.choose")}
               model={props.controller.model.selection}
               providerID={props.controller.model.selection.current()?.provider?.id}
-              modelName={props.controller.model.selection.current() ? "ZENKAI" : language.t("dialog.model.select.title")}
+              modelName={(() => {
+                const pid = props.controller.model.selection.current()?.provider?.id
+                if (!pid) return language.t("dialog.model.select.title")
+                // Badge Local/Nube (sin nombre de modelo, para no filtrar branding).
+                const local = pid === "ollama" || pid === "omniroute"
+                return local ? "ZENKAI · Local" : "ZENKAI · Nube"
+              })()}
               onClose={props.controller.restoreFocus}
               onUnpaidClick={() =>
                 dialog.show(() => <DialogSelectModelUnpaidV2 model={props.controller.model.selection} />)

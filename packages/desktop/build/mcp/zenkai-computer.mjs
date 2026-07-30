@@ -86,6 +86,16 @@ async function click(x, y, button = "left") {
 async function scroll(amount) {
   await powershell(`${CURSOR_SETUP} $U::mouse_event(0x0800,0,0,${amount | 0},[System.IntPtr]::Zero);`)
 }
+async function doubleClick(x, y) {
+  await powershell(
+    `${CURSOR_SETUP} [void]$U::SetCursorPos(${x | 0}, ${y | 0}); $U::mouse_event(0x02,0,0,0,[System.IntPtr]::Zero); $U::mouse_event(0x04,0,0,0,[System.IntPtr]::Zero); Start-Sleep -Milliseconds 60; $U::mouse_event(0x02,0,0,0,[System.IntPtr]::Zero); $U::mouse_event(0x04,0,0,0,[System.IntPtr]::Zero);`,
+  )
+}
+async function drag(x1, y1, x2, y2) {
+  await powershell(
+    `${CURSOR_SETUP} [void]$U::SetCursorPos(${x1 | 0}, ${y1 | 0}); $U::mouse_event(0x02,0,0,0,[System.IntPtr]::Zero); Start-Sleep -Milliseconds 80; [void]$U::SetCursorPos(${x2 | 0}, ${y2 | 0}); Start-Sleep -Milliseconds 80; $U::mouse_event(0x04,0,0,0,[System.IntPtr]::Zero);`,
+  )
+}
 async function typeText(text) {
   const esc = String(text).replace(/[+^%~(){}[\]]/g, "{$&}").replace(/'/g, "''")
   await powershell(`${CURSOR_SETUP} [System.Windows.Forms.SendKeys]::SendWait('${esc}');`)
@@ -131,6 +141,25 @@ const TOOLS = [
     description: "Scroll vertical. amount positivo = arriba, negativo = abajo (ej 120 por 'tic').",
     inputSchema: { type: "object", properties: { amount: { type: "number" } }, required: ["amount"] },
   },
+  {
+    name: "double_click",
+    description: "Doble clic en (x, y). Para abrir archivos, seleccionar palabras, etc.",
+    inputSchema: { type: "object", properties: { x: { type: "number" }, y: { type: "number" } }, required: ["x", "y"] },
+  },
+  {
+    name: "drag",
+    description: "Arrastra desde (x1, y1) hasta (x2, y2). Para mover, seleccionar, deslizar.",
+    inputSchema: {
+      type: "object",
+      properties: { x1: { type: "number" }, y1: { type: "number" }, x2: { type: "number" }, y2: { type: "number" } },
+      required: ["x1", "y1", "x2", "y2"],
+    },
+  },
+  {
+    name: "wait",
+    description: "Espera N segundos para que la pantalla reaccione antes del próximo paso.",
+    inputSchema: { type: "object", properties: { seconds: { type: "number" } }, required: ["seconds"] },
+  },
 ]
 
 async function runTool(name, args) {
@@ -163,6 +192,15 @@ async function runTool(name, args) {
     case "scroll":
       await scroll(args.amount ?? 0)
       return { text: `Scroll ${args.amount}.` }
+    case "double_click":
+      await doubleClick(args.x, args.y)
+      return { text: `Doble clic en (${args.x | 0}, ${args.y | 0}).` }
+    case "drag":
+      await drag(args.x1, args.y1, args.x2, args.y2)
+      return { text: `Arrastre de (${args.x1 | 0}, ${args.y1 | 0}) a (${args.x2 | 0}, ${args.y2 | 0}).` }
+    case "wait":
+      await new Promise((r) => setTimeout(r, Math.min(30, Math.max(0, args.seconds || 1)) * 1000))
+      return { text: `Esperé ${args.seconds}s.` }
     default:
       throw new Error(`Herramienta desconocida: ${name}`)
   }
