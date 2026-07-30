@@ -43,6 +43,7 @@ import {
   benchmarkYPersistir,
   leerBenchmarks,
   resumenRecomendacion,
+  CredencialesStore,
   bootstrapLlamaBinary,
   buscarModelosHf,
   listarGgufsDeModelo,
@@ -75,6 +76,18 @@ function getEngine(): ZenkaiEngine {
 
 // Pairing service singleton.
 const pairing = new PairingService()
+
+// Credenciales store singleton — guarda hashes en tmpdir/zenkai-core/creds.json.
+// El código en claro nunca se persiste. La app respeta el modo "sin cuenta"
+// (los endpoints /v2/auth son opcionales; el resto de /v1 y /v2 funciona sin login).
+let credencialesCache: CredencialesStore | undefined
+function getCredenciales(): CredencialesStore {
+  if (credencialesCache) return credencialesCache
+  const path = require("node:path") as typeof import("node:path")
+  const credsPath = path.join(tmpdir(), "zenkai-core", "credenciales.json")
+  credencialesCache = new CredencialesStore({ path: credsPath })
+  return credencialesCache
+}
 
 // Hardware monitor singleton — silencioso hasta que alguien se subscribe.
 const hwMonitor = new HwMonitor({ intervalMs: 2000 })
@@ -789,6 +802,44 @@ async function handleEngineLoad(req: http.IncomingMessage, res: http.ServerRespo
   }
 }
 
+// ─── Credenciales ───
+async function handleAuthCrear(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req).catch(() => "{}")) as { nombre?: string }
+    const gen = getCredenciales().crear(body?.nombre)
+    eventBus.emit("auth.creada", { id: gen.id, nombre: body?.nombre })
+    sendJson(res, 200, gen)
+  } catch (e) {
+    sendJson(res, 500, { error: String((e as Error).message) })
+  }
+}
+
+async function handleAuthVerificar(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as { codigo?: string }
+    if (!body?.codigo) return sendJson(res, 400, { error: "falta código" })
+    const found = getCredenciales().verificar(body.codigo)
+    if (!found) return sendJson(res, 401, { error: "código inválido" })
+    eventBus.emit("auth.verificada", { id: found.id, nombre: found.nombre })
+    sendJson(res, 200, { ok: true, id: found.id, nombre: found.nombre })
+  } catch (e) {
+    sendJson(res, 500, { error: String((e as Error).message) })
+  }
+}
+
+async function handleAuthRevocar(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as { id?: string }
+    if (!body?.id) return sendJson(res, 400, { error: "falta id" })
+    const ok = getCredenciales().revocar(body.id)
+    if (!ok) return sendJson(res, 404, { error: "id no encontrado o ya revocado" })
+    eventBus.emit("auth.revocada", { id: body.id })
+    sendJson(res, 200, { ok: true })
+  } catch (e) {
+    sendJson(res, 500, { error: String((e as Error).message) })
+  }
+}
+
 async function handleEngineCreate(req: http.IncomingMessage, res: http.ServerResponse) {
   try {
     const body = JSON.parse(await readBody(req)) as { id?: string; zenkaifile?: string }
@@ -1137,6 +1188,22 @@ export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
       // ZenkaiFile — modelo custom con SYSTEM/PARAMETER/TEMPLATE (paridad + mejora Modelfile).
       if (req.method === "POST" && url === "/v2/engine/create") {
         void handleEngineCreate(req, res)
+        return
+      }
+      // Credenciales (código de acceso opaco — sin email/password).
+      if (req.method === "POST" && url === "/v2/auth/crear") {
+        void handleAuthCrear(req, res)
+        return
+      }
+      if (req.method === "POST" && url === "/v2/auth/verificar") {
+        void handleAuthVerificar(req, res)
+        return
+      }
+      if (req.method === "GET" && url === "/v2/auth/listar") {
+        return sendJson(res, 200, { credenciales: getCredenciales().listar() })
+      }
+      if (req.method === "POST" && url === "/v2/auth/revocar") {
+        void handleAuthRevocar(req, res)
         return
       }
       if (req.method === "GET" && url === "/v2/tts/status") {

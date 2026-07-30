@@ -77,3 +77,6 @@ export * from "./sync/index"
 
 // v1.29: Onboarding wizard 30s con modelo tiny bundleado.
 export * from "./onboarding/index"
+
+// v1.30: Credenciales generadas (código opaco crypto, sin email/password).
+export * from "./auth/index"
