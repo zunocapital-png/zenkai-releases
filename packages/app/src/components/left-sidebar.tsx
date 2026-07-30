@@ -82,6 +82,9 @@ export function LeftSidebar() {
   const openTareas = () => {
     void import("@/components/dialog-tareas-programadas").then((x) => dialog.show(() => <x.DialogTareasProgramadas />))
   }
+  const openMcp = () => {
+    void import("@/components/dialog-conectores-mcp").then((x) => dialog.show(() => <x.DialogConectoresMcp />))
+  }
 
   const loading = createMemo(() => sessions.data.loading())
   // Dedup: una misma sesión no debe aparecer dos veces (ni entre grupos).
@@ -255,6 +258,7 @@ export function LeftSidebar() {
           {/* Fila de íconos secundarios */}
           <div class="flex items-center gap-1 px-2 pb-1.5 pt-1">
             <FooterIcon icon="settings-gear" label="Ajustes" onClick={() => openSettings()} />
+            <FooterIcon icon="server" label="Conectores (MCP / skills)" onClick={openMcp} />
             <FooterIcon icon="timer" label="Tareas programadas" onClick={openTareas} />
             <FooterIcon icon="monitor" label="Diagnóstico" onClick={openDiagnostico} />
             <FooterIcon icon="help" label="Ayuda" onClick={openHelp} />
@@ -293,7 +297,7 @@ function FooterAction(props: {
 }
 
 function FooterIcon(props: {
-  icon: "settings-gear" | "help" | "monitor" | "plus" | "timer"
+  icon: "settings-gear" | "help" | "monitor" | "plus" | "timer" | "server"
   label: string
   onClick: () => void
 }) {
