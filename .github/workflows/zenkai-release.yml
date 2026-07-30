@@ -40,6 +40,9 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build all packages
+        # Subimos el heap max de Node a 8 GB — sin esto el build de macOS/Linux OOM.
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
         run: bun run build
         working-directory: packages/desktop
 
@@ -48,5 +51,6 @@ jobs:
           # Este token lo provee GitHub Actions solo, no hay que setearlo.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENCODE_CHANNEL: prod
+          NODE_OPTIONS: "--max-old-space-size=8192"
         run: bun run ${{ matrix.pkg }} -- --publish always
         working-directory: packages/desktop

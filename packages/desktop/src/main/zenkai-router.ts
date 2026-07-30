@@ -26,11 +26,42 @@ import {
   consultarParlamento,
   correrCodigo,
   EventBus,
+  ZenkaiEngine,
+  downloadGguf,
+  MODELOS_RECOMENDADOS,
+  detectarGpu,
+  correrTraining,
+  correrEnDocker,
+  detectarDocker,
+  PairingService,
+  generarQrMatrizSimple,
+  sintetizar,
+  detectarPiper,
+  VOCES_PIPER,
+  inferirCapabilities,
 } from "@zenkai/core"
 import type { LlmProposer, FixPropuesto, MiembroParlamento } from "@zenkai/core"
+import { tmpdir } from "node:os"
 
 // Bus global de eventos del motor — expuesto vía /v2/events (SSE).
 const eventBus = new EventBus()
+
+// Zenkai Engine (motor propio que reemplaza Ollama).
+let engineCache: ZenkaiEngine | undefined
+function getEngine(): ZenkaiEngine {
+  if (engineCache) return engineCache
+  const path = require("node:path") as typeof import("node:path")
+  const modelsDir = process.env.ZENKAI_MODELS_DIR ?? path.join(tmpdir(), "zenkai-models")
+  engineCache = new ZenkaiEngine({
+    modelsDir,
+    onEvent: (evt) => eventBus.emit(`engine.${evt.tipo}`, evt),
+  })
+  engineCache.start()
+  return engineCache
+}
+
+// Pairing service singleton.
+const pairing = new PairingService()
 
 // ── Bridge Fase 6: @zenkai/core como motor alternativo del router ──
 // Instancia perezosa del orquestador propio. Se inicializa la primera vez
@@ -691,6 +722,172 @@ function handleEventsStream(res: http.ServerResponse) {
   })
 }
 
+// ── Zenkai Engine handlers ──
+async function handleEngineDownload(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as { id?: string; url?: string; nombre?: string }
+    if (!body?.id || !body?.url) {
+      return sendJson(res, 400, { error: { message: "faltan campos: id, url" } })
+    }
+    const engine = getEngine()
+    const destPath = engine.getRegistry().defaultPath(body.id)
+    // Progress vía event bus (frontend suscribe /v2/events).
+    const r = await downloadGguf({
+      url: body.url,
+      destPath,
+      onProgress: (p) => eventBus.emit("engine.download.progress", { id: body.id, ...p }),
+    })
+    const entry = engine.getRegistry().register({
+      id: body.id,
+      path: destPath,
+      nombre: body.nombre ?? body.id,
+      capabilities: inferirCapabilities(body.id),
+      sourceUrl: body.url,
+    })
+    eventBus.emit("engine.download.done", { id: body.id, bytes: r.bytes, duracionMs: r.duracionMs })
+    sendJson(res, 200, { entry, bytes: r.bytes })
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+async function handleEngineLoad(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as { id?: string }
+    if (!body?.id) return sendJson(res, 400, { error: { message: "falta id" } })
+    const r = await getEngine().asegurar(body.id)
+    sendJson(res, 200, { id: body.id, puerto: r.puerto, entry: r.entry })
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+async function handleEngineUnload(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as { id?: string }
+    if (!body?.id) return sendJson(res, 400, { error: { message: "falta id" } })
+    const ok = getEngine().descargar(body.id)
+    sendJson(res, 200, { ok })
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+function handleEngineRemove(url: string, res: http.ServerResponse) {
+  const id = decodeURIComponent(url.slice("/v2/engine/models/".length))
+  const ok = getEngine().getRegistry().remove(id, { borrarArchivo: true })
+  sendJson(res, ok ? 200 : 404, { ok, id })
+}
+
+// ── Training handler ──
+async function handleTrain(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as {
+      datasetPath?: string
+      baseModel?: string
+      outputDir?: string
+      epochs?: number
+      permitirCpu?: boolean
+    }
+    if (!body?.datasetPath || !body?.baseModel || !body?.outputDir) {
+      return sendJson(res, 400, { error: { message: "faltan campos: datasetPath, baseModel, outputDir" } })
+    }
+    const r = await correrTraining({
+      datasetPath: body.datasetPath,
+      baseModel: body.baseModel,
+      outputDir: body.outputDir,
+      epochs: body.epochs,
+      permitirCpu: body.permitirCpu,
+      onLog: (line) => eventBus.emit("train.log", line),
+      onProgress: (info) => eventBus.emit("train.progress", info),
+    })
+    sendJson(res, 200, r)
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+// ── Docker sandbox handler ──
+async function handleDockerRun(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as {
+      lenguaje?: "node" | "python" | "bash"
+      codigo?: string
+      timeoutMs?: number
+      memoryLimit?: string
+      cpuLimit?: string
+    }
+    if (!body?.lenguaje || !body?.codigo) {
+      return sendJson(res, 400, { error: { message: "faltan campos: lenguaje, codigo" } })
+    }
+    const r = await correrEnDocker({
+      lenguaje: body.lenguaje,
+      codigo: body.codigo,
+      timeoutMs: body.timeoutMs,
+      memoryLimit: body.memoryLimit,
+      cpuLimit: body.cpuLimit,
+    })
+    sendJson(res, 200, r)
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+// ── Pairing handlers ──
+async function handlePairCrear(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as { baseUrl?: string; ttlMs?: number }
+    const baseUrl = body?.baseUrl ?? `http://localhost:${ZENKAI_ROUTER_PORT}`
+    const inv = pairing.crearInvitacion({ baseUrl, ttlMs: body?.ttlMs })
+    const qrMatrix = generarQrMatrizSimple(inv.url)
+    sendJson(res, 200, { ...inv, qrMatrix })
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+async function handlePairAceptar(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as { code?: string; nombre?: string }
+    if (!body?.code) return sendJson(res, 400, { error: { message: "falta code" } })
+    const r = pairing.aceptar(body.code, {
+      nombre: body.nombre,
+      userAgent: req.headers["user-agent"],
+      ip: req.socket.remoteAddress,
+    })
+    if (!r.ok) return sendJson(res, 400, { error: { message: r.motivo } })
+    eventBus.emit("pair.aceptada", { code: body.code, nombre: body.nombre })
+    sendJson(res, 200, { token: r.token })
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+function handlePairStatus(url: string, res: http.ServerResponse) {
+  const code = decodeURIComponent(url.slice("/v2/pair/status/".length))
+  const inv = pairing.status(code)
+  if (!inv) return sendJson(res, 404, { error: { message: "no existe" } })
+  sendJson(res, 200, { estado: inv.estado, aceptadaEn: inv.aceptadaEn, clienteInfo: inv.clienteInfo })
+}
+
+// ── TTS handler ──
+async function handleTtsSynth(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as { texto?: string; modelPath?: string; lengthScale?: number }
+    if (!body?.texto || !body?.modelPath) {
+      return sendJson(res, 400, { error: { message: "faltan campos: texto, modelPath" } })
+    }
+    const r = await sintetizar(body.texto, { modelPath: body.modelPath, lengthScale: body.lengthScale })
+    if (!r.ok || !r.wavBytes) {
+      return sendJson(res, 500, { error: { message: r.mensajeError ?? "sintetización falló" } })
+    }
+    res.writeHead(200, { "content-type": "audio/wav", "content-length": String(r.wavBytes.length) })
+    res.end(Buffer.from(r.wavBytes))
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
 function extraerJsonBalanceado(text: string): Record<string, unknown> | undefined {
   const start = text.indexOf("{")
   if (start < 0) return undefined
@@ -740,6 +937,70 @@ export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
       }
       if (req.method === "GET" && url.startsWith("/v2/events")) {
         return handleEventsStream(res)
+      }
+      // Zenkai Engine (reemplazo de Ollama).
+      if (req.method === "GET" && url === "/v2/engine/status") {
+        return sendJson(res, 200, getEngine().status())
+      }
+      if (req.method === "GET" && url === "/v2/engine/models") {
+        return sendJson(res, 200, { catalogo: MODELOS_RECOMENDADOS, instalados: getEngine().getRegistry().list() })
+      }
+      if (req.method === "POST" && url === "/v2/engine/download") {
+        void handleEngineDownload(req, res)
+        return
+      }
+      if (req.method === "POST" && url === "/v2/engine/load") {
+        void handleEngineLoad(req, res)
+        return
+      }
+      if (req.method === "POST" && url === "/v2/engine/unload") {
+        void handleEngineUnload(req, res)
+        return
+      }
+      if (req.method === "DELETE" && url.startsWith("/v2/engine/models/")) {
+        return void handleEngineRemove(url, res)
+      }
+      // Training.
+      if (req.method === "GET" && url === "/v2/train/gpu") {
+        void (async () => sendJson(res, 200, await detectarGpu()))()
+        return
+      }
+      if (req.method === "POST" && url === "/v2/train") {
+        void handleTrain(req, res)
+        return
+      }
+      // Docker sandbox.
+      if (req.method === "GET" && url === "/v2/docker/status") {
+        void (async () => sendJson(res, 200, await detectarDocker()))()
+        return
+      }
+      if (req.method === "POST" && url === "/v2/docker/run") {
+        void handleDockerRun(req, res)
+        return
+      }
+      // Pairing (mobile companion).
+      if (req.method === "POST" && url === "/v2/pair/crear") {
+        void handlePairCrear(req, res)
+        return
+      }
+      if (req.method === "POST" && url === "/v2/pair/aceptar") {
+        void handlePairAceptar(req, res)
+        return
+      }
+      if (req.method === "GET" && url.startsWith("/v2/pair/status/")) {
+        return void handlePairStatus(url, res)
+      }
+      // TTS Piper.
+      if (req.method === "GET" && url === "/v2/tts/status") {
+        void (async () => {
+          const p = await detectarPiper()
+          sendJson(res, 200, { piperDisponible: p, voces: VOCES_PIPER })
+        })()
+        return
+      }
+      if (req.method === "POST" && url === "/v2/tts/synth") {
+        void handleTtsSynth(req, res)
+        return
       }
       // Rutas /v2/* van 100% al motor @zenkai/core (Fase 6).
       if (url.startsWith("/v2/")) {

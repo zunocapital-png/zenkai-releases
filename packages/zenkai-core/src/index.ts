@@ -51,3 +51,9 @@ export * from "./aios/index"
 
 // Largo plazo #14: Skill Store distribuido (registry local + remote + rating).
 export * from "./skills/index"
+
+// Post-v1.21: Runtime propio (llama-server wrapper + GGUF downloader) — reemplaza Ollama.
+export * from "./runtime/index"
+
+// Post-v1.21: Voz duplex (VAD energy-based + TTS Piper local).
+export * from "./voice/index"

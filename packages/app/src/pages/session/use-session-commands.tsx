@@ -388,6 +388,12 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       (x) => dialog.show(() => <x.DialogSandbox />),
     )
   }
+  const zenkaiMotor = () => {
+    void openDialog(
+      () => import("@/components/dialog-zenkai-engine"),
+      (x) => dialog.show(() => <x.DialogZenkaiEngine />),
+    )
+  }
 
   const toggleAutoAccept = () => {
     const sessionID = params.id
@@ -802,6 +808,13 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: "Ejecuta código Node/Python/Bash aislado con timeout duro",
       slash: "sandbox",
       onSelect: zenkaiSandbox,
+    }),
+    mcpCommand({
+      id: "zenkai.motor",
+      title: "Zenkai Engine (reemplazo Ollama)",
+      description: "Descarga y gestiona modelos GGUF con el motor propio, cargar/descargar por demanda",
+      slash: "motor",
+      onSelect: zenkaiMotor,
     }),
   ]
 
