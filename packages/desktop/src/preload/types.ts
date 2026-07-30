@@ -118,6 +118,8 @@ export type ElectronAPI = {
   }>
   computerUseGet: () => Promise<boolean>
   computerUseSet: (allowed: boolean) => Promise<boolean>
+  imageConfigGet: () => Promise<string | null>
+  imageConfigSet: (json: string) => Promise<boolean>
   scheduledGet: () => Promise<string>
   scheduledSet: (json: string) => Promise<boolean>
 }

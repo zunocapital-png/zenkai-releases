@@ -60,6 +60,13 @@ export function preferAppEnv(userDataPath: string) {
     ZENKAI_COMPUTER_NODE: process.execPath,
     // Archivo de permiso del control de PC: existe = permitido. El toggle lo crea/borra.
     ZENKAI_COMPUTER_ALLOW_FILE: join(userDataPath, "zenkai-computer-allow"),
+    // Generar imágenes desde el chat (MCP propio): ruta del server + runtime + archivo de
+    // config del proveedor (local SD o API de nube). auto-setup lo registra; sin config, avisa.
+    ZENKAI_IMAGE_MCP: app.isPackaged
+      ? join(process.resourcesPath, "mcp", "zenkai-image.mjs")
+      : join(process.cwd(), "packages", "desktop", "build", "mcp", "zenkai-image.mjs"),
+    ZENKAI_IMAGE_NODE: process.execPath,
+    ZENKAI_IMAGE_CONFIG: join(userDataPath, "zenkai-image-config.json"),
   })
 }
 

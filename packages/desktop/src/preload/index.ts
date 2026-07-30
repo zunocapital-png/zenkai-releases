@@ -132,6 +132,8 @@ const api: ElectronAPI = {
   analyzeHardware: () => ipcRenderer.invoke("analyze-hardware"),
   computerUseGet: () => ipcRenderer.invoke("computer-use-get"),
   computerUseSet: (allowed: boolean) => ipcRenderer.invoke("computer-use-set", allowed),
+  imageConfigGet: () => ipcRenderer.invoke("image-config-get"),
+  imageConfigSet: (json: string) => ipcRenderer.invoke("image-config-set", json),
   scheduledGet: () => ipcRenderer.invoke("scheduled-get"),
   scheduledSet: (json: string) => ipcRenderer.invoke("scheduled-set", json),
 }

@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process"
 import { stat } from "node:fs/promises"
-import { existsSync, writeFileSync, rmSync } from "node:fs"
+import { existsSync, writeFileSync, readFileSync, rmSync } from "node:fs"
 import { basename, join } from "node:path"
 import { app, BrowserWindow, Notification, clipboard, dialog, ipcMain, shell } from "electron"
 import type { IpcMainEvent, IpcMainInvokeEvent } from "electron"
@@ -116,6 +116,26 @@ export function registerIpcHandlers(deps: Deps) {
       return false // no propagar el error de fs al renderer
     }
   })
+
+  // Config de generación de imágenes desde el chat: el diálogo la guarda una vez y la tool
+  // MCP (zenkai-image) la lee para saber qué proveedor usar (local SD o API de nube).
+  const imageConfigFile = () => join(app.getPath("userData"), "zenkai-image-config.json")
+  ipcMain.handle("image-config-get", () => {
+    try {
+      return existsSync(imageConfigFile()) ? readFileSync(imageConfigFile(), "utf8") : null
+    } catch {
+      return null
+    }
+  })
+  ipcMain.handle("image-config-set", (_event: IpcMainInvokeEvent, json: string) => {
+    try {
+      writeFileSync(imageConfigFile(), json)
+      return true
+    } catch {
+      return false
+    }
+  })
+
   ipcMain.handle("store-get", (_event: IpcMainInvokeEvent, name: string, key: string) => {
     try {
       const store = getStore(name)

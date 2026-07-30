@@ -342,6 +342,21 @@ function defaultConfig(model: string): string {
       enabled: true,
     }
   }
+  // Generar imágenes desde el chat (texto→imagen). El modelo llama a la tool 'generar_imagen';
+  // usa el proveedor que el usuario configuró (archivo ZENKAI_IMAGE_CONFIG). Si no hay config,
+  // la tool responde cómo activarla — nunca falla en silencio.
+  const imageMcp = process.env.ZENKAI_IMAGE_MCP
+  if (imageMcp && existsSync(imageMcp)) {
+    ;(config.mcp as Record<string, unknown>)["zenkai-image"] = {
+      type: "local",
+      command: [process.env.ZENKAI_IMAGE_NODE || "node", imageMcp],
+      environment: {
+        ELECTRON_RUN_AS_NODE: "1",
+        ...(process.env.ZENKAI_IMAGE_CONFIG ? { ZENKAI_IMAGE_CONFIG: process.env.ZENKAI_IMAGE_CONFIG } : {}),
+      },
+      enabled: true,
+    }
+  }
   return JSON.stringify(config, null, 2) + "\n"
 }
 

@@ -47,7 +47,16 @@ export function LeftSidebar() {
   const openSettings = useSettingsCommand()
   const dialog = useDialog()
 
-  const [query, setQuery] = createSignal("")
+  const [query] = createSignal("")
+  // Grupos de días colapsables (como Claude): guardamos los títulos ocultos.
+  const [colapsados, setColapsados] = createSignal<Set<string>>(new Set())
+  const estaColapsado = (t: string) => colapsados().has(t)
+  const toggleGrupo = (t: string) =>
+    setColapsados((prev) => {
+      const n = new Set(prev)
+      n.has(t) ? n.delete(t) : n.add(t)
+      return n
+    })
   const leerNombre = () => {
     try {
       return localStorage.getItem("zenkai-username") ?? ""
@@ -155,30 +164,6 @@ export function LeftSidebar() {
           </button>
         </div>
 
-        {/* Buscador de chats */}
-        <div class="shrink-0 px-2 pb-2">
-          <div class="flex items-center gap-2 rounded-lg border border-v2-border-border-muted bg-v2-background-bg-layer-02 px-2.5 py-1.5 focus-within:border-v2-border-border-base">
-            <IconV2 name="magnifying-glass" size="small" class="shrink-0 text-v2-icon-icon-muted" />
-            <input
-              type="text"
-              value={query()}
-              onInput={(e) => setQuery(e.currentTarget.value)}
-              placeholder="Buscar chats…"
-              class="min-w-0 flex-1 bg-transparent text-14-regular text-v2-text-text-base placeholder:text-v2-text-text-faint focus:outline-none"
-            />
-            <Show when={query()}>
-              <button
-                type="button"
-                class="shrink-0 text-v2-icon-icon-muted transition-colors hover:text-v2-text-text-strong"
-                aria-label="Limpiar búsqueda"
-                onClick={() => setQuery("")}
-              >
-                <IconV2 name="xmark-small" size="small" />
-              </button>
-            </Show>
-          </div>
-        </div>
-
         {/* Historial */}
         <div class="min-h-0 flex-1 overflow-y-auto no-scrollbar px-2">
           <Show
@@ -201,19 +186,32 @@ export function LeftSidebar() {
             >
               {(group) => (
                 <div class="flex flex-col gap-0.5 pb-2">
-                  <div class="select-none px-2 pt-2 pb-0.5 text-[11px] font-medium uppercase tracking-wider text-v2-text-text-faint">
+                  {/* Header del grupo: click para ocultar/mostrar los chats de ese día (como Claude) */}
+                  <button
+                    type="button"
+                    onClick={() => toggleGrupo(group.title)}
+                    class="flex w-full items-center gap-1 select-none px-2 pt-2 pb-0.5 text-[11px] font-medium uppercase tracking-wider text-v2-text-text-faint transition-colors hover:text-v2-text-text-base"
+                  >
+                    <IconV2
+                      name="outline-chevron-down"
+                      size="small"
+                      class="transition-transform"
+                      style={{ transform: estaColapsado(group.title) ? "rotate(-90deg)" : "none" }}
+                    />
                     {group.title}
-                  </div>
-                  <For each={group.sessions}>
-                    {(record) => (
-                      <SessionRow
-                        record={record}
-                        sessions={sessions}
-                        onRename={(title) => renameSession(record.session, title)}
-                        onDelete={() => void sessions.session.archive(record.session)}
-                      />
-                    )}
-                  </For>
+                  </button>
+                  <Show when={!estaColapsado(group.title)}>
+                    <For each={group.sessions}>
+                      {(record) => (
+                        <SessionRow
+                          record={record}
+                          sessions={sessions}
+                          onRename={(title) => renameSession(record.session, title)}
+                          onDelete={() => void sessions.session.archive(record.session)}
+                        />
+                      )}
+                    </For>
+                  </Show>
                 </div>
               )}
             </For>

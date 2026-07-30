@@ -1,6 +1,8 @@
 import { createSignal, For, onMount, Show } from "solid-js"
 import { Dialog } from "@opencode-ai/ui/dialog"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
+import { usePlatform } from "@/context/platform"
+import { showToast } from "@/utils/toast"
 
 // Generar imágenes en ZENKAI de DOS formas (fiel a "local pero también online"):
 //  • LOCAL: motor Stable Diffusion en tu PC (Automatic1111/Forge, localhost:7860). Gratis, offline.
@@ -19,6 +21,7 @@ const NUBE: ProvNube[] = [
 
 export function DialogImagenes() {
   const dialog = useDialog()
+  const platform = usePlatform()
   const [modo, setModo] = createSignal<"local" | "nube">("local")
   const [prompt, setPrompt] = createSignal("")
   const [negativo, setNegativo] = createSignal("")
@@ -102,6 +105,31 @@ export function DialogImagenes() {
     a.href = s
     a.download = `zenkai-${modo()}.png`
     a.click()
+  }
+
+  // Guarda el proveedor para que el MODELO genere imágenes DESDE EL CHAT (tool generar_imagen),
+  // como Claude: configurás una vez acá y después pedís imágenes escribiendo en la conversación.
+  async function guardarParaChat() {
+    const p = prov()
+    const cfg =
+      modo() === "local"
+        ? { mode: "local", sdUrl: sdUrl() }
+        : {
+            mode: "nube",
+            baseURL: (p.id === "custom" ? baseCustom() : p.baseURL).trim(),
+            key: keyNube().trim(),
+            model: (p.id === "custom" ? modeloCustom() : p.modelo).trim(),
+          }
+    if (modo() === "nube" && (!cfg.baseURL || !cfg.model || !cfg.key)) {
+      setError("Completá proveedor y key antes de guardar para el chat.")
+      return
+    }
+    const ok = await platform.imageConfigSet?.(JSON.stringify(cfg))
+    showToast(
+      ok
+        ? { variant: "success", icon: "circle-check", title: "Listo para el chat", description: "Ahora podés pedir imágenes escribiendo en la conversación (ej: 'generá una imagen de…')." }
+        : { variant: "error", title: "No se pudo guardar", description: "Intentá de nuevo." },
+    )
   }
 
   const inputClass = "w-full rounded-md border border-border-base bg-surface-base px-3 py-2 text-13-regular text-text-strong placeholder:text-text-muted focus:outline-none focus:border-orange-500"
@@ -206,7 +234,15 @@ export function DialogImagenes() {
           </div>
         </Show>
 
-        <div class="mt-1 flex items-center justify-end">
+        <div class="mt-1 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => void guardarParaChat()}
+            class="rounded-lg border border-orange-500/50 bg-orange-500/10 px-4 py-2 text-13-medium text-orange-500 hover:bg-orange-500/20"
+            title="Configurar para pedir imágenes directamente en el chat"
+          >
+            ✓ Usar en el chat
+          </button>
           <button type="button" onClick={() => dialog.close()} class="rounded-lg border border-border-base bg-surface-raised px-4 py-2 text-13-medium text-text-strong hover:bg-surface-hover">Cerrar</button>
         </div>
       </div>

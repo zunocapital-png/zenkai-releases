@@ -133,6 +133,12 @@ type PlatformBase = {
   /** Allow/disallow PC control (writes/removes the permission flag) (desktop only) */
   computerUseSet?(allowed: boolean): Promise<boolean>
 
+  /** Read the image-generation provider config JSON (desktop only) */
+  imageConfigGet?(): Promise<string | null>
+
+  /** Save the image-generation provider config JSON (used by the chat image tool) (desktop only) */
+  imageConfigSet?(json: string): Promise<boolean>
+
   /** Get scheduled tasks as JSON (desktop only) */
   scheduledGet?(): Promise<string>
 
