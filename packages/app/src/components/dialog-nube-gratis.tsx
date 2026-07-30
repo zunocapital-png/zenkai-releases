@@ -67,12 +67,6 @@ const PROVEEDORES: Proveedor[] = [
     porque: "Llama 3.3 70B, Qwen, DeepSeek y más, con créditos gratis.",
     url: "https://api.together.xyz/settings/api-keys",
   },
-  {
-    id: "sambanova",
-    nombre: "SambaNova",
-    porque: "Ultrarrápido; llega hasta Llama 405B en el tier gratis.",
-    url: "https://cloud.sambanova.ai/apis",
-  },
 ]
 
 export function DialogNubeGratis() {

@@ -62,6 +62,9 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
   const openMcp = () => {
     void import("./dialog-conectores-mcp").then((x) => dialog.show(() => <x.DialogConectoresMcp />))
   }
+  const openDisenos = () => {
+    void import("./dialog-galeria-diseno").then((x) => dialog.show(() => <x.DialogGaleriaDiseno />))
+  }
 
   // Transparencia del Auto: cuando el proveedor es "omniroute" (ZENKAI Auto), resolvemos y
   // mostramos QUÉ modelo local está usando ahora mismo (antes era una caja negra).
@@ -146,6 +149,18 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
                 onClick={openMcp}
               >
                 🧩 Skills
+              </ButtonV2>
+            </TooltipV2>
+            <TooltipV2 placement="top" gutter={4} value="Galería de diseño (web, app, 3D) con prompts listos">
+              <ButtonV2
+                data-control-type="dialog"
+                variant="ghost-muted"
+                size="normal"
+                class="shrink-0 ![font-weight:440]"
+                style={{ height: "28px" }}
+                onClick={openDisenos}
+              >
+                🎨 Diseños
               </ButtonV2>
             </TooltipV2>
           </>
