@@ -55,6 +55,24 @@ const PROVEEDORES: Proveedor[] = [
     porque: "Modelos Mistral (chat y código) con tier gratis.",
     url: "https://console.mistral.ai/api-keys",
   },
+  {
+    id: "cohere",
+    nombre: "Cohere",
+    porque: "Command R/A, fuertes en RAG y herramientas. Gratis, sin tarjeta.",
+    url: "https://dashboard.cohere.com/api-keys",
+  },
+  {
+    id: "togetherai",
+    nombre: "Together AI",
+    porque: "Llama 3.3 70B, Qwen, DeepSeek y más, con créditos gratis.",
+    url: "https://api.together.xyz/settings/api-keys",
+  },
+  {
+    id: "sambanova",
+    nombre: "SambaNova",
+    porque: "Ultrarrápido; llega hasta Llama 405B en el tier gratis.",
+    url: "https://cloud.sambanova.ai/apis",
+  },
 ]
 
 export function DialogNubeGratis() {
