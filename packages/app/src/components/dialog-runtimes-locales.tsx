@@ -67,6 +67,13 @@ export function DialogRuntimesLocales() {
           [r.id]: { npm: "@ai-sdk/openai-compatible", name: `${r.nombre} (local)`, options: { baseURL: base }, models },
         } as never,
       })
+      // dispose para que el catálogo se reconstruya y los modelos aparezcan YA (sin reload),
+      // igual que hace el flujo estándar de conexión.
+      try {
+        await serverSDK().client.global.dispose()
+      } catch {
+        /* si falla, aparecen al reiniciar */
+      }
       queryClient.invalidateQueries({
         predicate: (q) => q.queryKey[0] === serverSDK().scope && q.queryKey[2] === "providers",
       })
