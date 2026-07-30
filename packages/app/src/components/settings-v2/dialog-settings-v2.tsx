@@ -22,6 +22,10 @@ const LazyThemeEditor = lazy(() => import("@/components/theme-editor").then((m) 
 // Nuevo panel unificado: MCP (herramientas de la IA con explicación) + Plugins
 // (marketplace comunidad). Reemplaza el marketplace legacy que era técnico.
 const LazyPanelMcpPlugins = lazy(() => import("@/components/panel-mcp-plugins").then((m) => ({ default: m.PanelMcpPlugins })))
+// Vista de detalle completa de features Zenkai vs referencias — solo lectura.
+const LazyZenkaiDetalle = lazy(() =>
+  import("./zenkai-detalle").then((m) => ({ default: m.SettingsZenkaiDetalle })),
+)
 
 export const DialogSettings: Component<{
   sessionID?: string
@@ -69,6 +73,10 @@ export const DialogSettings: Component<{
                       <Icon name="sliders" />
                       {language.t("settings.tab.general")}
                     </TabsV2.Trigger>
+                    <TabsV2.Trigger value="zenkai-detalle">
+                      <Icon name="info" />
+                      Todo lo que hace Zenkai
+                    </TabsV2.Trigger>
                     <TabsV2.Trigger value="themes">
                       <Icon name="palette" />
                       Themes
@@ -113,6 +121,9 @@ export const DialogSettings: Component<{
         </TabsV2.List>
         <TabsV2.Content value="general" class="settings-v2-panel">
           <SettingsGeneralV2 sessionID={props.sessionID} />
+        </TabsV2.Content>
+        <TabsV2.Content value="zenkai-detalle" class="settings-v2-panel">
+          <LazyZenkaiDetalle />
         </TabsV2.Content>
         <TabsV2.Content value="servers" class="settings-v2-panel">
           <SettingsServersV2 />

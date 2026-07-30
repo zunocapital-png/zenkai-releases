@@ -57,3 +57,15 @@ export * from "./runtime/index"
 
 // Post-v1.21: Voz duplex (VAD energy-based + TTS Piper local).
 export * from "./voice/index"
+
+// v1.25: Diff hunks (Cursor-style apply con confirmar/rechazar).
+export * from "./diff/index"
+
+// v1.25: Codebase indexer (Continue.dev/AnythingLLM-style).
+export * from "./indexer/index"
+
+// v1.25: App scaffold generator (Bolt.new/Replit-style).
+export * from "./scaffold/index"
+
+// v1.25: App catalog (Pinokio-style).
+export * from "./catalog/index"
