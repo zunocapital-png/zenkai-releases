@@ -246,6 +246,30 @@ function defaultConfig(model: string): string {
         description:
           "Diseñador UI. Genera propuestas de layout, colores y componentes basadas en descripción del usuario. Puede llamar a la tool generar_imagen para maquetas.",
       },
+      // ── COGNITIVE HARNESSES ─────────────────────────────────────────────
+      // Sub-agentes que no ejecutan herramientas: ejecutan PROCESOS MENTALES.
+      // El agente principal los invoca cuando quiere "pensar en voz alta" o
+      // validar su propia respuesta antes de entregarla al usuario.
+      reflector: {
+        description:
+          "Reflexión (Reflection Harness). Recibe tu respuesta ya redactada y la evalúa: ¿es correcta? ¿faltó algo? ¿hay una solución mejor? Devuelve una lista de mejoras concretas o 'OK, sin mejoras' si está fina.",
+      },
+      refutador: {
+        description:
+          "Refutador (Hallucination Harness). Recibe tu respuesta y busca ACTIVAMENTE errores, invenciones o afirmaciones sin evidencia. Su job es refutar, no confirmar. Devuelve claims sin sustento con severidad alta/media/baja.",
+      },
+      investigador: {
+        description:
+          "Investigador (Research Harness). Ante una pregunta con hechos actuales, verifica con context7, duckduckgo-search, wikipedia o fetch antes de responder. Devuelve el hallazgo con fuente citada.",
+      },
+      jurado: {
+        description:
+          "Jurado (Consensus Harness). Recibe 2 respuestas alternativas y decide cuál es mejor con criterio explícito (correctitud > completitud > claridad). Útil para comparar salidas de distintos modelos o del mismo modelo dos veces.",
+      },
+      optimizador: {
+        description:
+          "Optimizador (Cost/Latency Harness). Ante una tarea, sugiere el modelo más barato o más rápido que la resuelve sin sacrificar calidad. No ejecuta — recomienda.",
+      },
     },
     provider: {
       // Auto-relevo: enruta solo y engancha el siguiente si uno se agota. Sin key, sin configurar.

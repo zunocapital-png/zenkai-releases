@@ -310,6 +310,12 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       (x) => dialog.show(() => <x.DialogGaleriaDiseno />),
     )
   }
+  const zenkaiObservability = () => {
+    void openDialog(
+      () => import("@/components/dialog-observability"),
+      (x) => dialog.show(() => <x.DialogObservability />),
+    )
+  }
 
   const toggleAutoAccept = () => {
     const sessionID = params.id
@@ -633,6 +639,13 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: "Explicación en criollo con ejemplos",
       slash: "que-son-mcp",
       onSelect: zenkaiQueSonMcp,
+    }),
+    mcpCommand({
+      id: "zenkai.observability",
+      title: "Observability Center",
+      description: "Ver upstreams, latencias, breaker y modelos en vivo",
+      slash: "observability",
+      onSelect: zenkaiObservability,
     }),
   ]
 

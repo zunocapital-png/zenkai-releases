@@ -23,6 +23,9 @@ export function EstadoEcosistema() {
       dialog.show(() => <x.DialogConnectProvider directory={() => sdk().directory} />),
     )
   }
+  const abrirObservability = () => {
+    void import("@/components/dialog-observability").then((x) => dialog.show(() => <x.DialogObservability />))
+  }
 
   const [estado] = createResource(
     pulse,
@@ -118,6 +121,12 @@ export function EstadoEcosistema() {
           </div>
 
           <div class="mt-2 border-t border-v2-border-border-muted pt-1.5">
+            <MenuV2.Item onSelect={abrirObservability}>
+              <span class="text-[12px] flex items-center gap-2">
+                <span class="text-[#EC5B2B]">›</span>
+                Observability Center · ver qué hace la IA
+              </span>
+            </MenuV2.Item>
             <MenuV2.Item onSelect={abrirModelos}>
               <span class="text-[12px]">Instalar / gestionar modelos locales</span>
             </MenuV2.Item>
