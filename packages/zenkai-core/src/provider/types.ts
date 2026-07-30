@@ -19,7 +19,7 @@
 // Se sostiene con abstracciones MÍNIMAS: cada provider implementa `chat` (y
 // opcionalmente `stream`). El orquestador hace lo demás.
 
-import type { Message } from "../types/index.ts"
+import type { Message } from "../types/index"
 
 export type ProviderRegion = "local" | "us" | "eu" | "asia" | "unknown"
 export type ProviderKind = "openai-compat" | "anthropic" | "google" | "custom"

@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
-import type { Tool } from "../types.ts"
+import type { Tool } from "../types"
 
 // Tool 'grep' — buscar patrón en archivos con MEJORAS vs opencode:
 //   - Regex cache (compila UNA vez por pattern).

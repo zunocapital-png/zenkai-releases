@@ -1,7 +1,7 @@
 {
   "name": "@opencode-ai/desktop",
   "private": true,
-  "version": "1.18.88",
+  "version": "1.19.0",
   "type": "module",
   "license": "MIT",
   "homepage": "https://zenkai.ai",
@@ -25,6 +25,7 @@
   },
   "main": "./out/main/index.js",
   "dependencies": {
+    "@zenkai/core": "workspace:*",
     "@zip.js/zip.js": "2.7.62",
     "effect": "catalog:",
     "electron-context-menu": "4.1.2",

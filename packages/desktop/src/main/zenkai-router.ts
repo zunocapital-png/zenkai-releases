@@ -4,6 +4,8 @@
 //   - POST /v1/chat/completions -> si el modelo es "auto"/"auto/*", elige el mejor
 //     modelo local de Ollama disponible y hace de proxy a Ollama (que ya es
 //     OpenAI-compatible en :11434/v1). El streaming se pasa tal cual (byte passthrough).
+//   - GET /v2/*  (Fase 6) -> misma API pero corriendo sobre @zenkai/core.
+//     Al activarse ZENKAI_USE_CORE=1 en env, /v1/* se redirige a /v2/*.
 //
 // Sin dependencias externas, sin npm, sin binarios de terceros: solo Node.
 // Si Ollama no está o no hay modelos, responde un error claro (y el usuario igual
@@ -13,6 +15,63 @@ import http from "node:http"
 import net from "node:net"
 import { randomUUID } from "node:crypto"
 import { Readable } from "node:stream"
+import { ProviderOrchestrator, crearProviderOpenAICompat, crearZenkaiCoreServer } from "@zenkai/core"
+
+// ── Bridge Fase 6: @zenkai/core como motor alternativo del router ──
+// Instancia perezosa del orquestador propio. Se inicializa la primera vez
+// que llega un request a /v2 (o cuando ZENKAI_USE_CORE=1 y viene un /v1).
+// Registra Ollama como provider local por default y expone endpoints
+// OpenAI-compatible sobre esa capa.
+let coreServerCache: ReturnType<typeof crearZenkaiCoreServer> | undefined
+function coreServer() {
+  if (coreServerCache) return coreServerCache
+  const orchestrator = new ProviderOrchestrator({ regionPreferida: "local" })
+  orchestrator.register(
+    crearProviderOpenAICompat({
+      name: "ollama",
+      kind: "openai-compat",
+      baseURL: "http://localhost:11434/v1",
+      supportsTools: true,
+      supportsStream: true,
+      region: "local",
+    }),
+  )
+  coreServerCache = crearZenkaiCoreServer(orchestrator)
+  return coreServerCache
+}
+
+// Traduce IncomingMessage → Fetch API Request para @zenkai/core.
+async function toWebRequest(req: http.IncomingMessage): Promise<Request> {
+  const chunks: Buffer[] = []
+  await new Promise<void>((resolve, reject) => {
+    req.on("data", (c) => chunks.push(c as Buffer))
+    req.on("end", () => resolve())
+    req.on("error", reject)
+  })
+  const body = chunks.length > 0 ? Buffer.concat(chunks) : undefined
+  const url = `http://localhost:${ZENKAI_ROUTER_PORT}${req.url ?? "/"}`
+  return new Request(url, {
+    method: req.method,
+    headers: req.headers as Record<string, string>,
+    body: body ? (body as unknown as BodyInit) : undefined,
+  })
+}
+
+// Copia una Web Response al http.ServerResponse (soporta streaming SSE).
+async function copyResponse(webRes: Response, res: http.ServerResponse) {
+  res.writeHead(webRes.status, Object.fromEntries(webRes.headers))
+  if (!webRes.body) {
+    res.end()
+    return
+  }
+  const reader = webRes.body.getReader()
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    res.write(value)
+  }
+  res.end()
+}
 
 export const ZENKAI_ROUTER_PORT = 20128
 
@@ -436,6 +495,19 @@ export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
     if (await portInUse(ZENKAI_ROUTER_PORT)) return "already-running"
     server = http.createServer((req, res) => {
       const url = req.url ?? ""
+      // Rutas /v2/* van 100% al motor @zenkai/core (Fase 6).
+      if (url.startsWith("/v2/")) {
+        void (async () => {
+          try {
+            const webReq = await toWebRequest(req)
+            const webRes = await coreServer().handle(new Request(webReq.url.replace("/v2/", "/v1/"), webReq))
+            await copyResponse(webRes, res)
+          } catch (e) {
+            sendJson(res, 500, { error: { message: String(e) } })
+          }
+        })()
+        return
+      }
       if (req.method === "GET" && url.startsWith("/v1/models")) return void handleModels(res)
       if (req.method === "GET" && url === "/v1/health") return void handleHealth(res)
       if (req.method === "POST" && url.startsWith("/v1/chat/completions")) return void handleChat(req, res)

@@ -1,4 +1,4 @@
-import type { Tool, ToolContext, ToolInvocationResult, ToolMeta } from "./types.ts"
+import type { Tool, ToolContext, ToolInvocationResult, ToolMeta } from "./types"
 
 // ToolExecutor: registra tools, valida input, aplica rate limit, timeout, cache,
 // y ejecuta. Todo con métricas para el Observability Center.

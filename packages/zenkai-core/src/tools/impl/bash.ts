@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process"
-import type { Tool } from "../types.ts"
+import type { Tool } from "../types"
 
 // Tool 'bash' — ejecutar comando con MEJORAS vs opencode:
 //   - Streaming de output mid-run (progress con líneas de stdout/stderr).

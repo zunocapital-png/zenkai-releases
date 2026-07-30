@@ -1,4 +1,4 @@
-import type { ChatChunk, ChatRequest, ChatResponse, Provider, ProviderStats } from "./types.ts"
+import type { ChatChunk, ChatRequest, ChatResponse, Provider, ProviderStats } from "./types"
 
 // ProviderOrchestrator: capa sobre múltiples providers con las 10 mejoras del
 // diseño de Fase 4. Es lo que sale del router zenkai — el UI habla acá, no con

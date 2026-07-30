@@ -1,5 +1,5 @@
-import type { Message, Part } from "../types/index.ts"
-import type { ChatRequest, ChatResponse, ChatChunk, Provider, ProviderContext, ProviderMeta } from "./types.ts"
+import type { Message, Part } from "../types/index"
+import type { ChatRequest, ChatResponse, ChatChunk, Provider, ProviderContext, ProviderMeta } from "./types"
 
 // Adapter OpenAI-compatible universal. Sirve para todo provider que expone
 // /v1/chat/completions con el shape de OpenAI (que es la mayoría en 2026:

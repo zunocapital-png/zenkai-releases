@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from "node:fs"
-import type { Tool } from "../types.ts"
+import type { Tool } from "../types"
 
 // Tool 'read' — leer archivo del disco con MEJORAS vs opencode:
 //   - Metadata (size, mime, lastModified, encoding).

@@ -381,8 +381,9 @@
     },
     "packages/desktop": {
       "name": "@opencode-ai/desktop",
-      "version": "1.18.84",
+      "version": "1.18.88",
       "dependencies": {
+        "@zenkai/core": "workspace:*",
         "@zip.js/zip.js": "2.7.62",
         "effect": "catalog:",
         "electron-context-menu": "4.1.2",

@@ -1,7 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { tmpdir } from "node:os"
-import type { Tool } from "../types.ts"
+import type { Tool } from "../types"
 
 // Tool 'write' — escribir archivo con MEJORAS vs opencode:
 //   - Atomic write real: escribimos a temp + rename (evita corrupción si falla).

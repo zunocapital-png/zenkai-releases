@@ -1,4 +1,4 @@
-export * from "./types.ts"
-export { crearProviderOpenAICompat } from "./openai-compat.ts"
-export { ProviderOrchestrator } from "./orchestrator.ts"
-export type { OrchestratorOptions } from "./orchestrator.ts"
+export * from "./types"
+export { crearProviderOpenAICompat } from "./openai-compat"
+export { ProviderOrchestrator } from "./orchestrator"
+export type { OrchestratorOptions } from "./orchestrator"

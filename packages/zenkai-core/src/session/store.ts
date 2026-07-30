@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
-import type { Message, Session } from "../types/index.ts"
+import type { Message, Session } from "../types/index"
 
 // SessionStore: guarda sesiones y mensajes. In-memory + persist opcional a JSON
 // en disco. La Fase 1 usa un solo archivo por sesión (simple, sin lockfiles ni
