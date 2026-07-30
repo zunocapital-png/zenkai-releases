@@ -99,10 +99,69 @@ function summaryDiff(value: SnapshotFileDiff): value is SummaryDiff {
 
 const hidden = new Set(["todowrite"])
 
+// Extrae el texto plano del último part textual del último mensaje del
+// asistente. Se usa como entrada del Confidence Engine.
+function textoUltimoParteAsistente(mensajes: AssistantMessage[]): string {
+  const ultimo = mensajes[mensajes.length - 1]
+  if (!ultimo) return ""
+  const parts = (ultimo as unknown as { parts?: Array<{ type?: string; text?: string; content?: string }> }).parts ?? []
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i]
+    if (p?.type === "text" && typeof p.text === "string") return p.text
+    if (typeof p?.content === "string") return p.content
+  }
+  return ""
+}
+
+// Confidence Engine (idea del Tomo I de la charla). Analiza el texto de la
+// última respuesta del asistente con una heurística barata y devuelve un
+// porcentaje aproximado + motivo. No es un LLM — es una regla de dedo:
+//   - Si el mensaje tiene frases de duda ("no estoy seguro", "quizás") baja.
+//   - Si el mensaje niega verificación ("no verifiqué", "no probé") baja.
+//   - Si menciona archivos/comandos ejecutados con éxito sube.
+//   - Si es corto y sin evidencia observada baja.
+// La idea es hacer VISIBLE al usuario la incertidumbre de la respuesta sin
+// depender de que el modelo lo declare.
+function calcularConfianza(texto: string): { pct: number; motivo: string } {
+  const t = texto.toLowerCase()
+  let score = 75
+  const motivos: string[] = []
+  if (/(no estoy seguro|no lo sé|quizás|quizas|puede ser|creo que|tal vez)/.test(t)) {
+    score -= 20
+    motivos.push("frases de duda")
+  }
+  if (/(no verifiqué|no verifique|no probé|no probe|no ejecuté|no ejecute|no corrí|no corri)/.test(t)) {
+    score -= 25
+    motivos.push("sin verificación")
+  }
+  if (/(compila|typecheck ok|exit=0|passed|✓|verificado|listo|hecho)/.test(t)) {
+    score += 15
+    motivos.push("verificación observada")
+  }
+  if (/(git commit|push|typecheck|build|test)/.test(t) && /(ok|passed|éxito|exito|listo)/.test(t)) {
+    score += 10
+    motivos.push("acción confirmada")
+  }
+  if (t.length < 80) {
+    score -= 8
+    motivos.push("respuesta corta")
+  }
+  score = Math.max(35, Math.min(98, score))
+  return { pct: score, motivo: motivos.length > 0 ? motivos.join(" · ") : "sin señales claras" }
+}
+
 // Firma ZENKAI que aparece al final de cada respuesta terminada del asistente
 // (como el ícono de Claude al cerrar un mensaje). El logo pixel `>|` con un
-// fade-in + glow naranja suave. No es interactivo — es identidad de marca.
-function ZenkaiEndcap() {
+// fade-in + glow naranja suave. Suma el Confidence Engine.
+function ZenkaiEndcap(props: { texto?: string }) {
+  const conf = () => (props.texto ? calcularConfianza(props.texto) : undefined)
+  const colorConf = () => {
+    const c = conf()
+    if (!c) return "#94a3b8"
+    if (c.pct >= 85) return "#22c55e"
+    if (c.pct >= 65) return "#f59e0b"
+    return "#ef4444"
+  }
   return (
     <div
       class="mt-2 flex items-center gap-1.5 opacity-70"
@@ -141,6 +200,16 @@ function ZenkaiEndcap() {
         ))}
       </svg>
       <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-v2-text-text-faint">zenkai</span>
+      {conf() && (
+        <span
+          class="ml-1 flex items-center gap-1 text-[9.5px] font-mono uppercase tracking-wider"
+          title={`Confianza estimada — ${conf()!.motivo}`}
+          style={{ color: colorConf() }}
+        >
+          <span class="inline-block size-1.5 rounded-full" style={{ background: colorConf() }} />
+          <span>{conf()!.pct}%</span>
+        </span>
+      )}
       <style>{`
         @keyframes zenkai-endcap-in {
           0% { opacity: 0; transform: translateY(4px); }
@@ -469,10 +538,11 @@ export function SessionTurn(
                     shellToolDefaultOpen={props.shellToolDefaultOpen}
                     editToolDefaultOpen={props.editToolDefaultOpen}
                   />
-                  {/* Firma ZENKAI al final de la respuesta terminada — como Claude
-                      pone su ícono cuando termina. Solo cuando `working` es false. */}
+                  {/* Firma ZENKAI + Confidence Engine al final de la respuesta.
+                      Solo cuando `working` es false. El texto es el último part
+                      textual del asistente para calcular la confianza. */}
                   <Show when={!working()}>
-                    <ZenkaiEndcap />
+                    <ZenkaiEndcap texto={textoUltimoParteAsistente(assistantMessages())} />
                   </Show>
                 </div>
               </Show>

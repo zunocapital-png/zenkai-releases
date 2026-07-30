@@ -316,6 +316,12 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       (x) => dialog.show(() => <x.DialogObservability />),
     )
   }
+  const zenkaiCapacidades = () => {
+    void openDialog(
+      () => import("@/components/dialog-capacidades"),
+      (x) => dialog.show(() => <x.DialogCapacidades />),
+    )
+  }
 
   const toggleAutoAccept = () => {
     const sessionID = params.id
@@ -646,6 +652,13 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: "Ver upstreams, latencias, breaker y modelos en vivo",
       slash: "observability",
       onSelect: zenkaiObservability,
+    }),
+    mcpCommand({
+      id: "zenkai.capacidades",
+      title: "¿Qué sabe hacer ZENKAI?",
+      description: "Ver las capabilities agrupadas por categoría",
+      slash: "capacidades",
+      onSelect: zenkaiCapacidades,
     }),
   ]
 
