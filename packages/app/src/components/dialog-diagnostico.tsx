@@ -12,6 +12,7 @@ import {
   listarModelosOllama,
   estaInstalado,
   descargarModeloOllama,
+  borrarModeloOllama,
   ramAproxGB,
   advertenciaPc,
   presupuestoGB,
@@ -119,16 +120,42 @@ export function DialogDiagnostico() {
     })
   }
 
+  const aborters: Record<string, AbortController> = {}
+
+  function cancelar(id: string) {
+    aborters[id]?.abort()
+  }
+
   async function descargar(id: string) {
+    const ac = new AbortController()
+    aborters[id] = ac
     try {
-      await descargarModeloOllama(id, (d) => setDescargas((prev) => ({ ...prev, [id]: d })))
+      await descargarModeloOllama(id, (d) => setDescargas((prev) => ({ ...prev, [id]: d })), ac.signal)
       void check()
       void sincronizarConZenkai()
     } catch (e) {
+      const cancelado = ac.signal.aborted || (e instanceof Error && e.name === "AbortError")
       setDescargas((prev) => ({
         ...prev,
-        [id]: { pct: -1, estado: "Error", error: e instanceof Error ? e.message : "No se pudo descargar." },
+        [id]: cancelado
+          ? { pct: -1, estado: "Cancelado", error: "Cancelado." }
+          : { pct: -1, estado: "Error", error: e instanceof Error ? e.message : "No se pudo descargar." },
       }))
+    } finally {
+      delete aborters[id]
+    }
+  }
+
+  async function borrar(m: ModeloLocal) {
+    const inst = modelosOllama().find((x) => x === m.id || x.split(":")[0] === m.id.split(":")[0])
+    if (!inst) return
+    if (typeof window !== "undefined" && !window.confirm(`¿Borrar ${m.nombre} del disco? (${m.tam})`)) return
+    try {
+      await borrarModeloOllama(inst)
+      void check()
+      void sincronizarConZenkai()
+    } catch {
+      /* si falla, la lista sigue igual */
     }
   }
 
@@ -150,7 +177,7 @@ export function DialogDiagnostico() {
             <div class="h-full rounded-full bg-orange-500 transition-all" style={{ width: `${Math.max(2, d()!.pct)}%` }} />
           </div>
           <span class="text-12-regular text-text-muted">
-            {d()!.estado} {d()!.pct > 0 ? `· ${d()!.pct}%` : ""}
+            {d()!.estado} {d()!.pct > 0 ? `· ${d()!.pct}%` : ""} {d()!.detalle ? `· ${d()!.detalle}` : ""}
           </span>
         </Show>
       </div>
@@ -171,16 +198,40 @@ export function DialogDiagnostico() {
           </div>
           <Show
             when={!instalado(m.id)}
-            fallback={<span class="shrink-0 text-13-medium text-green-400">✅ Instalado</span>}
+            fallback={
+              <div class="flex shrink-0 items-center gap-2">
+                <span class="text-13-medium text-green-400">✅ Instalado</span>
+                <button
+                  type="button"
+                  title="Borrar del disco"
+                  onClick={() => void borrar(m)}
+                  class="rounded-md border border-border-base px-2 py-1 text-12-medium text-text-muted hover:text-red-400"
+                >
+                  🗑
+                </button>
+              </div>
+            }
           >
-            <button
-              type="button"
-              disabled={!!d() && d()!.pct >= 0 && d()!.pct < 100}
-              onClick={() => void descargar(m.id)}
-              class="shrink-0 rounded-md border border-border-base bg-surface-raised px-3 py-1.5 text-12-medium text-text-strong hover:bg-surface-hover disabled:opacity-50"
+            <Show
+              when={!!d() && d()!.pct >= 0 && d()!.pct < 100}
+              fallback={
+                <button
+                  type="button"
+                  onClick={() => void descargar(m.id)}
+                  class="shrink-0 rounded-md border border-border-base bg-surface-raised px-3 py-1.5 text-12-medium text-text-strong hover:bg-surface-hover"
+                >
+                  {d() ? (d()!.pct === -1 ? "Reintentar" : "Descargar") : "Descargar"}
+                </button>
+              }
             >
-              {d() ? (d()!.pct === -1 ? "Reintentar" : "Descargando…") : "Descargar"}
-            </button>
+              <button
+                type="button"
+                onClick={() => cancelar(m.id)}
+                class="shrink-0 rounded-md border border-border-base px-3 py-1.5 text-12-medium text-text-muted hover:text-red-400"
+              >
+                Cancelar
+              </button>
+            </Show>
           </Show>
         </div>
         <Show when={!instalado(m.id)}>

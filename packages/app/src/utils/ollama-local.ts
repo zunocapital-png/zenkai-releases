@@ -154,8 +154,30 @@ export function modeloRecomendado(budgetGB: number): ModeloLocal {
   return [...CATALOGO_LOCAL].sort((a, b) => porTam(a) - porTam(b))[0]
 }
 
-// Progreso de una descarga: pct 0..100, o -1 = error.
-export type Descarga = { pct: number; estado: string; error?: string }
+// Progreso de una descarga: pct 0..100, o -1 = error. detalle = "12 MB/s · faltan 2m".
+export type Descarga = { pct: number; estado: string; error?: string; detalle?: string }
+
+// Borra un modelo local de Ollama (DELETE /api/delete). Libera disco.
+export async function borrarModeloOllama(name: string): Promise<void> {
+  const res = await fetch(`${OLLAMA_HOST}/api/delete`, {
+    method: "DELETE",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name }),
+  })
+  if (!res.ok) throw new Error("No se pudo borrar el modelo.")
+}
+
+function fmtBytes(n: number): string {
+  if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(1)} GB`
+  if (n >= 1024 ** 2) return `${Math.round(n / 1024 ** 2)} MB`
+  return `${Math.round(n / 1024)} KB`
+}
+function fmtTiempo(seg: number): string {
+  if (!(seg > 0) || !isFinite(seg)) return "…"
+  if (seg >= 3600) return `${Math.round(seg / 3600)}h`
+  if (seg >= 60) return `${Math.round(seg / 60)}m`
+  return `${Math.round(seg)}s`
+}
 
 // Lista los modelos ya descargados (tags) desde Ollama. [] si está apagado.
 export async function listarModelosOllama(): Promise<string[]> {
@@ -176,12 +198,17 @@ export function estaInstalado(id: string, instalados: string[]): boolean {
 
 // Descarga un modelo con Ollama (/api/pull) reportando progreso en vivo.
 // Llama a onProgress con cada actualización; resuelve al terminar, rechaza en error.
-export async function descargarModeloOllama(id: string, onProgress: (d: Descarga) => void): Promise<void> {
+export async function descargarModeloOllama(
+  id: string,
+  onProgress: (d: Descarga) => void,
+  signal?: AbortSignal,
+): Promise<void> {
   onProgress({ pct: 0, estado: "Iniciando…" })
   const res = await fetch(`${OLLAMA_HOST}/api/pull`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ model: id, stream: true }),
+    signal,
   })
   if (!res.ok || !res.body) throw new Error("No se pudo iniciar la descarga. ¿Ollama está prendido?")
 
@@ -189,6 +216,9 @@ export async function descargarModeloOllama(id: string, onProgress: (d: Descarga
   const decoder = new TextDecoder()
   let buffer = ""
   let ultimoPct = 0
+  let lastBytes = 0
+  let lastT = Date.now()
+  let detalle: string | undefined
   for (;;) {
     const { done, value } = await reader.read()
     if (done) break
@@ -204,8 +234,20 @@ export async function descargarModeloOllama(id: string, onProgress: (d: Descarga
         continue
       }
       if (obj.error) throw new Error(obj.error)
-      if (obj.total) ultimoPct = Math.round(((obj.completed ?? 0) / obj.total) * 100)
-      onProgress({ pct: ultimoPct, estado: obj.status ?? "Descargando…" })
+      if (obj.total) {
+        const comp = obj.completed ?? 0
+        ultimoPct = Math.round((comp / obj.total) * 100)
+        const now = Date.now()
+        const dt = (now - lastT) / 1000
+        if (dt >= 0.7 && comp > lastBytes) {
+          const speed = (comp - lastBytes) / dt // bytes/s
+          const eta = speed > 0 ? (obj.total - comp) / speed : 0
+          detalle = `${fmtBytes(speed)}/s · faltan ${fmtTiempo(eta)}`
+          lastBytes = comp
+          lastT = now
+        }
+      }
+      onProgress({ pct: ultimoPct, estado: obj.status ?? "Descargando…", detalle })
     }
   }
   onProgress({ pct: 100, estado: "Listo" })

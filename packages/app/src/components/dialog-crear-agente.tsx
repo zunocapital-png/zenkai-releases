@@ -17,6 +17,45 @@ const OPCIONES_MODELO: OpcionModelo[] = [
   ...CATALOGO_LOCAL.map((m) => ({ value: `ollama/${m.id}`, label: `🖥️ ${m.nombre} (local)` })),
 ]
 
+// Plantillas: rellenan el formulario para crear un agente útil en segundos.
+const PLANTILLAS: { label: string; nombre: string; descripcion: string; prompt: string }[] = [
+  {
+    label: "🔍 Revisor",
+    nombre: "Revisor de código",
+    descripcion: "Revisa código buscando bugs y riesgos",
+    prompt:
+      "Sos un revisor de código senior. Revisá el código buscando bugs, riesgos de seguridad, casos borde y malas prácticas. Respondé en español, conciso, con ejemplos concretos y la línea afectada.",
+  },
+  {
+    label: "📝 Documentador",
+    nombre: "Documentador",
+    descripcion: "Escribe documentación clara",
+    prompt:
+      "Documentás código de forma clara y concisa. Explicá qué hace cada función, sus parámetros y un ejemplo de uso. Respondé en español, sin relleno.",
+  },
+  {
+    label: "🧪 Tester",
+    nombre: "Tester",
+    descripcion: "Escribe tests y casos borde",
+    prompt:
+      "Escribís tests para el código dado: casos felices, bordes y errores. Usá el framework de tests del proyecto. Respondé en español y explicá qué cubre cada test.",
+  },
+  {
+    label: "🌐 Traductor",
+    nombre: "Traductor",
+    descripcion: "Traduce manteniendo el sentido",
+    prompt:
+      "Traducís texto y comentarios de código manteniendo el sentido técnico y el tono. Preguntá el idioma destino si no está claro. No traduzcas nombres de variables ni código.",
+  },
+  {
+    label: "🎓 Explicador",
+    nombre: "Explicador",
+    descripcion: "Explica código paso a paso",
+    prompt:
+      "Explicás código paso a paso, simple, como a alguien que recién empieza. Usá analogías cuando ayuden. Respondé en español.",
+  },
+]
+
 const MODOS: { value: "all" | "primary" | "subagent"; label: string }[] = [
   { value: "all", label: "General (principal y como subagente)" },
   { value: "primary", label: "Principal (lo elegís en el chat)" },
@@ -94,6 +133,27 @@ export function DialogCrearAgente() {
           Un agente es un asistente con su propio modelo e instrucciones. Podés fijarlo a un modelo local (gratis, en tu
           PC) o dejar que ZENKAI Auto elija.
         </p>
+
+        <div class="flex flex-col gap-1.5">
+          <span class="text-12-medium text-text-strong">Empezá con una plantilla</span>
+          <div class="flex flex-wrap gap-2">
+            <For each={PLANTILLAS}>
+              {(p) => (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNombre(p.nombre)
+                    setDescripcion(p.descripcion)
+                    setPrompt(p.prompt)
+                  }}
+                  class="rounded-full border border-border-base bg-surface-base px-3 py-1 text-12-medium text-text-strong hover:bg-surface-hover"
+                >
+                  {p.label}
+                </button>
+              )}
+            </For>
+          </div>
+        </div>
 
         <label class="flex flex-col gap-1.5">
           <span class="text-13-medium text-text-strong">Nombre</span>
