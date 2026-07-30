@@ -243,10 +243,14 @@ export function LeftSidebar() {
               </Show>
             </div>
           </div>
-          {/* Fila de íconos */}
-          <div class="flex items-center gap-1 px-2 pb-1.5">
+          {/* Accesos principales, etiquetados (antes eran iconitos y no se encontraban) */}
+          <div class="flex flex-col gap-1 px-2 pt-0.5">
+            <FooterAction icon="grid-plus" label="Modelos locales" hint="Descargá modelos gratis" onClick={openDiagnostico} />
+            <FooterAction icon="plus" label="Crear agente" hint="Tu asistente a medida" onClick={openCrearAgente} />
+          </div>
+          {/* Fila de íconos secundarios */}
+          <div class="flex items-center gap-1 px-2 pb-1.5 pt-1">
             <FooterIcon icon="settings-gear" label="Ajustes" onClick={() => openSettings()} />
-            <FooterIcon icon="plus" label="Crear agente" onClick={openCrearAgente} />
             <FooterIcon icon="timer" label="Tareas programadas" onClick={openTareas} />
             <FooterIcon icon="monitor" label="Diagnóstico" onClick={openDiagnostico} />
             <FooterIcon icon="help" label="Ayuda" onClick={openHelp} />
@@ -254,6 +258,33 @@ export function LeftSidebar() {
         </div>
       </aside>
     </Show>
+  )
+}
+
+// Botón etiquetado (ícono + texto + hint) para los accesos que antes se perdían.
+function FooterAction(props: {
+  icon: "grid-plus" | "plus"
+  label: string
+  hint: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={props.onClick}
+      class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left transition-colors hover:bg-v2-overlay-simple-overlay-hover"
+    >
+      <span
+        class="flex size-7 shrink-0 items-center justify-center rounded-md"
+        style={{ background: "rgba(236,91,43,0.12)", color: "#EC5B2B" }}
+      >
+        <IconV2 name={props.icon} size="small" />
+      </span>
+      <span class="flex min-w-0 flex-col">
+        <span class="truncate text-13-medium text-v2-text-text-strong">{props.label}</span>
+        <span class="truncate text-11-regular text-v2-text-text-faint">{props.hint}</span>
+      </span>
+    </button>
   )
 }
 

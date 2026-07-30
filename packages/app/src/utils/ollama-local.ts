@@ -102,6 +102,43 @@ export const CATALOGO_LOCAL: ModeloLocal[] = [
   { id: "qwen2.5:0.5b", nombre: "Qwen2.5 0.5B", nota: "El más chico de Qwen", tam: "~398 MB", categoria: "mini" },
   { id: "qwen2.5:1.5b", nombre: "Qwen2.5 1.5B", nota: "Chico y capaz", tam: "~986 MB", categoria: "mini" },
   { id: "phi3.5", nombre: "Phi-3.5 Mini", nota: "Pequeño y actualizado", tam: "~2.2 GB", categoria: "mini" },
+
+  // ── Más opciones (tercera tanda) ──
+  // Programación
+  { id: "opencoder:8b", nombre: "OpenCoder 8B", nota: "Código abierto y capaz", tam: "~4.7 GB", categoria: "codigo" },
+  { id: "yi-coder:9b", nombre: "Yi-Coder 9B", nota: "Código, gran contexto", tam: "~5.0 GB", categoria: "codigo" },
+  { id: "granite-code:20b", nombre: "Granite Code 20B", nota: "Código pro, de IBM", tam: "~12 GB", categoria: "codigo" },
+  { id: "codellama:13b", nombre: "Code Llama 13B", nota: "Código, más grande", tam: "~7.4 GB", categoria: "codigo" },
+  { id: "sqlcoder:7b", nombre: "SQLCoder 7B", nota: "Especialista en SQL", tam: "~4.1 GB", categoria: "codigo" },
+  // Razonamiento
+  { id: "qwen3:4b", nombre: "Qwen3 4B", nota: "Razonamiento liviano", tam: "~2.6 GB", categoria: "razonamiento" },
+  { id: "qwen3:30b", nombre: "Qwen3 30B", nota: "Razonamiento pro (PC potente)", tam: "~18 GB", categoria: "razonamiento" },
+  { id: "phi4-reasoning:14b", nombre: "Phi-4 Reasoning 14B", nota: "Piensa paso a paso, MS", tam: "~11 GB", categoria: "razonamiento" },
+  { id: "deepseek-r1:70b", nombre: "DeepSeek R1 70B", nota: "Razonamiento máximo (PC muy potente)", tam: "~43 GB", categoria: "razonamiento" },
+  // Chat general
+  { id: "llama3.3:70b", nombre: "Llama 3.3 70B", nota: "Tope de Meta (PC muy potente)", tam: "~43 GB", categoria: "chat" },
+  { id: "qwen2.5:14b", nombre: "Qwen2.5 14B", nota: "General, muy capaz", tam: "~9.0 GB", categoria: "chat" },
+  { id: "qwen2.5:32b", nombre: "Qwen2.5 32B", nota: "General pro (PC potente)", tam: "~20 GB", categoria: "chat" },
+  { id: "mistral-small:24b", nombre: "Mistral Small 24B", nota: "General potente", tam: "~14 GB", categoria: "chat" },
+  { id: "command-r:35b", nombre: "Command R 35B", nota: "RAG y herramientas, Cohere", tam: "~20 GB", categoria: "chat" },
+  { id: "granite3.3:8b", nombre: "Granite 3.3 8B", nota: "General, de IBM", tam: "~4.9 GB", categoria: "chat" },
+  { id: "aya-expanse:8b", nombre: "Aya Expanse 8B", nota: "Multilingüe (23 idiomas)", tam: "~5.1 GB", categoria: "chat" },
+  { id: "glm4:9b", nombre: "GLM-4 9B", nota: "General, fuerte en chino/inglés", tam: "~5.5 GB", categoria: "chat" },
+  { id: "hermes3:8b", nombre: "Hermes 3 8B", nota: "General sin filtros, Nous", tam: "~4.7 GB", categoria: "chat" },
+  { id: "dolphin3:8b", nombre: "Dolphin 3 8B", nota: "General, muy servicial", tam: "~4.9 GB", categoria: "chat" },
+  // Visión
+  { id: "qwen2.5vl:3b", nombre: "Qwen2.5 VL 3B", nota: "Visión liviana", tam: "~3.2 GB", categoria: "vision" },
+  { id: "qwen2.5vl:32b", nombre: "Qwen2.5 VL 32B", nota: "Visión pro (PC potente)", tam: "~21 GB", categoria: "vision" },
+  { id: "llava-phi3", nombre: "LLaVA-Phi3", nota: "Visión mini sobre Phi-3", tam: "~2.9 GB", categoria: "vision" },
+  { id: "granite3.2-vision:2b", nombre: "Granite 3.2 Vision 2B", nota: "Visión de documentos, IBM", tam: "~2.4 GB", categoria: "vision" },
+  // Embeddings
+  { id: "granite-embedding:278m", nombre: "Granite Embedding 278M", nota: "Embeddings de IBM", tam: "~563 MB", categoria: "embeddings" },
+  { id: "paraphrase-multilingual", nombre: "Paraphrase Multilingual", nota: "Embeddings multi-idioma", tam: "~563 MB", categoria: "embeddings" },
+  // Mini
+  { id: "qwen3:0.6b", nombre: "Qwen3 0.6B", nota: "Diminuto y moderno", tam: "~523 MB", categoria: "mini" },
+  { id: "qwen3:1.7b", nombre: "Qwen3 1.7B", nota: "Chico y capaz", tam: "~1.4 GB", categoria: "mini" },
+  { id: "smollm2:360m", nombre: "SmolLM2 360M", nota: "Ínfimo, para probar", tam: "~726 MB", categoria: "mini" },
+  { id: "granite3.1-moe:1b", nombre: "Granite 3.1 MoE 1B", nota: "Mini mezcla de expertos", tam: "~1.4 GB", categoria: "mini" },
 ]
 
 // Top picks para el onboarding de bienvenida (no abrumar al recién llegado).

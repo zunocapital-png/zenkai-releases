@@ -109,6 +109,7 @@ type ModelItem = ReturnType<ModelState["list"]>[number]
 
 const modelKey = (model: ModelItem) => `${model.provider.id}:${model.id}`
 const manageKey = "action:manage"
+const descargarKey = "action:descargar"
 
 // Solo mostramos modelos USABLES ya: locales (Ollama…), sin API (Auto/gateway) o de nube CON key conectada.
 // Los de nube sin conectar se agregan desde "Conectar proveedor" — así el selector no marea ni falla con Unauthorized.
@@ -345,7 +346,7 @@ export function ModelSelectorPopoverV2(props: {
       (a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category),
     )
   })
-  const keys = () => [...models().map(modelKey), manageKey]
+  const keys = () => [...models().map(modelKey), descargarKey, manageKey]
   const current = () => {
     const value = model.current()
     return value ? `${value.provider.id}:${value.id}` : undefined
@@ -400,13 +401,23 @@ export function ModelSelectorPopoverV2(props: {
       })
     })
   }
+  const descargar = () => {
+    restoreTrigger = false
+    setOpen(false)
+    afterClose(() => {
+      void import("./dialog-diagnostico").then((x) => {
+        dialog.show(() => <x.DialogDiagnostico />)
+      })
+    })
+  }
   const selectActive = () => {
     const item = models().find((item) => modelKey(item) === store.active)
     if (item) {
       selectModel(item)
       return
     }
-    if (store.active === manageKey) manage()
+    if (store.active === descargarKey) descargar()
+    else if (store.active === manageKey) manage()
   }
   const moveActive = (delta: number) => {
     const options = keys()
@@ -566,6 +577,18 @@ export function ModelSelectorPopoverV2(props: {
           </ScrollView>
           <div class="h-px bg-v2-border-border-muted" />
           <div class="flex flex-col p-0.5">
+            <MenuV2.Item
+              data-option-key={descargarKey}
+              classList={{ "!bg-v2-overlay-simple-overlay-hover": store.active === descargarKey }}
+              onMouseEnter={() => {
+                setStore("active", descargarKey)
+                setTimeout(() => searchRef?.focus())
+              }}
+              onSelect={descargar}
+            >
+              <Icon name="grid-plus" size="small" />
+              <span class="min-w-0 flex-1 truncate leading-5">Descargar modelos locales (gratis)</span>
+            </MenuV2.Item>
             <MenuV2.Item
               data-option-key={manageKey}
               classList={{ "!bg-v2-overlay-simple-overlay-hover": store.active === manageKey }}
