@@ -358,6 +358,12 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       (x) => dialog.show(() => <x.DialogEstadoIntegral />),
     )
   }
+  const zenkaiSetup = () => {
+    void openDialog(
+      () => import("@/components/dialog-oneclick-setup"),
+      (x) => dialog.show(() => <x.DialogOneClickSetup />),
+    )
+  }
 
   const toggleAutoAccept = () => {
     const sessionID = params.id
@@ -737,6 +743,13 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: "Modelos, MCPs, agentes, upstreams, proveedores nube con estado real",
       slash: "estado",
       onSelect: zenkaiEstadoIntegral,
+    }),
+    mcpCommand({
+      id: "zenkai.setup",
+      title: "Setup en un click",
+      description: "Escanea PC, sugiere modelo, links a nube gratis, todo en 3 pasos",
+      slash: "setup",
+      onSelect: zenkaiSetup,
     }),
   ]
 
