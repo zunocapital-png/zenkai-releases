@@ -322,6 +322,12 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       (x) => dialog.show(() => <x.DialogCapacidades />),
     )
   }
+  const zenkaiEvolution = () => {
+    void openDialog(
+      () => import("@/components/dialog-evolution"),
+      (x) => dialog.show(() => <x.DialogEvolution />),
+    )
+  }
 
   const toggleAutoAccept = () => {
     const sessionID = params.id
@@ -659,6 +665,13 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: "Ver las capabilities agrupadas por categoría",
       slash: "capacidades",
       onSelect: zenkaiCapacidades,
+    }),
+    mcpCommand({
+      id: "zenkai.evolution",
+      title: "Evolution Engine",
+      description: "Propuestas de mejora en base al estado real del sistema",
+      slash: "evolution",
+      onSelect: zenkaiEvolution,
     }),
   ]
 
