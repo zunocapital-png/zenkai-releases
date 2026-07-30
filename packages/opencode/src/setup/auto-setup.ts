@@ -376,6 +376,43 @@ function defaultConfig(model: string): string {
         command: ["npx", "-y", "@modelcontextprotocol/server-sqlite"],
         enabled: false,
       },
+      // ── MCPs adicionales SIN KEY (todos gratis, sin cuenta) ─────────────
+      // DuckDuckGo: búsqueda web sin API key. Alternativa a Google que sí
+      // pide key. La IA puede buscar antes de responder.
+      "duckduckgo-search": {
+        type: "local",
+        command: ["npx", "-y", "duckduckgo-mcp-server"],
+        enabled: true,
+      },
+      // Weather: clima actual + pronóstico. Usa open-meteo (sin key). "¿Cómo
+      // va a estar mañana en Rosario?"
+      weather: {
+        type: "local",
+        command: ["npx", "-y", "@timlukahorstmann/mcp-weather"],
+        enabled: true,
+      },
+      // Wikipedia: buscar y traer artículos. Sin key. Útil para contexto
+      // enciclopédico antes de generar contenido.
+      wikipedia: {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-wikipedia"],
+        enabled: false,
+      },
+      // YouTube: buscar videos + traer transcripciones. Sin key. "Resumime
+      // este video: <url>"
+      youtube: {
+        type: "local",
+        command: ["npx", "-y", "@anaisbetts/mcp-youtube"],
+        enabled: false,
+      },
+      // Playwright: automatización de navegador multi-engine (Chrome/Firefox/
+      // Safari). Alternativa moderna a puppeteer. Apagado por defecto porque
+      // descarga navegadores al primer uso.
+      playwright: {
+        type: "local",
+        command: ["npx", "-y", "@playwright/mcp"],
+        enabled: false,
+      },
     },
   }
   // Control de PC (experimental): el desktop expone la ruta del MCP propio por env.

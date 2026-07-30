@@ -19,7 +19,9 @@ import { useServerSync } from "@/context/server-sync"
 // - Atajos: la lista antigua era decorativa (los rebinds no se aplicaban).
 // - Performance: el panel no recibía datos reales — era relleno visual.
 const LazyThemeEditor = lazy(() => import("@/components/theme-editor").then((m) => ({ default: m.ThemeEditor })))
-const LazyPluginMarketplace = lazy(() => import("@/components/plugin-marketplace").then((m) => ({ default: m.PluginMarketplace })))
+// Nuevo panel unificado: MCP (herramientas de la IA con explicación) + Plugins
+// (marketplace comunidad). Reemplaza el marketplace legacy que era técnico.
+const LazyPanelMcpPlugins = lazy(() => import("@/components/panel-mcp-plugins").then((m) => ({ default: m.PanelMcpPlugins })))
 
 export const DialogSettings: Component<{
   sessionID?: string
@@ -125,7 +127,7 @@ export const DialogSettings: Component<{
           <LazyThemeEditor />
         </TabsV2.Content>
         <TabsV2.Content value="plugins" class="settings-v2-panel">
-          <LazyPluginMarketplace />
+          <LazyPanelMcpPlugins />
         </TabsV2.Content>
         <TabsV2.Content value="about" class="settings-v2-panel">
           <div class="flex flex-col items-center gap-6 py-8 px-4">

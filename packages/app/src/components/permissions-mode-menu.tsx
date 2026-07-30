@@ -1,4 +1,4 @@
-import { createEffect, createSignal, For, Show } from "solid-js"
+import { createEffect, createSignal, For, onCleanup, onMount, Show } from "solid-js"
 import { MenuV2 } from "@opencode-ai/ui/v2/menu-v2"
 import { useSettings } from "@/context/settings"
 
@@ -145,6 +145,23 @@ export function PermissionsModeMenu() {
     } catch {
       /* ignore */
     }
+  })
+
+  // Hotkey Shift+Tab: cicla entre los 4 modos (como los CLIs modernos). Se ignora
+  // cuando el foco está en un input/editor para no romper la navegación normal.
+  const ORDEN: ModoPermiso[] = ["manual", "aceptar", "plan", "omitir"]
+  onMount(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!e.shiftKey || e.key !== "Tab") return
+      const target = e.target as HTMLElement | null
+      if (target?.matches("input, textarea, [contenteditable='true']")) return
+      e.preventDefault()
+      const idx = ORDEN.indexOf(modo())
+      const next = ORDEN[(idx + 1) % ORDEN.length]
+      setModo(next)
+    }
+    window.addEventListener("keydown", handler)
+    onCleanup(() => window.removeEventListener("keydown", handler))
   })
 
   const opcionActual = () => OPCIONES.find((o) => o.id === modo()) ?? OPCIONES[0]

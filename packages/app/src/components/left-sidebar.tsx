@@ -15,6 +15,7 @@ import { errorMessage } from "@/pages/layout/helpers"
 import { sessionTitle } from "@/utils/session-title"
 import { showToast } from "@/utils/toast"
 import { ZenkaiLogoMark } from "@/components/zenkai-logo"
+import { confirmarDialog } from "@/components/dialog-confirmar"
 
 // ─── Estado colapsado COMPARTIDO (el toggle vive en el titlebar) ───
 const STORAGE_KEY = "zenkai.leftSidebar.collapsed"
@@ -231,16 +232,15 @@ export function LeftSidebar() {
                         ? projects.selection.value().server === ServerConnection.key(s) &&
                           projects.selection.value().directory === proyecto.worktree
                         : false
-                    const cerrar = (e: MouseEvent) => {
+                    const cerrar = async (e: MouseEvent) => {
                       e.stopPropagation()
                       e.preventDefault()
                       if (!s) return
-                      const ok =
-                        typeof window === "undefined"
-                          ? true
-                          : window.confirm(
-                              `¿Quitar "${displayName(proyecto)}" de la lista? La carpeta en disco NO se borra.`,
-                            )
+                      const ok = await confirmarDialog(dialog, {
+                        titulo: "Quitar proyecto",
+                        mensaje: `¿Quitar "${displayName(proyecto)}" de la lista? La carpeta en disco NO se borra, solo desaparece del sidebar.`,
+                        confirmTexto: "Quitar de la lista",
+                      })
                       if (ok) projects.project.close(s, proyecto.worktree)
                     }
                     return (
@@ -457,6 +457,7 @@ function SessionRow(props: {
   onRename: (title: string) => void
   onDelete: () => void
 }) {
+  const dlg = useDialog()
   const title = createMemo(() => sessionTitle(props.record.session.title) || "Nuevo chat")
   const active = createMemo(() => props.sessions.tab.isOpen(props.record))
   const [editing, setEditing] = createSignal(false)
@@ -471,8 +472,13 @@ function SessionRow(props: {
     setEditing(false)
     props.onRename(draft())
   }
-  const confirmDelete = () => {
-    const ok = typeof window === "undefined" ? true : window.confirm(`¿Borrar "${title()}"? Esta acción no se puede deshacer.`)
+  const confirmDelete = async () => {
+    const ok = await confirmarDialog(dlg, {
+      titulo: "Borrar chat",
+      mensaje: `¿Borrar "${title()}"? Esta acción no se puede deshacer.`,
+      confirmTexto: "Borrar",
+      peligro: true,
+    })
     if (ok) props.onDelete()
   }
 
