@@ -5,7 +5,7 @@ import { Icon } from "@opencode-ai/ui/v2/icon"
 import { KeybindV2 } from "@opencode-ai/ui/v2/keybind-v2"
 import { TooltipV2 } from "@opencode-ai/ui/v2/tooltip-v2"
 import type { ReferenceInfo } from "@opencode-ai/sdk/v2/client"
-import { createEffect, createMemo, createSignal, on, Show } from "solid-js"
+import { createEffect, createMemo, createSignal, type JSX, on, Show } from "solid-js"
 import { modeloAutoResuelto } from "@/utils/ollama-local"
 import { ModelSelectorPopoverV2 } from "@/components/dialog-select-model"
 import { DialogSelectModelUnpaidV2 } from "@/components/dialog-select-model-unpaid-v2"
@@ -43,6 +43,62 @@ export type PromptInputV2ComposerProps = {
 export type PromptInputV2ControllerProps = Omit<PromptInputProps, "class" | "submission">
 export type PromptInputV2ComposerController = PromptInputV2Interaction & {
   readonly model: PromptInputProps["controls"]["model"]
+}
+
+// Íconos de línea (SVG inline): el sprite v2 es chico, así que dibujamos los propios para
+// no depender de emojis. 18px, stroke currentColor.
+const svg = (path: JSX.Element) => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    {path}
+  </svg>
+)
+const IcoPlus = () => svg(<><path d="M12 5v14" /><path d="M5 12h14" /></>)
+const IcoPlug = () =>
+  svg(<><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1" /><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1" /></>)
+const IcoImage = () => svg(<><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-5-5L5 21" /></>)
+const IcoSkills = () =>
+  svg(<><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></>)
+const IcoPalette = () =>
+  svg(<><circle cx="12" cy="12" r="9" /><circle cx="8.5" cy="10" r="1" /><circle cx="12" cy="8" r="1" /><circle cx="15.5" cy="10" r="1" /></>)
+
+function ComposerMasMenu(props: { onConectar: () => void; onImagen: () => void; onSkills: () => void; onDisenos: () => void }) {
+  const [open, setOpen] = createSignal(false)
+  const item = (icon: JSX.Element, label: string, desc: string, onClick: () => void) => (
+    <button
+      type="button"
+      onClick={() => {
+        setOpen(false)
+        onClick()
+      }}
+      class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-v2-overlay-simple-overlay-hover"
+    >
+      <span class="flex size-7 shrink-0 items-center justify-center rounded-md text-orange-500" style={{ background: "rgba(236,91,43,0.12)" }}>
+        {icon}
+      </span>
+      <span class="flex min-w-0 flex-col">
+        <span class="text-13-medium text-v2-text-text-strong">{label}</span>
+        <span class="text-11-regular text-v2-text-text-faint">{desc}</span>
+      </span>
+    </button>
+  )
+  return (
+    <div class="relative shrink-0">
+      <ButtonV2 variant="ghost-muted" size="normal" class="![font-weight:440]" style={{ height: "28px" }} onClick={() => setOpen((v) => !v)}>
+        <span class="flex items-center gap-1">
+          <IcoPlus /> Más
+        </span>
+      </ButtonV2>
+      <Show when={open()}>
+        <div class="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+        <div class="absolute bottom-full right-0 z-50 mb-1.5 w-64 rounded-xl border border-v2-border-border-base bg-v2-background-bg-layer-02 p-1 shadow-2xl">
+          {item(<IcoPlug />, "Conectar API", "Conectá una key de nube", props.onConectar)}
+          {item(<IcoImage />, "Generar imagen", "Local o por API de nube", props.onImagen)}
+          {item(<IcoSkills />, "Skills (MCP)", "Más capacidades para la IA", props.onSkills)}
+          {item(<IcoPalette />, "Galería de diseño", "Web, app, 3D con preview", props.onDisenos)}
+        </div>
+      </Show>
+    </div>
+  )
 }
 
 export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
@@ -114,55 +170,12 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
                 dialog.show(() => <DialogSelectModelUnpaidV2 model={props.controller.model.selection} />)
               }
             />
-            <TooltipV2 placement="top" gutter={4} value="Conectar una API key">
-              <ButtonV2
-                data-action="prompt-connect-provider"
-                data-control-type="dialog"
-                variant="ghost-muted"
-                size="normal"
-                class="shrink-0 ![font-weight:440]"
-                style={{ height: "28px" }}
-                onClick={connectProvider}
-              >
-                🔌 Conectar API
-              </ButtonV2>
-            </TooltipV2>
-            <TooltipV2 placement="top" gutter={4} value="Generar una imagen (local)">
-              <ButtonV2
-                data-control-type="dialog"
-                variant="ghost-muted"
-                size="normal"
-                class="shrink-0 ![font-weight:440]"
-                style={{ height: "28px" }}
-                onClick={openImagenes}
-              >
-                🖼 Imagen
-              </ButtonV2>
-            </TooltipV2>
-            <TooltipV2 placement="top" gutter={4} value="Conectores MCP (darle más capacidades a la IA)">
-              <ButtonV2
-                data-control-type="dialog"
-                variant="ghost-muted"
-                size="normal"
-                class="shrink-0 ![font-weight:440]"
-                style={{ height: "28px" }}
-                onClick={openMcp}
-              >
-                🧩 Skills
-              </ButtonV2>
-            </TooltipV2>
-            <TooltipV2 placement="top" gutter={4} value="Galería de diseño (web, app, 3D) con prompts listos">
-              <ButtonV2
-                data-control-type="dialog"
-                variant="ghost-muted"
-                size="normal"
-                class="shrink-0 ![font-weight:440]"
-                style={{ height: "28px" }}
-                onClick={openDisenos}
-              >
-                🎨 Diseños
-              </ButtonV2>
-            </TooltipV2>
+            <ComposerMasMenu
+              onConectar={connectProvider}
+              onImagen={openImagenes}
+              onSkills={openMcp}
+              onDisenos={openDisenos}
+            />
           </>
         }
       />
