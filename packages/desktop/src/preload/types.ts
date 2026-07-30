@@ -110,6 +110,7 @@ export type ElectronAPI = {
   recordFatalRendererError: (error: FatalRendererError) => Promise<void>
   analyzeHardware: () => Promise<{
     ramGB: number
+    freeRamGB: number
     cpuModel: string
     cpuCores: number
     gpuName: string | null

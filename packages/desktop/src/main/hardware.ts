@@ -11,6 +11,7 @@ const execFileAsync = promisify(execFile)
 
 export type HardwareInfo = {
   ramGB: number
+  freeRamGB: number
   cpuModel: string
   cpuCores: number
   gpuName: string | null
@@ -64,10 +65,12 @@ async function detectGpuName(): Promise<string | null> {
 export async function analyzeHardware(): Promise<HardwareInfo> {
   const cpus = os.cpus()
   const ramGB = Math.round((os.totalmem() / 1024 ** 3) * 10) / 10
+  const freeRamGB = Math.round((os.freemem() / 1024 ** 3) * 10) / 10
   const nvidia = await detectNvidia()
   const gpuName = nvidia?.name ?? (await detectGpuName())
   return {
     ramGB,
+    freeRamGB,
     cpuModel: cpus[0]?.model?.trim() ?? "Desconocido",
     cpuCores: cpus.length,
     gpuName: gpuName ?? null,

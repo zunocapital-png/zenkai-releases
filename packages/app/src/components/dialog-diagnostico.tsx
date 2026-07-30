@@ -91,7 +91,7 @@ export function DialogDiagnostico() {
   }
   const presupuesto = () => {
     const h = hw()
-    return h ? presupuestoGB(h.ramGB, h.vramGB) : undefined
+    return h ? presupuestoGB(h.ramGB, h.vramGB, h.freeRamGB) : undefined
   }
   const [ollama, setOllama] = createSignal<Estado>("loading")
   const [modelosOllama, setModelosOllama] = createSignal<string[]>([])
@@ -316,7 +316,8 @@ export function DialogDiagnostico() {
                       <div class="flex flex-col gap-2">
                         <div class="flex flex-col gap-0.5 text-12-regular text-text-muted">
                           <span>
-                            🧠 RAM: <span class="text-text-strong">{h().ramGB} GB</span> · ⚙️ CPU:{" "}
+                            🧠 RAM: <span class="text-text-strong">{h().ramGB} GB</span> (libre{" "}
+                            <span class="text-text-strong">{h().freeRamGB} GB</span>) · ⚙️ CPU:{" "}
                             <span class="text-text-strong">{h().cpuCores} núcleos</span>
                           </span>
                           <span>

@@ -128,10 +128,13 @@ export function advertenciaPc(tam: string, ramGB: number | undefined): string | 
   return parseGB(tam) >= 5 ? "Tu PC puede quedar justa para este modelo" : undefined
 }
 
-// Presupuesto de memoria para modelos locales: si hay GPU dedicada, el modelo corre
-// mejor en VRAM; si no, usamos ~60% de la RAM del sistema.
-export function presupuestoGB(ramGB: number, vramGB: number | null): number {
-  return vramGB && vramGB > 0 ? vramGB : Math.max(0, ramGB * 0.6)
+// Presupuesto de memoria para modelos locales. Si hay GPU dedicada, el modelo corre
+// mejor en VRAM. Si no, usamos la RAM LIBRE real (menos un colchón para el SO) — más
+// honesto que un % de la RAM total, que ignora lo que el SO/navegador ya consumen.
+export function presupuestoGB(ramGB: number, vramGB: number | null, freeRamGB?: number): number {
+  if (vramGB && vramGB > 0) return vramGB
+  if (typeof freeRamGB === "number" && freeRamGB > 0) return Math.max(0, freeRamGB - 1)
+  return Math.max(0, ramGB * 0.6)
 }
 
 // Un modelo "entra" si su tamaño cabe cómodo (~90%) en el presupuesto.

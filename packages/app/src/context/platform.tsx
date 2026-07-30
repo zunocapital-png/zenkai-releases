@@ -143,6 +143,7 @@ type PlatformBase = {
 /** Specs de la PC para recomendar modelos locales. */
 export type HardwareInfo = {
   ramGB: number
+  freeRamGB: number
   cpuModel: string
   cpuCores: number
   gpuName: string | null
