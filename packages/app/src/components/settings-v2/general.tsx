@@ -276,14 +276,9 @@ export const SettingsGeneralV2: Component<{
           />
         </SettingsRowV2>
 
-        <SettingsRowV2
-          title={language.t("command.permissions.autoaccept.enable")}
-          description={language.t("toast.permissions.autoaccept.on.description")}
-        >
-          <div data-action="settings-auto-accept-permissions">
-            <Switch checked={accepting()} disabled={!dir()} onChange={toggleAccept} />
-          </div>
-        </SettingsRowV2>
+        {/* "Aceptar permisos automáticamente" se movió al menú desplegable
+            del compositor (junto al botón Enviar) — como Claude. Acá quedaba
+            duplicado y sin visibilidad. */}
 
         <SettingsRowV2
           title={language.t("settings.general.row.shell.title")}

@@ -106,9 +106,12 @@ export function PromptInputV2(props: PromptInputV2Props) {
       <form
         data-component="prompt-input-v2"
         data-dock-border-underlay={props.borderUnderlay ? "v2" : undefined}
-        class="group/prompt-input relative min-h-[96px] w-full rounded-xl bg-v2-background-bg-base"
+        // El compositor tiene bg-layer-01 + borde naranja tenue para
+        // DESTACAR sobre el chat (que usa bg-base). Antes ambos compartían el
+        // mismo tono y no se distinguían.
+        class="group/prompt-input relative min-h-[96px] w-full rounded-xl bg-v2-background-bg-layer-01 border border-[rgba(236,91,43,0.18)]"
         classList={{
-          "shadow-[var(--v2-elevation-raised)]": !props.borderUnderlay,
+          "shadow-[0_-8px_24px_-8px_rgba(236,91,43,0.15),var(--v2-elevation-raised)]": !props.borderUnderlay,
           "border border-v2-icon-icon-info border-dashed": state.drag === "active",
         }}
         onSubmit={(event) => {

@@ -99,6 +99,58 @@ function summaryDiff(value: SnapshotFileDiff): value is SummaryDiff {
 
 const hidden = new Set(["todowrite"])
 
+// Firma ZENKAI que aparece al final de cada respuesta terminada del asistente
+// (como el ícono de Claude al cerrar un mensaje). El logo pixel `>|` con un
+// fade-in + glow naranja suave. No es interactivo — es identidad de marca.
+function ZenkaiEndcap() {
+  return (
+    <div
+      class="mt-2 flex items-center gap-1.5 opacity-70"
+      style={{ animation: "zenkai-endcap-in 500ms ease-out both" }}
+      aria-hidden="true"
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 12 12"
+        shape-rendering="crispEdges"
+        fill="#EC5B2B"
+        style={{ filter: "drop-shadow(0 0 6px rgba(236,91,43,0.55))" }}
+      >
+        {[
+          [1, 3], [2, 3],
+          [1, 4], [2, 4], [3, 4],
+          [2, 5], [3, 5], [4, 5],
+          [3, 6], [4, 6], [5, 6],
+          [4, 7], [5, 7], [6, 7],
+          [3, 8], [4, 8], [5, 8],
+          [2, 9], [3, 9], [4, 9],
+          [1, 10], [2, 10], [3, 10],
+          [1, 11], [2, 11],
+          [8, 3], [9, 3],
+          [8, 4], [9, 4],
+          [8, 5], [9, 5],
+          [8, 6], [9, 6],
+          [8, 7], [9, 7],
+          [8, 8], [9, 8],
+          [8, 9], [9, 9],
+          [8, 10], [9, 10],
+          [8, 11], [9, 11],
+        ].map(([x, y]) => (
+          <rect x={x} y={y} width="1" height="1" />
+        ))}
+      </svg>
+      <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-v2-text-text-faint">zenkai</span>
+      <style>{`
+        @keyframes zenkai-endcap-in {
+          0% { opacity: 0; transform: translateY(4px); }
+          100% { opacity: 0.7; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 function partState(part: PartType, showReasoningSummaries: boolean) {
   if (part.type === "tool") {
     if (hidden.has(part.tool)) return
@@ -417,6 +469,11 @@ export function SessionTurn(
                     shellToolDefaultOpen={props.shellToolDefaultOpen}
                     editToolDefaultOpen={props.editToolDefaultOpen}
                   />
+                  {/* Firma ZENKAI al final de la respuesta terminada — como Claude
+                      pone su ícono cuando termina. Solo cuando `working` es false. */}
+                  <Show when={!working()}>
+                    <ZenkaiEndcap />
+                  </Show>
                 </div>
               </Show>
               <Show when={showThinking()}>

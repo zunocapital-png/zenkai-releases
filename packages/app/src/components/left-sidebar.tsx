@@ -7,7 +7,10 @@ import type { Session } from "@opencode-ai/sdk/v2/client"
 import { useSettingsCommand } from "@/components/settings-dialog"
 import { getAuthInfo } from "@/auth/license-manager"
 import { createHomeController } from "@/pages/home/home-controller"
+import { createHomeProjectsController } from "@/pages/home/home-projects-controller"
 import { createHomeSessionsController, type HomeSessionRecord } from "@/pages/home/home-sessions-controller"
+import { displayName } from "@/pages/layout/helpers"
+import { ServerConnection } from "@/context/server"
 import { errorMessage } from "@/pages/layout/helpers"
 import { sessionTitle } from "@/utils/session-title"
 import { showToast } from "@/utils/toast"
@@ -44,8 +47,14 @@ export function toggleLeftSidebar() {
 export function LeftSidebar() {
   const home = createHomeController()
   const sessions = createHomeSessionsController(home)
+  const projects = createHomeProjectsController(home)
   const openSettings = useSettingsCommand()
   const dialog = useDialog()
+
+  // Sección Proyectos del sidebar (colapsable, como HOY).
+  const [proyectosColapsados, setProyectosColapsados] = createSignal(false)
+  const listaProyectos = createMemo(() => projects.project.list())
+  const servidorActivo = () => projects.server.list()[0]
 
   const [query] = createSignal("")
   // Grupos de días colapsables (como Claude): guardamos los títulos ocultos.
@@ -151,17 +160,142 @@ export function LeftSidebar() {
           <span class="ml-2 text-13-medium tracking-wide text-v2-text-text-strong">ZENKAI</span>
         </div>
 
-        {/* Nuevo chat */}
-        <div class="shrink-0 px-2 pb-2">
+        {/* Dos accesos INDEPENDIENTES lado a lado: Nuevo chat + Proyectos.
+            Iguales de tamaño, con identidad visual propia. El de proyectos
+            despliega la lista debajo al click. */}
+        <div class="shrink-0 grid grid-cols-2 gap-1.5 px-2 pb-2">
           <button
             type="button"
-            class="flex w-full items-center gap-2 rounded-lg border border-v2-border-border-muted px-2.5 py-2 text-left text-14-medium text-v2-text-text-strong transition-colors hover:border-[#EC5B2B]/50 hover:bg-[#EC5B2B]/8 disabled:opacity-40 disabled:pointer-events-none"
+            class="flex flex-col items-center justify-center gap-1 rounded-lg border border-v2-border-border-muted px-2 py-2.5 text-center transition-all hover:border-[#EC5B2B]/50 hover:bg-[#EC5B2B]/8 disabled:opacity-40 disabled:pointer-events-none"
             disabled={!sessions.session.canCreate()}
             onClick={() => sessions.session.create()}
+            title="Nuevo chat (Ctrl+N)"
           >
             <IconV2 name="edit" size="small" style={{ color: "#EC5B2B" }} />
-            <span class="min-w-0 flex-1 truncate">Nuevo chat</span>
+            <span class="text-[11px] font-medium text-v2-text-text-strong">Nuevo chat</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setProyectosColapsados((v) => !v)}
+            class="flex flex-col items-center justify-center gap-1 rounded-lg border border-v2-border-border-muted px-2 py-2.5 text-center transition-all hover:border-[#EC5B2B]/50 hover:bg-[#EC5B2B]/8"
+            title={proyectosColapsados() ? "Ver proyectos" : "Ocultar proyectos"}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EC5B2B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            </svg>
+            <span class="text-[11px] font-medium text-v2-text-text-strong flex items-center gap-1">
+              Proyectos
+              <span class="text-[9px] text-v2-text-text-faint">({listaProyectos().length})</span>
+            </span>
+          </button>
+        </div>
+
+        {/* Lista desplegable de proyectos — solo cuando el usuario hace click
+            en la card "Proyectos". Botón "+" para agregar carpeta. */}
+        <div class="shrink-0 px-2 pb-2">
+          <Show when={!proyectosColapsados() && listaProyectos().length > 0}>
+            <div class="flex items-center justify-between px-1 pb-1">
+              <span class="text-[10px] font-medium uppercase tracking-wider text-v2-text-text-faint">
+                Carpetas activas
+              </span>
+              <Show when={servidorActivo()}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const s = servidorActivo()
+                    if (s) projects.project.choose(s)
+                  }}
+                  title="Agregar carpeta"
+                  aria-label="Agregar carpeta"
+                  class="flex size-5 items-center justify-center rounded-md text-v2-icon-icon-muted hover:bg-v2-overlay-simple-overlay-hover hover:text-[#EC5B2B]"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
+              </Show>
+            </div>
+          </Show>
+          <Show when={!proyectosColapsados()}>
+            <div class="flex flex-col gap-0.5 pt-1">
+              <Show
+                when={listaProyectos().length > 0}
+                fallback={
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const s = servidorActivo()
+                      if (s) projects.project.choose(s)
+                    }}
+                    class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-13-regular text-v2-text-text-faint hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base"
+                  >
+                    <span class="text-[#EC5B2B]">+</span>
+                    <span>Agregar carpeta</span>
+                  </button>
+                }
+              >
+                <For each={listaProyectos()}>
+                  {(proyecto) => {
+                    const s = servidorActivo()
+                    const sel = () =>
+                      s
+                        ? projects.selection.value().server === ServerConnection.key(s) &&
+                          projects.selection.value().directory === proyecto.worktree
+                        : false
+                    const cerrar = (e: MouseEvent) => {
+                      e.stopPropagation()
+                      e.preventDefault()
+                      if (!s) return
+                      const ok =
+                        typeof window === "undefined"
+                          ? true
+                          : window.confirm(
+                              `¿Quitar "${displayName(proyecto)}" de la lista? La carpeta en disco NO se borra.`,
+                            )
+                      if (ok) projects.project.close(s, proyecto.worktree)
+                    }
+                    return (
+                      <div
+                        class="group relative flex w-full items-center rounded-md text-13-regular text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base"
+                        classList={{ "bg-v2-overlay-simple-overlay-hover !text-v2-text-text-strong": sel() }}
+                      >
+                        <Show when={sel()}>
+                          <span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full" style={{ "background-color": "#EC5B2B" }} />
+                        </Show>
+                        <button
+                          type="button"
+                          onClick={() => s && projects.project.select(s, proyecto.worktree)}
+                          title={proyecto.worktree}
+                          class="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left"
+                        >
+                          <div
+                            class="flex size-5 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold"
+                            style={{ background: "rgba(236,91,43,0.14)", color: "#EC5B2B" }}
+                          >
+                            {displayName(proyecto).charAt(0).toUpperCase()}
+                          </div>
+                          <span class="min-w-0 flex-1 truncate">{displayName(proyecto)}</span>
+                        </button>
+                        {/* Botón × visible al hover — cierra el proyecto (lo saca de la lista,
+                            no borra el disco). Antes había que hacer right-click. */}
+                        <button
+                          type="button"
+                          onClick={cerrar}
+                          title="Quitar de la lista"
+                          aria-label="Quitar proyecto de la lista"
+                          class="mr-1 flex size-5 shrink-0 items-center justify-center rounded text-v2-icon-icon-muted opacity-0 transition-opacity group-hover:opacity-100 hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-status-text-danger"
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                            <path d="M6 6l12 12M18 6L6 18" />
+                          </svg>
+                        </button>
+                      </div>
+                    )
+                  }}
+                </For>
+              </Show>
+            </div>
+          </Show>
         </div>
 
         {/* Historial */}
@@ -262,15 +396,71 @@ function FooterText(props: { icon: JSX.Element; label: string; onClick: () => vo
   )
 }
 
-// Íconos de línea (SVG inline) para el footer — así no dependemos del sprite ni de emojis.
-const fsvg = (path: JSX.Element) => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    {path}
-  </svg>
+// Íconos PIXEL (8-bit) del footer — mismo lenguaje visual que el logo ZENKAI.
+// Cuadrícula de 12×12 con celdas rectas: nada de curvas ni gradientes. Se dibuja
+// con <rect> discretos para que el look "arcade / terminal" sea consistente con
+// la marca. Escala fija a 15px para que combine con el resto del sidebar.
+type Celda = [number, number] // [x, y] en la grilla 12×12
+function IcoPixel(props: { celdas: Celda[] }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 12 12" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
+      <For each={props.celdas}>
+        {([x, y]) => <rect x={x} y={y} width="1" height="1" />}
+      </For>
+    </svg>
+  )
+}
+// Engranaje 8-bit: cuadrado con "dientes" en las 4 direcciones y hueco central.
+const IcoAjustes = () => (
+  <IcoPixel
+    celdas={[
+      [5, 1], [6, 1],
+      [2, 2], [5, 2], [6, 2], [9, 2],
+      [2, 3], [3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [8, 3], [9, 3],
+      [3, 4], [4, 4], [7, 4], [8, 4],
+      [1, 5], [2, 5], [3, 5], [8, 5], [9, 5], [10, 5],
+      [1, 6], [2, 6], [3, 6], [8, 6], [9, 6], [10, 6],
+      [3, 7], [4, 7], [7, 7], [8, 7],
+      [2, 8], [3, 8], [4, 8], [5, 8], [6, 8], [7, 8], [8, 8], [9, 8],
+      [2, 9], [5, 9], [6, 9], [9, 9],
+      [5, 10], [6, 10],
+    ]}
+  />
 )
-const IcoAjustes = () => fsvg(<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>)
-const IcoTareas = () => fsvg(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>)
-const IcoAyuda = () => fsvg(<><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3" /><path d="M12 17h.01" /></>)
+// Reloj 8-bit: marco cuadrado con dos manecillas y pip central.
+const IcoTareas = () => (
+  <IcoPixel
+    celdas={[
+      [3, 1], [4, 1], [5, 1], [6, 1], [7, 1], [8, 1],
+      [2, 2], [9, 2],
+      [1, 3], [10, 3],
+      [1, 4], [5, 4], [10, 4],
+      [1, 5], [5, 5], [10, 5],
+      [1, 6], [5, 6], [6, 6], [7, 6], [10, 6],
+      [1, 7], [10, 7],
+      [1, 8], [10, 8],
+      [2, 9], [9, 9],
+      [3, 10], [4, 10], [5, 10], [6, 10], [7, 10], [8, 10],
+    ]}
+  />
+)
+// Signo de pregunta 8-bit dentro de un marco.
+const IcoAyuda = () => (
+  <IcoPixel
+    celdas={[
+      [3, 1], [4, 1], [5, 1], [6, 1], [7, 1], [8, 1],
+      [2, 2], [9, 2],
+      [1, 3], [4, 3], [5, 3], [6, 3], [10, 3],
+      [1, 4], [3, 4], [7, 4], [10, 4],
+      [1, 5], [6, 5], [10, 5],
+      [1, 6], [5, 6], [10, 6],
+      [1, 7], [5, 7], [10, 7],
+      [1, 8], [5, 8], [10, 8],
+      [2, 9], [9, 9],
+      [3, 10], [4, 10], [5, 10], [6, 10], [7, 10], [8, 10],
+    ]}
+  />
+)
 
 function SessionRow(props: {
   record: HomeSessionRecord

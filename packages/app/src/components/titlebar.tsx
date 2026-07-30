@@ -159,7 +159,10 @@ export function Titlebar(props: { update?: TitlebarUpdate; debugTools?: { visibl
       data-slot={useV2Titlebar() ? "titlebar-v2" : undefined}
       classList={{
         "shrink-0 relative flex flex-row": true,
-        "h-9 bg-v2-background-bg-deep overflow-visible": useV2Titlebar(),
+        // Antes bg-v2-background-bg-deep (gris) mientras el sidebar usa
+        // bg-v2-background-bg-layer-01 (negro): no combinaban. Unifico ambos al
+        // mismo tono del sidebar para que la interfaz sea continua.
+        "h-9 bg-v2-background-bg-layer-01 overflow-visible": useV2Titlebar(),
         "h-10 bg-background-base overflow-hidden": !useV2Titlebar(),
         "order-last": bottom(),
       }}
@@ -399,6 +402,36 @@ export function Titlebar(props: { update?: TitlebarUpdate; debugTools?: { visibl
                     icon={<IconV2 name="sidebar-right" />}
                     onClick={toggleLeftSidebar}
                     aria-label="Mostrar u ocultar el panel lateral"
+                  />
+                </TooltipV2>
+                {/* Botón Home: vuelve al home SIN cerrar chats. Antes había que
+                    cerrarlos todos para verlo. */}
+                <TooltipV2 placement="bottom" value="Ir al home" class="shrink-0">
+                  <IconButtonV2
+                    type="button"
+                    variant="ghost-muted"
+                    size="large"
+                    class="!w-9 shrink-0"
+                    icon={
+                      <svg width="14" height="14" viewBox="0 0 12 12" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
+                        {[
+                          [5, 1], [6, 1],
+                          [4, 2], [5, 2], [6, 2], [7, 2],
+                          [3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [8, 3],
+                          [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [7, 4], [8, 4], [9, 4],
+                          [1, 5], [2, 5], [9, 5], [10, 5],
+                          [2, 6], [3, 6], [4, 6], [5, 6], [6, 6], [7, 6], [8, 6], [9, 6],
+                          [2, 7], [3, 7], [4, 7], [7, 7], [8, 7], [9, 7],
+                          [2, 8], [3, 8], [4, 8], [7, 8], [8, 8], [9, 8],
+                          [2, 9], [3, 9], [4, 9], [7, 9], [8, 9], [9, 9],
+                          [2, 10], [3, 10], [4, 10], [7, 10], [8, 10], [9, 10],
+                        ].map(([x, y]) => (
+                          <rect x={x} y={y} width="1" height="1" />
+                        ))}
+                      </svg>
+                    }
+                    onClick={() => navigate("/")}
+                    aria-label="Ir al home"
                   />
                 </TooltipV2>
                 <TitlebarTabStrip

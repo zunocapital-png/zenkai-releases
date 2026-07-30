@@ -35,7 +35,12 @@ let server: http.Server | undefined
 // caídos y pagar el timeout completo en cada request). name -> timestamp hasta el que sigue abierto.
 const breaker = new Map<string, number>()
 const COOLDOWN_MS = 30_000
-const PRIMER_BYTE_MS = 8_000 // watchdog: si no llega respuesta en este tiempo, failover
+// Watchdog de primer byte. Antes eran 8s, pero un modelo local recién arrancado
+// (5-7 GB cargando a RAM la primera vez) TARDA 20-40s en emitir el primer token.
+// Con 8s el router abortaba, disparaba el circuit breaker y devolvía 503 sin
+// error visible — el usuario veía "la IA no responde". 60s es holgado sin ser
+// eterno; los upstreams de nube igual responden en < 5s.
+const PRIMER_BYTE_MS = 60_000
 
 function portInUse(port: number, timeoutMs = 600): Promise<boolean> {
   return new Promise((resolve) => {
@@ -53,6 +58,9 @@ function portInUse(port: number, timeoutMs = 600): Promise<boolean> {
 }
 
 // Modelos locales instalados, en orden de preferencia para "auto" (código primero).
+// Preferencia. Ojo: modelos SIN capability "tools" (p.ej. qwen2.5vl vision-only)
+// se filtran a nivel del /api/tags — nunca llegan a matchearse acá, así el auto
+// nunca elige un modelo que después falle silencioso porque el agente pide tools.
 const PREFERENCIA = ["qwen2.5-coder", "qwen3", "qwen2.5", "llama3.1", "deepseek", "mistral", "gemma"]
 
 // Cache corto de tags: en "auto" resolverModelo y handleModels piden /api/tags seguido;
@@ -60,13 +68,21 @@ const PREFERENCIA = ["qwen2.5-coder", "qwen3", "qwen2.5", "llama3.1", "deepseek"
 let tagsCache: { at: number; tags: string[] } | undefined
 const TAGS_TTL_MS = 5_000
 
+// Trae la lista de modelos locales FILTRANDO los que no tienen "tools" en sus
+// capabilities. Modelos vision-only (qwen2.5vl) o solo completion no sirven al
+// agente — si los elegimos, el chat responde vacío y sin error visible.
 async function tagsOllama(): Promise<string[]> {
   if (tagsCache && Date.now() - tagsCache.at < TAGS_TTL_MS) return tagsCache.tags
   try {
     const res = await fetch(`${OLLAMA}/api/tags`, { signal: AbortSignal.timeout(2000) })
     if (!res.ok) return tagsCache?.tags ?? []
-    const data = (await res.json()) as { models?: Array<{ name?: string }> }
-    const tags = (data.models ?? []).map((m) => m?.name).filter((n): n is string => typeof n === "string")
+    const data = (await res.json()) as {
+      models?: Array<{ name?: string; capabilities?: string[] }>
+    }
+    const tags = (data.models ?? [])
+      .filter((m) => Array.isArray(m?.capabilities) && m.capabilities.includes("tools"))
+      .map((m) => m?.name)
+      .filter((n): n is string => typeof n === "string")
     tagsCache = { at: Date.now(), tags }
     return tags
   } catch {
@@ -194,13 +210,66 @@ async function handleChat(req: http.IncomingMessage, res: http.ServerResponse) {
     return
   }
 
+  // Diagnóstico específico: por qué falló todo. Le decimos al usuario la causa
+  // exacta en vez de un mensaje genérico que no lo ayuda a solucionar.
+  const diag = await diagnosticoUpstreams()
   sendJson(res, 503, {
     error: {
-      message:
-        "ZENKAI Auto no encontró un modelo disponible. Descargá un modelo local en Diagnóstico o conectá un proveedor de nube.",
-      type: "no_upstream",
+      message: diag.mensaje,
+      type: diag.tipo,
+      sugerencia: diag.sugerencia,
     },
   })
+}
+
+// Emite el motivo real por el que no hay upstreams: (1) Ollama caído, (2) Ollama
+// corriendo pero sin modelos con capability "tools", (3) todos los upstreams
+// fallaron (nube incluida). Cada caso trae su sugerencia accionable.
+async function diagnosticoUpstreams(): Promise<{ mensaje: string; tipo: string; sugerencia: string }> {
+  // ¿Ollama vivo?
+  let ollamaVivo = false
+  let modelosTotales = 0
+  let modelosConTools = 0
+  try {
+    const r = await fetch(`${OLLAMA}/api/tags`, { signal: AbortSignal.timeout(1500) })
+    if (r.ok) {
+      ollamaVivo = true
+      const data = (await r.json()) as { models?: Array<{ capabilities?: string[] }> }
+      modelosTotales = (data.models ?? []).length
+      modelosConTools = (data.models ?? []).filter(
+        (m) => Array.isArray(m?.capabilities) && m.capabilities.includes("tools"),
+      ).length
+    }
+  } catch {
+    /* Ollama caído */
+  }
+
+  if (!ollamaVivo) {
+    return {
+      tipo: "ollama_offline",
+      mensaje: "Ollama no está corriendo. ZENKAI intenta iniciarlo automáticamente — probá de nuevo en unos segundos.",
+      sugerencia: "Si no arranca, ejecutá 'ollama serve' en una terminal o revisá la sección Diagnóstico.",
+    }
+  }
+  if (modelosTotales === 0) {
+    return {
+      tipo: "sin_modelos",
+      mensaje: "Ollama está corriendo pero no hay ningún modelo instalado.",
+      sugerencia: "Descargá 'qwen3:14b' (recomendado) o 'qwen2.5-coder:7b' desde Diagnóstico → Modelos locales.",
+    }
+  }
+  if (modelosConTools === 0) {
+    return {
+      tipo: "sin_tools",
+      mensaje: `Tenés ${modelosTotales} modelo(s) locales pero ninguno soporta 'tools' — el agente los necesita para funcionar.`,
+      sugerencia: "Descargá 'qwen3:14b' o 'qwen2.5-coder:7b' (soportan tools). Modelos como 'qwen2.5vl' no sirven para el agente.",
+    }
+  }
+  return {
+    tipo: "todos_fallaron",
+    mensaje: "Todos los proveedores (local + nube) fallaron o tardaron demasiado.",
+    sugerencia: "Reintentá en un momento. Si persiste, revisá la conexión y el estado de Ollama en Diagnóstico.",
+  }
 }
 
 // POST /img: recibe { data: base64, mime } y guarda la imagen; devuelve { id }.

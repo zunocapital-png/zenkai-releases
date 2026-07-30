@@ -27,7 +27,8 @@ import { useSync } from "@/context/sync"
 import { createSessionTabs } from "@/pages/session/helpers"
 import { showToast } from "@/utils/toast"
 import { PromptInputV2, type PromptInputV2Suggestion } from "@opencode-ai/session-ui/v2/prompt-input"
-import { SkipPermissionsToggle } from "@/components/skip-permissions-toggle"
+import { PermissionsModeMenu } from "@/components/permissions-mode-menu"
+import { PreflightModelo } from "@/components/preflight-modelo"
 import {
   createPromptInputV2Controller,
   createPromptInputV2State,
@@ -142,6 +143,9 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
 
   return (
     <div class="flex flex-col gap-2">
+      {/* Aviso pre-vuelo: si el modelo local no puede correr el agente, banner
+          amarillo aquí ANTES del compositor. Segunda capa del fail-safe. */}
+      <PreflightModelo />
       <PromptInputV2
         controller={props.controller}
         borderUnderlay={props.borderUnderlay}
@@ -187,7 +191,7 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
         }
       />
       <div class="flex items-center justify-end px-1">
-        <SkipPermissionsToggle />
+        <PermissionsModeMenu />
       </div>
     </div>
   )

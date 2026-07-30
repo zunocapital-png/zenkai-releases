@@ -5,7 +5,6 @@ import { Icon } from "@opencode-ai/ui/icon"
 import { useLanguage } from "@/context/language"
 import { usePlatform } from "@/context/platform"
 import { SettingsGeneralV2 } from "./general"
-import { SettingsPermisosV2 } from "./permisos"
 import { SettingsProvidersV2 } from "./providers"
 import { SettingsModelsV2 } from "./models"
 import "./settings-v2.css"
@@ -15,10 +14,12 @@ import { useLayout } from "@/context/layout"
 import { useTabs } from "@/context/tabs"
 import { useServerSync } from "@/context/server-sync"
 
+// Solo los paneles que HACEN algo real. Se quitaron:
+// - Permisos: ahora es el menú desplegable del compositor (como Claude).
+// - Atajos: la lista antigua era decorativa (los rebinds no se aplicaban).
+// - Performance: el panel no recibía datos reales — era relleno visual.
 const LazyThemeEditor = lazy(() => import("@/components/theme-editor").then((m) => ({ default: m.ThemeEditor })))
-const LazyKeyboardShortcuts = lazy(() => import("@/components/keyboard-shortcuts").then((m) => ({ default: m.KeyboardShortcuts })))
 const LazyPluginMarketplace = lazy(() => import("@/components/plugin-marketplace").then((m) => ({ default: m.PluginMarketplace })))
-const LazyPerformanceMonitor = lazy(() => import("@/components/performance-monitor").then((m) => ({ default: m.PerformanceMonitor })))
 
 export const DialogSettings: Component<{
   sessionID?: string
@@ -66,14 +67,6 @@ export const DialogSettings: Component<{
                       <Icon name="sliders" />
                       {language.t("settings.tab.general")}
                     </TabsV2.Trigger>
-                    <TabsV2.Trigger value="permisos">
-                      <Icon name="shield" />
-                      Permisos
-                    </TabsV2.Trigger>
-                    <TabsV2.Trigger value="shortcuts">
-                      <Icon name="keyboard" />
-                      {language.t("settings.tab.shortcuts")}
-                    </TabsV2.Trigger>
                     <TabsV2.Trigger value="themes">
                       <Icon name="palette" />
                       Themes
@@ -107,34 +100,17 @@ export const DialogSettings: Component<{
                     </TabsV2.Trigger>
                   </div>
                 </div>
-
-                {/* Avanzado: herramientas técnicas, fuera del flujo principal */}
-                <div class="flex flex-col gap-1.5">
-                  <TabsV2.SectionTitle>Avanzado</TabsV2.SectionTitle>
-                  <div class="flex flex-col gap-1.5 w-full">
-                    <TabsV2.Trigger value="performance">
-                      <Icon name="gauge" />
-                      Performance
-                    </TabsV2.Trigger>
-                  </div>
-                </div>
               </div>
             </div>
             <div class="settings-v2-nav-footer">
+              {/* Sin versión visible (regla: nadie tiene que saber la versión). */}
               <span>{language.t("app.name.desktop")}</span>
-              <span>v{platform.version}</span>
               <span class="text-[10px] opacity-50 mt-1">Zuno Company - Maycol Velazquez</span>
             </div>
           </div>
         </TabsV2.List>
         <TabsV2.Content value="general" class="settings-v2-panel">
           <SettingsGeneralV2 sessionID={props.sessionID} />
-        </TabsV2.Content>
-        <TabsV2.Content value="permisos" class="settings-v2-panel">
-          <SettingsPermisosV2 />
-        </TabsV2.Content>
-        <TabsV2.Content value="shortcuts" class="settings-v2-panel">
-          <LazyKeyboardShortcuts />
         </TabsV2.Content>
         <TabsV2.Content value="servers" class="settings-v2-panel">
           <SettingsServersV2 />
@@ -151,9 +127,6 @@ export const DialogSettings: Component<{
         <TabsV2.Content value="plugins" class="settings-v2-panel">
           <LazyPluginMarketplace />
         </TabsV2.Content>
-        <TabsV2.Content value="performance" class="settings-v2-panel">
-          <LazyPerformanceMonitor />
-        </TabsV2.Content>
         <TabsV2.Content value="about" class="settings-v2-panel">
           <div class="flex flex-col items-center gap-6 py-8 px-4">
             <h1
@@ -168,7 +141,7 @@ export const DialogSettings: Component<{
               ZENKAI
             </h1>
             <p class="text-sm text-[var(--v2-text-text-muted)]">AI Coding Assistant</p>
-            <p class="text-xs text-[var(--v2-text-text-base)]">v{platform.version}</p>
+            {/* Sin versión visible. */}
             <div class="w-full max-w-sm border-t border-[var(--v2-border-border-base)] pt-4 mt-2">
               <div class="flex flex-col gap-3 text-center">
                 <div>

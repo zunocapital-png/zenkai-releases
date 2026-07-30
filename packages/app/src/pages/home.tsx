@@ -2,9 +2,6 @@ import { createEffect, createSignal, Show } from "solid-js"
 import { ScrollView } from "@opencode-ai/ui/scroll-view"
 import { useTabs } from "@/context/tabs"
 import { createHomeController } from "./home/home-controller"
-import { createHomeProjectsController } from "./home/home-projects-controller"
-import { HomeUtilityNav } from "./home/home-projects-view"
-import { HomeProjects } from "./home/home-projects"
 import { createHomeScrollController } from "./home/home-scroll-controller"
 import { createHomeSessionSearchController } from "./home/home-session-search-controller"
 import { createHomeSessionsController } from "./home/home-sessions-controller"
@@ -18,7 +15,6 @@ let startupChatOpened = false
 
 export function NewHome() {
   const home = createHomeController()
-  const projects = createHomeProjectsController(home)
   const sessions = createHomeSessionsController(home)
   const search = createHomeSessionSearchController(home, sessions)
   const scroll = createHomeScrollController(sessions.data.groups)
@@ -67,20 +63,11 @@ export function NewHome() {
         onScroll={(event) => scroll.viewport.update(event.currentTarget.scrollTop)}
         onWheel={scroll.viewport.containOuterWheel}
       >
-        <div
-          class={`
-            mx-auto grid min-h-full w-full max-w-[1080px] grid-rows-[auto_minmax(0,1fr)_auto] gap-4 px-3
-            lg:grid-cols-[280px_minmax(0,720px)] lg:grid-rows-1 lg:gap-8 lg:px-6
-          `}
-        >
-          <HomeProjects projects={projects} scroll={scroll} />
+        {/* Home limpio: solo el welcome centrado. Proyectos vive ahora en el
+            sidebar izquierdo (LeftSidebar), y los chats también. No más columnas
+            duplicadas ni panel derecho. */}
+        <div class="mx-auto flex min-h-full w-full max-w-[900px] flex-col px-3 lg:px-6">
           <HomeSessions sessions={sessions} search={search} scroll={scroll} />
-          <HomeUtilityNav
-            class="flex lg:hidden"
-            onOpenSettings={projects.utility.settings}
-            onOpenHelp={projects.utility.help}
-            language={projects.copy.language}
-          />
         </div>
       </ScrollView>
     </div>
