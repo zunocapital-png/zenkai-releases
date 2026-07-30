@@ -4,6 +4,7 @@ import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useServerSDK } from "@/context/server-sdk"
 import { usePlatform } from "@/context/platform"
 import { useQueryClient } from "@tanstack/solid-query"
+import { ScannerPC } from "@/components/scanner-pc"
 import {
   MODELOS_RECOMENDADOS,
   type Descarga,
@@ -90,12 +91,29 @@ export function DialogBienvenida() {
     void import("@/components/dialog-connect-provider").then((x) => dialog.show(() => <x.DialogConnectProvider />))
   }
 
+  // Fase del onboarding: primero corre el scanner pixelado, después muestra la
+  // guía de setup. El scanner es visual: el usuario "ve" que la app conoce su
+  // PC antes de recomendar un modelo.
+  const [faseOnboarding, setFaseOnboarding] = createSignal<"scan" | "setup">("scan")
+
   return (
     <Dialog
       size="large"
       title="Bienvenido a ZENKAI"
       class="w-[min(calc(100vw-40px),640px)] h-[min(calc(100vh-40px),600px)] min-h-0 overflow-hidden"
     >
+      <Show
+        when={faseOnboarding() === "setup"}
+        fallback={
+          <ScannerPC
+            onResultado={(r) => {
+              setRamGB(r.ramGB)
+              setRecomendado(r.modeloSugerido)
+            }}
+            onCerrar={() => setFaseOnboarding("setup")}
+          />
+        }
+      >
       <div class="flex flex-col gap-4 overflow-y-auto p-6 text-14-regular text-text-base">
         <p class="text-14-regular text-text-base">
           ZENKAI programa de dos formas, y podés usar las dos:
@@ -235,6 +253,7 @@ export function DialogBienvenida() {
           </button>
         </div>
       </div>
+      </Show>
     </Dialog>
   )
 }
