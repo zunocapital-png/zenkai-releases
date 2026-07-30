@@ -200,6 +200,43 @@ function applyCodeMetadata(wrapper: HTMLElement, language: string | undefined) {
   else delete wrapper.dataset.codeKind
 }
 
+function ensureCodeHeader(wrapper: HTMLElement, language: string | undefined, labels: CopyLabels) {
+  // Header prominente estilo la imagen: `</> LANGUAGE` a la izquierda + botones a la derecha.
+  // Reutilizable: si ya existe, solo actualiza label y asegura el copy button.
+  let header = wrapper.querySelector<HTMLElement>('[data-slot="markdown-code-header"]')
+  if (!header) {
+    header = document.createElement("div")
+    header.setAttribute("data-slot", "markdown-code-header")
+    // Etiqueta lenguaje.
+    const label = document.createElement("span")
+    label.setAttribute("data-slot", "markdown-code-lang")
+    label.innerHTML = `<span aria-hidden="true">&lt;/&gt;</span> <span data-slot="markdown-code-lang-name"></span>`
+    header.appendChild(label)
+    // Grupo de acciones (copiar + editar + insertar + ejecutar). Cada acción
+    // es un botón con data-action; la UI del chat puede engancharse via evento.
+    const actions = document.createElement("div")
+    actions.setAttribute("data-slot", "markdown-code-actions")
+    actions.appendChild(createCopyButton(labels))
+    for (const [action, glyph, aria] of [
+      ["edit", "✎", "Editar"],
+      ["insert", "[+]", "Insertar"],
+      ["run", "▶", "Ejecutar"],
+    ] as const) {
+      const btn = document.createElement("button")
+      btn.type = "button"
+      btn.setAttribute("data-slot", "markdown-code-action")
+      btn.setAttribute("data-action", action)
+      btn.setAttribute("aria-label", aria)
+      btn.textContent = glyph
+      actions.appendChild(btn)
+    }
+    header.appendChild(actions)
+    wrapper.insertBefore(header, wrapper.firstChild)
+  }
+  const langName = header.querySelector<HTMLElement>('[data-slot="markdown-code-lang-name"]')
+  if (langName) langName.textContent = (language ?? "texto").toUpperCase()
+}
+
 function ensureCodeWrapper(block: HTMLPreElement, labels: CopyLabels) {
   const parent = block.parentElement
   if (!parent) return
@@ -207,24 +244,22 @@ function ensureCodeWrapper(block: HTMLPreElement, labels: CopyLabels) {
   if (!wrapped) {
     const wrapper = document.createElement("div")
     wrapper.setAttribute("data-component", "markdown-code")
-    applyCodeMetadata(wrapper, codeLanguage(block))
+    const language = codeLanguage(block)
+    applyCodeMetadata(wrapper, language)
     parent.replaceChild(wrapper, block)
+    ensureCodeHeader(wrapper, language, labels)
     wrapper.appendChild(block)
-    wrapper.appendChild(createCopyButton(labels))
     return
   }
 
-  applyCodeMetadata(parent, codeLanguage(block))
+  const language = codeLanguage(block)
+  applyCodeMetadata(parent, language)
+  ensureCodeHeader(parent, language, labels)
 
+  // Deduplicar copy buttons si hay más de uno.
   const buttons = Array.from(parent.querySelectorAll('[data-slot="markdown-copy-button"]')).filter(
     (el): el is HTMLButtonElement => el instanceof HTMLButtonElement,
   )
-
-  if (buttons.length === 0) {
-    parent.appendChild(createCopyButton(labels))
-    return
-  }
-
   for (const button of buttons.slice(1)) {
     disposeCopyButton(button)
     button.remove()
@@ -293,20 +328,40 @@ function setupCodeCopy(root: HTMLDivElement, getLabels: () => CopyLabels) {
     const target = event.target
     if (!(target instanceof Element)) return
 
-    const button = target.closest('[data-slot="markdown-copy-button"]')
-    if (!(button instanceof HTMLElement)) return
-    const code = button.closest('[data-component="markdown-code"]')?.querySelector("code")
-    const content = code?.textContent ?? ""
-    if (!content) return
-    const clipboard = navigator?.clipboard
-    if (!clipboard) return
-    await clipboard.writeText(content)
-    const labels = getLabels()
-    setCopyState(button, labels, true)
-    const existing = timeouts.get(button)
-    if (existing) clearTimeout(existing)
-    const timeout = setTimeout(() => setCopyState(button, labels, false), 2000)
-    timeouts.set(button, timeout)
+    // Copy button.
+    const copyBtn = target.closest('[data-slot="markdown-copy-button"]')
+    if (copyBtn instanceof HTMLElement) {
+      const code = copyBtn.closest('[data-component="markdown-code"]')?.querySelector("code")
+      const content = code?.textContent ?? ""
+      if (!content) return
+      const clipboard = navigator?.clipboard
+      if (!clipboard) return
+      await clipboard.writeText(content)
+      const labels = getLabels()
+      setCopyState(copyBtn, labels, true)
+      const existing = timeouts.get(copyBtn)
+      if (existing) clearTimeout(existing)
+      const timeout = setTimeout(() => setCopyState(copyBtn, labels, false), 2000)
+      timeouts.set(copyBtn, timeout)
+      return
+    }
+
+    // Action button (edit / insert / run). Emitimos un CustomEvent que el
+    // compositor escucha para reaccionar (insertar en editor, abrir sandbox, etc).
+    const actionBtn = target.closest('[data-slot="markdown-code-action"]')
+    if (actionBtn instanceof HTMLElement) {
+      const wrapper = actionBtn.closest('[data-component="markdown-code"]')
+      const code = wrapper?.querySelector("code")
+      const content = code?.textContent ?? ""
+      const language = code?.className.match(/language-([^\s]+)/)?.[1] ?? "text"
+      const action = actionBtn.getAttribute("data-action") ?? ""
+      const evt = new CustomEvent("markdown-code-action", {
+        bubbles: true,
+        detail: { action, language, content },
+      })
+      actionBtn.dispatchEvent(evt)
+      return
+    }
   }
 
   const buttons = Array.from(root.querySelectorAll('[data-slot="markdown-copy-button"]'))
@@ -642,6 +697,7 @@ function updateCodeBlock(
   const wrapper = document.createElement("div")
   wrapper.setAttribute("data-component", "markdown-code")
   applyCodeMetadata(wrapper, block.language)
+  ensureCodeHeader(wrapper, block.language, labels)
   const pre = document.createElement("pre")
   pre.className = "shiki OpenCode"
   const codeElement = document.createElement("code")
@@ -649,7 +705,6 @@ function updateCodeBlock(
   ;[...block.stable, ...block.unstable].map(createTokenSpan).forEach((span) => codeElement.appendChild(span))
   pre.appendChild(codeElement)
   wrapper.appendChild(pre)
-  wrapper.appendChild(createCopyButton(labels))
   next.appendChild(wrapper)
   renderedCodeTokens.set(next, {
     language: block.language,

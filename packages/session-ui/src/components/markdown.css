@@ -183,6 +183,129 @@
 
   [data-component="markdown-code"] {
     position: relative;
+    /* Bloque completo con marco integrado: header pegado al pre sin gap. */
+    margin: 14px 0 20px;
+    border: 1px solid var(--v2-border-border-muted, #2a2a2a);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--v2-background-bg-layer-01, #0f0f0f);
+  }
+
+  /* Header prominente estilo la imagen: `</> LANGUAGE` a la izquierda,
+     acciones a la derecha, siempre visible (no espera hover). */
+  [data-slot="markdown-code-header"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px 8px 14px;
+    background: linear-gradient(180deg, rgba(255, 107, 53, 0.06), transparent),
+      var(--v2-background-bg-layer-02, #151515);
+    border-bottom: 1px solid var(--v2-border-border-muted, #2a2a2a);
+    font-family: var(--font-family-mono);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  [data-slot="markdown-code-lang"] {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--v2-text-text-muted, #999);
+    font-weight: 600;
+  }
+  [data-slot="markdown-code-lang"] > span:first-child {
+    color: var(--v2-orange, #ff6b35);
+    font-size: 11px;
+    opacity: 0.85;
+  }
+  [data-slot="markdown-code-lang-name"] {
+    color: var(--v2-text-text-base, #e4e4e4);
+  }
+
+  [data-slot="markdown-code-actions"] {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Copy button — prominente y siempre visible (a diferencia de hover-only viejo). */
+  [data-slot="markdown-copy-button"] {
+    position: relative;
+    opacity: 1;
+    transition: transform 0.1s ease, background 0.15s ease;
+    /* Look de "mano dorada" pixel: pastilla dorada compacta. */
+    background: linear-gradient(180deg, #ffd77a, #ffb84a);
+    color: #1a1a1a;
+    border: 1px solid #a76d1a;
+    border-radius: 5px;
+    padding: 4px 10px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 1px 2px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  [data-slot="markdown-copy-button"]:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, #ffe090, #ffc760);
+  }
+  [data-slot="markdown-copy-button"]:active {
+    transform: translateY(0);
+  }
+  [data-slot="markdown-copy-button"]::before {
+    content: "Copiar";
+  }
+  [data-slot="markdown-copy-button"][data-copied="true"]::before {
+    content: "✓ Copiado";
+    color: #0a5a1a;
+  }
+
+  /* Botones de acción (editar / insertar / ejecutar) — cuadrados sutiles. */
+  [data-slot="markdown-code-action"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--v2-border-border-muted, #2a2a2a);
+    border-radius: 5px;
+    background: var(--v2-background-bg-layer-01, #0f0f0f);
+    color: var(--v2-text-text-muted, #999);
+    cursor: pointer;
+    font-size: 12px;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    padding: 0;
+  }
+  [data-slot="markdown-code-action"]:hover {
+    color: var(--v2-orange, #ff6b35);
+    border-color: var(--v2-orange, #ff6b35);
+    background: rgba(255, 107, 53, 0.08);
+  }
+  [data-slot="markdown-code-action"][data-action="run"] {
+    color: #4ade80;
+  }
+  [data-slot="markdown-code-action"][data-action="run"]:hover {
+    color: #4ade80;
+    border-color: #4ade80;
+    background: rgba(74, 222, 128, 0.1);
+  }
+
+  /* Ocultamos íconos SVG viejos del copy button — ahora usamos ::before. */
+  [data-slot="markdown-copy-button"] [data-copy-icon],
+  [data-slot="markdown-copy-button"] [data-check-icon] {
+    display: none !important;
+  }
+
+  /* Ajustamos el pre para que no tenga margin ni border propio — el wrapper ya lo tiene. */
+  [data-component="markdown-code"] pre {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    padding: 14px 16px;
+    background: var(--v2-background-bg-layer-01, #0f0f0f);
   }
 
   [data-component="markdown-code"][data-code-kind="shell"] .shiki {
@@ -197,20 +320,6 @@
 
   [data-component="markdown-code"][data-code-kind="shell"] code span {
     color: var(--markdown-shell-code-token-color) !important;
-  }
-
-  [data-slot="markdown-copy-button"] {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    z-index: 1;
-  }
-
-  [data-component="markdown-code"]:hover [data-slot="markdown-copy-button"],
-  [data-slot="markdown-copy-button"]:focus-within {
-    opacity: 1;
   }
 
   [data-slot="markdown-copy-button"] [data-check-icon] {
@@ -299,25 +408,11 @@
 }
 
 body[data-new-layout] [data-component="markdown"] {
+  /* Suprimimos el ::after tooltip viejo — ahora el label lo pinta ::before
+     dentro del propio botón (ver bloque de arriba). Sin esto quedaban dos
+     etiquetas "Copy" superpuestas. */
   [data-slot="markdown-copy-button"]::after {
-    box-sizing: border-box;
-    display: inline-flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 6px;
-    border: 0;
-    border-radius: 4px;
-    background: var(--v2-background-bg-layer-01);
-    box-shadow: var(--v2-elevation-floating);
-    color: var(--v2-text-text-base);
-    user-select: none;
-    font-size: 11px;
-    font-weight: 530;
-    line-height: 12px;
-    letter-spacing: 0.05px;
-    font-variant-numeric: tabular-nums;
-    font-variation-settings: "slnt" 0;
+    content: none !important;
   }
 }
 
