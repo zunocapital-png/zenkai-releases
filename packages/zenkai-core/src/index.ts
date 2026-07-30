@@ -69,3 +69,8 @@ export * from "./scaffold/index"
 
 // v1.25: App catalog (Pinokio-style).
 export * from "./catalog/index"
+
+// v1.27: Tutoriales in-app, presets probados, smoke suite, sync export/import.
+export * from "./docs/index"
+export * from "./smoke/index"
+export * from "./sync/index"

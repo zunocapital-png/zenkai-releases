@@ -8,3 +8,6 @@ export type {
   AgentLoopInput, AgentLoopResultado, EjecucionPaso, Plan, PlanPaso,
   ToolRunner, CheckpointFn, RollbackFn,
 } from "./agent-loop"
+
+export { inlineEdit, extraerCodigoLimpio, generarDiffSimple, contarCambios } from "./inline-edit"
+export type { InlineEditInput, InlineEditResultado } from "./inline-edit"

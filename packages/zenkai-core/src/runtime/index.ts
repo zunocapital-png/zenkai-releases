@@ -7,6 +7,9 @@ export type { DownloadOptions, DownloadProgress, DownloadResultado, ModeloRecome
 export { diagnosticar, evaluarModelos, elegirMejorPorTipo, resumenRecomendacion } from "./recomendador"
 export type { DiagnosticoHw, Recomendacion } from "./recomendador"
 
+export { PRESETS, PRESET_EMOJI, aplicarPreset, sugerirPresetDePrompt } from "./presets"
+export type { PresetModo, PresetParams } from "./presets"
+
 export { ModelRegistry, inferirCapabilities } from "./model-registry"
 export type { ModelEntry, ModelRegistrySnapshot, ModelRegistryOptions } from "./model-registry"
 
