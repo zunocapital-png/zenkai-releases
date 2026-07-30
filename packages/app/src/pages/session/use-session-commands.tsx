@@ -364,6 +364,12 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       (x) => dialog.show(() => <x.DialogOneClickSetup />),
     )
   }
+  const zenkaiCostTracker = () => {
+    void openDialog(
+      () => import("@/components/dialog-cost-tracker"),
+      (x) => dialog.show(() => <x.DialogCostTracker />),
+    )
+  }
 
   const toggleAutoAccept = () => {
     const sessionID = params.id
@@ -750,6 +756,13 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: "Escanea PC, sugiere modelo, links a nube gratis, todo en 3 pasos",
       slash: "setup",
       onSelect: zenkaiSetup,
+    }),
+    mcpCommand({
+      id: "zenkai.costs",
+      title: "Cost Tracker · @zenkai/core en vivo",
+      description: "Gastos USD por provider + health + budget del motor propio",
+      slash: "costos",
+      onSelect: zenkaiCostTracker,
     }),
   ]
 
