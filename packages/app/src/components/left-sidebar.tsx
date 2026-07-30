@@ -76,6 +76,9 @@ export function LeftSidebar() {
   const openCrearAgente = () => {
     void import("@/components/dialog-crear-agente").then((x) => dialog.show(() => <x.DialogCrearAgente />))
   }
+  const openPlantillas = () => {
+    void import("@/components/dialog-plantillas").then((x) => dialog.show(() => <x.DialogPlantillas />))
+  }
   const openTareas = () => {
     void import("@/components/dialog-tareas-programadas").then((x) => dialog.show(() => <x.DialogTareasProgramadas />))
   }
@@ -246,6 +249,7 @@ export function LeftSidebar() {
           {/* Accesos principales, etiquetados (antes eran iconitos y no se encontraban) */}
           <div class="flex flex-col gap-1 px-2 pt-0.5">
             <FooterAction icon="grid-plus" label="Modelos locales" hint="Descargá modelos gratis" onClick={openDiagnostico} />
+            <FooterAction icon="outline-copy" label="Plantillas" hint="Agentes listos por sector" onClick={openPlantillas} />
             <FooterAction icon="plus" label="Crear agente" hint="Tu asistente a medida" onClick={openCrearAgente} />
           </div>
           {/* Fila de íconos secundarios */}
@@ -263,7 +267,7 @@ export function LeftSidebar() {
 
 // Botón etiquetado (ícono + texto + hint) para los accesos que antes se perdían.
 function FooterAction(props: {
-  icon: "grid-plus" | "plus"
+  icon: "grid-plus" | "plus" | "outline-copy"
   label: string
   hint: string
   onClick: () => void
