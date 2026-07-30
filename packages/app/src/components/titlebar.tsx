@@ -1,4 +1,5 @@
 import { toggleLeftSidebar } from "@/components/left-sidebar"
+import { EstadoEcosistema } from "@/components/estado-ecosistema"
 import { createEffect, createMemo, createResource, createSignal, Match, onMount, Show, Switch, untrack } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLocation, useNavigate, useParams } from "@solidjs/router"
@@ -618,6 +619,9 @@ export function Titlebar(props: { update?: TitlebarUpdate; debugTools?: { visibl
               }}
               data-tauri-drag-region
             >
+              {/* Widget de estado del ecosistema — visible en TODA la app.
+                  Antes solo se veía en el home. */}
+              <EstadoEcosistema />
               <div id="opencode-titlebar-right" class="flex items-center gap-1 shrink-0 justify-end" />
               <Show when={windows()}>
                 <div class="shrink-0" style={{ width: windowsControlsWidth() }} />
