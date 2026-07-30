@@ -199,6 +199,9 @@ function defaultConfig(model: string): string {
   const config = {
     $schema: "https://opencode.ai/config.json",
     model: "omniroute/auto",
+    // Orquestación multi-agente: el agente principal puede delegar en subagentes
+    // (herramienta "task"). Permitimos anidamiento más profundo (director → equipos).
+    subagent_depth: 3,
     provider: {
       // Auto-relevo: enruta solo y engancha el siguiente si uno se agota. Sin key, sin configurar.
       omniroute: {

@@ -47,6 +47,8 @@ export function preferAppEnv(userDataPath: string) {
     ...(shell ? loadShellEnv(shell, getLogger()) : null),
     OPENCODE_EXPERIMENTAL_ICON_DISCOVERY: "true",
     OPENCODE_EXPERIMENTAL_FILEWATCHER: "true",
+    // Orquestación: subagentes en paralelo (el modelo puede lanzar tareas en background).
+    OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS: "true",
     OPENCODE_CLIENT: "desktop",
     XDG_STATE_HOME: process.env.XDG_STATE_HOME ?? userDataPath,
     // Control de PC (MCP propio): ruta del server + runtime Node (el propio Electron,
