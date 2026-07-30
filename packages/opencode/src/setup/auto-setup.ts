@@ -270,6 +270,31 @@ function defaultConfig(model: string): string {
         description:
           "Optimizador (Cost/Latency Harness). Ante una tarea, sugiere el modelo más barato o más rápido que la resuelve sin sacrificar calidad. No ejecuta — recomienda.",
       },
+      // ── AI Software Engineer OS (Tomo XIII) — harnesses de programación ──
+      builder: {
+        description:
+          "Build Harness. Antes de declarar terminado: compila, corre tests, mide cobertura, compara contra baseline. Reporta pass/fail con métricas. Si empeora, sugiere rollback.",
+      },
+      tester: {
+        description:
+          "Test Harness. Ante código nuevo o modificado, genera tests unitarios + fixtures + mocks + al menos 1 test de edge case. Puede correr mutation testing simple. No modifica lógica.",
+      },
+      security: {
+        description:
+          "Security Harness. Escanea código en busca de OWASP top-10, secretos leaked, deps vulnerables, SQL injection, XSS, CSRF, JWT mal usados, permisos laxos. Reporta ordenado por severidad.",
+      },
+      documenter: {
+        description:
+          "Documentation Harness. Genera README, wiki, diagramas ASCII, docs de API, changelog, arquitectura del módulo. Detecta docs desactualizadas comparando con el código real.",
+      },
+      arquitecto: {
+        description:
+          "Architect. Antes de escribir código: propone arquitectura, dependencias, interfaces y diagramas. Preserva estilo del proyecto (Code DNA). Nunca implementa: diseña.",
+      },
+      impacto: {
+        description:
+          "Impact Engine. Antes de modificar un archivo: calcula qué otros archivos, APIs, tests, docs, workflows CI/CD podrían romperse. Devuelve el radio de impacto con severidad.",
+      },
     },
     provider: {
       // Auto-relevo: enruta solo y engancha el siguiente si uno se agota. Sin key, sin configurar.
@@ -480,6 +505,60 @@ function defaultConfig(model: string): string {
       playwright: {
         type: "local",
         command: ["npx", "-y", "@playwright/mcp"],
+        enabled: false,
+      },
+      // ── ENCICLOPEDIA MCP (Tomo XIII de la charla) ────────────────────────
+      // Development, Database, Communication, Storage — apagados por default;
+      // el usuario los prende cuando los necesita (algunos requieren key).
+      docker: {
+        type: "local",
+        command: ["npx", "-y", "docker-mcp-server"],
+        enabled: false,
+      },
+      postgres: {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-postgres"],
+        enabled: false,
+      },
+      slack: {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-slack"],
+        enabled: false,
+      },
+      notion: {
+        type: "local",
+        command: ["npx", "-y", "@notionhq/notion-mcp-server"],
+        enabled: false,
+      },
+      "google-drive": {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-gdrive"],
+        enabled: false,
+      },
+      "brave-search": {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-brave-search"],
+        enabled: false,
+      },
+      github: {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-github"],
+        enabled: false,
+      },
+      "everything-search": {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-everything"],
+        enabled: false,
+      },
+      obsidian: {
+        type: "local",
+        command: ["npx", "-y", "obsidian-mcp"],
+        enabled: false,
+      },
+      // Vision / OCR: complementan al agente cuando trabaja con imágenes.
+      "vision-tesseract": {
+        type: "local",
+        command: ["npx", "-y", "@mcpservers/tesseract-mcp"],
         enabled: false,
       },
     },

@@ -340,6 +340,12 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       (x) => dialog.show(() => <x.DialogParliament />),
     )
   }
+  const zenkaiPoliticas = () => {
+    void openDialog(
+      () => import("@/components/dialog-policy-engine"),
+      (x) => dialog.show(() => <x.DialogPolicyEngine />),
+    )
+  }
 
   const toggleAutoAccept = () => {
     const sessionID = params.id
@@ -698,6 +704,13 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: "Misma pregunta a 2 modelos en paralelo con jurado local",
       slash: "parliament",
       onSelect: zenkaiParliament,
+    }),
+    mcpCommand({
+      id: "zenkai.politicas",
+      title: "Policy Engine",
+      description: "Reglas declarativas: privacidad, presupuesto, tipo de tarea",
+      slash: "politicas",
+      onSelect: zenkaiPoliticas,
     }),
   ]
 
