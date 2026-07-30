@@ -4,7 +4,7 @@
 
 const OLLAMA_HOST = "http://localhost:11434"
 
-export type CategoriaModelo = "codigo" | "chat" | "razonamiento" | "vision" | "embeddings" | "mini"
+export type CategoriaModelo = "codigo" | "chat" | "razonamiento" | "matematica" | "vision" | "embeddings" | "mini"
 
 export type ModeloLocal = {
   id: string
@@ -18,6 +18,7 @@ export type ModeloLocal = {
 export const CATEGORIAS: { id: CategoriaModelo; label: string; emoji: string }[] = [
   { id: "codigo", label: "Programación", emoji: "💻" },
   { id: "razonamiento", label: "Razonamiento", emoji: "🧠" },
+  { id: "matematica", label: "Matemática", emoji: "🔢" },
   { id: "chat", label: "Chat general", emoji: "💬" },
   { id: "vision", label: "Visión (imágenes)", emoji: "👁️" },
   { id: "embeddings", label: "Embeddings (RAG/búsqueda)", emoji: "🔎" },
@@ -139,6 +140,74 @@ export const CATALOGO_LOCAL: ModeloLocal[] = [
   { id: "qwen3:1.7b", nombre: "Qwen3 1.7B", nota: "Chico y capaz", tam: "~1.4 GB", categoria: "mini" },
   { id: "smollm2:360m", nombre: "SmolLM2 360M", nota: "Ínfimo, para probar", tam: "~726 MB", categoria: "mini" },
   { id: "granite3.1-moe:1b", nombre: "Granite 3.1 MoE 1B", nota: "Mini mezcla de expertos", tam: "~1.4 GB", categoria: "mini" },
+
+  // ── Más opciones (cuarta tanda) — verificados en la librería de Ollama ──
+  // Programación
+  { id: "qwen3-coder", nombre: "Qwen3 Coder", nota: "Nuevo modelo de código de Qwen", tam: "~19 GB", categoria: "codigo" },
+  { id: "deepcoder:14b", nombre: "DeepCoder 14B", nota: "Código abierto y capaz", tam: "~9.0 GB", categoria: "codigo" },
+  { id: "devstral", nombre: "Devstral", nota: "Agente de código de Mistral", tam: "~14 GB", categoria: "codigo" },
+  { id: "codegeex4:9b", nombre: "CodeGeeX4 9B", nota: "Código multilingüe (Zhipu)", tam: "~5.5 GB", categoria: "codigo" },
+  { id: "codeqwen:7b", nombre: "CodeQwen 7B", nota: "Código, base de Qwen", tam: "~4.2 GB", categoria: "codigo" },
+  { id: "magicoder:7b", nombre: "Magicoder 7B", nota: "Código con datos OSS-Instruct", tam: "~3.8 GB", categoria: "codigo" },
+  { id: "phind-codellama:34b", nombre: "Phind CodeLlama 34B", nota: "Código pro (PC potente)", tam: "~19 GB", categoria: "codigo" },
+  { id: "stable-code:3b", nombre: "Stable Code 3B", nota: "Código liviano (Stability)", tam: "~1.6 GB", categoria: "codigo" },
+  { id: "starcoder:7b", nombre: "StarCoder 7B", nota: "Autocompletado clásico", tam: "~4.3 GB", categoria: "codigo" },
+  { id: "codeup:13b", nombre: "CodeUp 13B", nota: "Código sobre Llama 2", tam: "~7.4 GB", categoria: "codigo" },
+  { id: "qwen2.5-coder:0.5b", nombre: "Qwen2.5 Coder 0.5B", nota: "Código diminuto", tam: "~398 MB", categoria: "codigo" },
+
+  // Razonamiento
+  { id: "gpt-oss:20b", nombre: "GPT-OSS 20B", nota: "Modelo abierto de OpenAI", tam: "~14 GB", categoria: "razonamiento", destacado: true },
+  { id: "magistral", nombre: "Magistral", nota: "Razonamiento de Mistral", tam: "~14 GB", categoria: "razonamiento" },
+  { id: "openthinker:7b", nombre: "OpenThinker 7B", nota: "Cadena de pensamiento abierta", tam: "~4.7 GB", categoria: "razonamiento" },
+  { id: "deepscaler:1.5b", nombre: "DeepScaleR 1.5B", nota: "Razonamiento matemático mini", tam: "~1.1 GB", categoria: "razonamiento" },
+  { id: "exaone-deep:7.8b", nombre: "EXAONE Deep 7.8B", nota: "Razonamiento de LG", tam: "~4.8 GB", categoria: "razonamiento" },
+  { id: "marco-o1:7b", nombre: "Marco-o1 7B", nota: "Razonamiento estilo o1", tam: "~4.7 GB", categoria: "razonamiento" },
+  { id: "smallthinker:3b", nombre: "SmallThinker 3B", nota: "Razonamiento compacto", tam: "~3.6 GB", categoria: "razonamiento" },
+  { id: "cogito:8b", nombre: "Cogito 8B", nota: "Híbrido razonamiento/chat", tam: "~4.9 GB", categoria: "razonamiento" },
+  { id: "phi4-mini-reasoning:3.8b", nombre: "Phi-4 Mini Reasoning", nota: "Razonamiento compacto (MS)", tam: "~2.5 GB", categoria: "razonamiento" },
+
+  // Matemática
+  { id: "qwen2-math:7b", nombre: "Qwen2 Math 7B", nota: "Especialista en matemática", tam: "~4.4 GB", categoria: "matematica", destacado: true },
+  { id: "mathstral:7b", nombre: "Mathstral 7B", nota: "Matemática, de Mistral", tam: "~4.1 GB", categoria: "matematica" },
+  { id: "wizard-math:7b", nombre: "WizardMath 7B", nota: "Resolución de problemas", tam: "~4.1 GB", categoria: "matematica" },
+  { id: "deepseek-math:7b", nombre: "DeepSeek Math 7B", nota: "Matemática avanzada", tam: "~4.0 GB", categoria: "matematica" },
+  { id: "qwen2-math:1.5b", nombre: "Qwen2 Math 1.5B", nota: "Matemática liviana", tam: "~986 MB", categoria: "matematica" },
+
+  // Chat general
+  { id: "llama3:8b", nombre: "Llama 3 8B", nota: "El clásico de Meta", tam: "~4.7 GB", categoria: "chat" },
+  { id: "llama2:7b", nombre: "Llama 2 7B", nota: "Clásico, muy compatible", tam: "~3.8 GB", categoria: "chat" },
+  { id: "solar:10.7b", nombre: "SOLAR 10.7B", nota: "General potente (Upstage)", tam: "~6.1 GB", categoria: "chat" },
+  { id: "yi:9b", nombre: "Yi 9B", nota: "General bilingüe (01.AI)", tam: "~5.0 GB", categoria: "chat" },
+  { id: "openchat:7b", nombre: "OpenChat 7B", nota: "General afinado, muy sólido", tam: "~4.1 GB", categoria: "chat" },
+  { id: "starling-lm:7b", nombre: "Starling 7B", nota: "General entrenado con RLAIF", tam: "~4.1 GB", categoria: "chat" },
+  { id: "zephyr:7b", nombre: "Zephyr 7B", nota: "Asistente afinado", tam: "~4.1 GB", categoria: "chat" },
+  { id: "neural-chat:7b", nombre: "Neural Chat 7B", nota: "General de Intel", tam: "~4.1 GB", categoria: "chat" },
+  { id: "openhermes", nombre: "OpenHermes", nota: "General versátil (Nous)", tam: "~4.1 GB", categoria: "chat" },
+  { id: "vicuna:7b", nombre: "Vicuna 7B", nota: "Clásico conversacional", tam: "~3.8 GB", categoria: "chat" },
+  { id: "solar-pro", nombre: "SOLAR Pro", nota: "General de 22B, un solo GPU", tam: "~13 GB", categoria: "chat" },
+  { id: "tulu3:8b", nombre: "Tülu 3 8B", nota: "General abierto (AI2)", tam: "~4.9 GB", categoria: "chat" },
+  { id: "command-r7b", nombre: "Command R7B", nota: "RAG y tools, liviano (Cohere)", tam: "~5.1 GB", categoria: "chat" },
+  { id: "athene-v2:72b", nombre: "Athene V2 72B", nota: "General tope (PC muy potente)", tam: "~44 GB", categoria: "chat" },
+  { id: "dolphin-mixtral:8x7b", nombre: "Dolphin Mixtral 8x7B", nota: "Sin filtros (PC potente)", tam: "~26 GB", categoria: "chat" },
+  { id: "dolphin-llama3:8b", nombre: "Dolphin Llama 3 8B", nota: "General muy servicial", tam: "~4.7 GB", categoria: "chat" },
+  { id: "llama2-uncensored:7b", nombre: "Llama 2 Uncensored 7B", nota: "Sin filtros", tam: "~3.8 GB", categoria: "chat" },
+
+  // Visión
+  { id: "qwen3-vl", nombre: "Qwen3 VL", nota: "Visión de nueva generación", tam: "~6.0 GB", categoria: "vision" },
+  { id: "medgemma:4b", nombre: "MedGemma 4B", nota: "Visión médica (Google)", tam: "~3.3 GB", categoria: "vision" },
+  { id: "bakllava:7b", nombre: "BakLLaVA 7B", nota: "Visión sobre Mistral", tam: "~4.7 GB", categoria: "vision" },
+
+  // Embeddings
+  { id: "qwen3-embedding", nombre: "Qwen3 Embedding", nota: "Embeddings de nueva generación", tam: "~600 MB", categoria: "embeddings" },
+  { id: "embeddinggemma", nombre: "EmbeddingGemma", nota: "Embeddings de Google", tam: "~622 MB", categoria: "embeddings" },
+  { id: "snowflake-arctic-embed2", nombre: "Snowflake Arctic Embed 2", nota: "Embeddings multilingües", tam: "~1.2 GB", categoria: "embeddings" },
+  { id: "bge-large", nombre: "BGE Large", nota: "Embeddings de alta calidad", tam: "~671 MB", categoria: "embeddings" },
+
+  // Mini
+  { id: "smollm:1.7b", nombre: "SmolLM 1.7B", nota: "Diminuto y rápido", tam: "~990 MB", categoria: "mini" },
+  { id: "tinydolphin:1.1b", nombre: "TinyDolphin 1.1B", nota: "Mini servicial", tam: "~637 MB", categoria: "mini" },
+  { id: "stablelm-zephyr:3b", nombre: "StableLM Zephyr 3B", nota: "Chico y afinado", tam: "~1.6 GB", categoria: "mini" },
+  { id: "granite3-moe:1b", nombre: "Granite 3 MoE 1B", nota: "Mini mezcla de expertos (IBM)", tam: "~822 MB", categoria: "mini" },
 ]
 
 // Top picks para el onboarding de bienvenida (no abrumar al recién llegado).

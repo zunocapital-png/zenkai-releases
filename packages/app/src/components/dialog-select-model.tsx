@@ -111,6 +111,7 @@ const modelKey = (model: ModelItem) => `${model.provider.id}:${model.id}`
 const manageKey = "action:manage"
 const descargarKey = "action:descargar"
 const nubeKey = "action:nube"
+const runtimesKey = "action:runtimes"
 
 // Solo mostramos modelos USABLES ya: locales (Ollama…), sin API (Auto/gateway) o de nube CON key conectada.
 // Los de nube sin conectar se agregan desde "Conectar proveedor" — así el selector no marea ni falla con Unauthorized.
@@ -347,7 +348,7 @@ export function ModelSelectorPopoverV2(props: {
       (a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category),
     )
   })
-  const keys = () => [...models().map(modelKey), descargarKey, nubeKey, manageKey]
+  const keys = () => [...models().map(modelKey), descargarKey, nubeKey, runtimesKey, manageKey]
   const current = () => {
     const value = model.current()
     return value ? `${value.provider.id}:${value.id}` : undefined
@@ -420,6 +421,15 @@ export function ModelSelectorPopoverV2(props: {
       })
     })
   }
+  const runtimes = () => {
+    restoreTrigger = false
+    setOpen(false)
+    afterClose(() => {
+      void import("./dialog-runtimes-locales").then((x) => {
+        dialog.show(() => <x.DialogRuntimesLocales />)
+      })
+    })
+  }
   const selectActive = () => {
     const item = models().find((item) => modelKey(item) === store.active)
     if (item) {
@@ -428,6 +438,7 @@ export function ModelSelectorPopoverV2(props: {
     }
     if (store.active === descargarKey) descargar()
     else if (store.active === nubeKey) nube()
+    else if (store.active === runtimesKey) runtimes()
     else if (store.active === manageKey) manage()
   }
   const moveActive = (delta: number) => {
@@ -611,6 +622,18 @@ export function ModelSelectorPopoverV2(props: {
             >
               <Icon name="cloud" size="small" />
               <span class="min-w-0 flex-1 truncate leading-5">Conectar modelos de nube (gratis)</span>
+            </MenuV2.Item>
+            <MenuV2.Item
+              data-option-key={runtimesKey}
+              classList={{ "!bg-v2-overlay-simple-overlay-hover": store.active === runtimesKey }}
+              onMouseEnter={() => {
+                setStore("active", runtimesKey)
+                setTimeout(() => searchRef?.focus())
+              }}
+              onSelect={runtimes}
+            >
+              <Icon name="server" size="small" />
+              <span class="min-w-0 flex-1 truncate leading-5">Conectar otra app local (LM Studio, Jan…)</span>
             </MenuV2.Item>
             <MenuV2.Item
               data-option-key={manageKey}

@@ -1,8 +1,9 @@
-import { Component, For } from "solid-js"
+import { Component, createSignal, For, onMount } from "solid-js"
 import { SelectV2 } from "@opencode-ai/ui/v2/select-v2"
 import { Switch } from "@opencode-ai/ui/v2/switch-v2"
 import { useServerSync } from "@/context/server-sync"
 import { useSettings } from "@/context/settings"
+import { usePlatform } from "@/context/platform"
 import { SettingsListV2 } from "./parts/list"
 import { SettingsRowV2 } from "./parts/row"
 import "./settings-v2.css"
@@ -33,6 +34,15 @@ const HERRAMIENTAS: { key: string; titulo: string; desc: string }[] = [
 export const SettingsPermisosV2: Component = () => {
   const serverSync = useServerSync()
   const settings = useSettings()
+  const platform = usePlatform()
+
+  // Control de PC: permiso maestro para que la IA maneje mouse/teclado/pantalla (estilo Claude).
+  const [controlPc, setControlPc] = createSignal(false)
+  onMount(() => void platform.computerUseGet?.().then((v) => setControlPc(!!v)).catch(() => {}))
+  async function toggleControlPc(v: boolean) {
+    const res = await platform.computerUseSet?.(v)
+    setControlPc(!!res)
+  }
 
   const permisos = () => (serverSync().data.config.permission ?? {}) as Record<string, unknown>
   const valor = (key: string): Accion => {
@@ -62,6 +72,12 @@ export const SettingsPermisosV2: Component = () => {
           description="Si está activo, la IA actúa sin pedir permiso para nada. Rápido, pero úsalo solo si confiás en la tarea."
         >
           <Switch checked={autonomo()} onChange={(v) => settings.permissions.setAutoApprove(v)} />
+        </SettingsRowV2>
+        <SettingsRowV2
+          title="Permitir control de PC"
+          description="Deja que la IA vea la pantalla y maneje mouse y teclado (como Claude). Apagado por defecto; prendelo solo cuando lo necesites."
+        >
+          <Switch checked={controlPc()} onChange={(v) => void toggleControlPc(v)} />
         </SettingsRowV2>
       </SettingsListV2>
 

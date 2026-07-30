@@ -56,6 +56,12 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
       void dialog.show(() => <x.DialogConnectProvider directory={() => sdk().directory} />)
     })
   }
+  const openImagenes = () => {
+    void import("./dialog-imagenes").then((x) => dialog.show(() => <x.DialogImagenes />))
+  }
+  const openMcp = () => {
+    void import("./dialog-conectores-mcp").then((x) => dialog.show(() => <x.DialogConectoresMcp />))
+  }
 
   // Transparencia del Auto: cuando el proveedor es "omniroute" (ZENKAI Auto), resolvemos y
   // mostramos QUÉ modelo local está usando ahora mismo (antes era una caja negra).
@@ -116,6 +122,30 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
                 onClick={connectProvider}
               >
                 🔌 Conectar API
+              </ButtonV2>
+            </TooltipV2>
+            <TooltipV2 placement="top" gutter={4} value="Generar una imagen (local)">
+              <ButtonV2
+                data-control-type="dialog"
+                variant="ghost-muted"
+                size="normal"
+                class="shrink-0 ![font-weight:440]"
+                style={{ height: "28px" }}
+                onClick={openImagenes}
+              >
+                🖼 Imagen
+              </ButtonV2>
+            </TooltipV2>
+            <TooltipV2 placement="top" gutter={4} value="Conectores MCP (darle más capacidades a la IA)">
+              <ButtonV2
+                data-control-type="dialog"
+                variant="ghost-muted"
+                size="normal"
+                class="shrink-0 ![font-weight:440]"
+                style={{ height: "28px" }}
+                onClick={openMcp}
+              >
+                🧩 Skills
               </ButtonV2>
             </TooltipV2>
           </>

@@ -70,17 +70,8 @@ export function LeftSidebar() {
     })
   }
 
-  const openDiagnostico = () => {
-    void import("@/components/dialog-diagnostico").then((x) => dialog.show(() => <x.DialogDiagnostico />))
-  }
   const openTareas = () => {
     void import("@/components/dialog-tareas-programadas").then((x) => dialog.show(() => <x.DialogTareasProgramadas />))
-  }
-  const openMcp = () => {
-    void import("@/components/dialog-conectores-mcp").then((x) => dialog.show(() => <x.DialogConectoresMcp />))
-  }
-  const openImagenes = () => {
-    void import("@/components/dialog-imagenes").then((x) => dialog.show(() => <x.DialogImagenes />))
   }
 
   const loading = createMemo(() => sessions.data.loading())
@@ -246,15 +237,13 @@ export function LeftSidebar() {
               </Show>
             </div>
           </div>
-          {/* Footer minimal estilo Claude: solo íconos chicos. Modelos y agentes NO viven acá
-              (están en sus propios selectores del chat) para no duplicar ni ocupar espacio. */}
-          <div class="flex items-center gap-1 px-2 pb-1.5 pt-1">
-            <FooterIcon icon="settings-gear" label="Ajustes" onClick={() => openSettings()} />
-            <FooterIcon icon="image" label="Generar imagen" onClick={openImagenes} />
-            <FooterIcon icon="server" label="Conectores (MCP / skills)" onClick={openMcp} />
-            <FooterIcon icon="timer" label="Tareas programadas" onClick={openTareas} />
-            <FooterIcon icon="monitor" label="Diagnóstico" onClick={openDiagnostico} />
-            <FooterIcon icon="help" label="Ayuda" onClick={openHelp} />
+          {/* Footer minimal estilo Claude: texto claro (los íconos genéricos no se entendían).
+              Modelos, imagen y skills viven en el chat (selector de modelos / barra del compositor),
+              no acá, para no duplicar ni ocupar espacio. */}
+          <div class="flex items-center gap-1 px-3 pb-2 pt-1 text-12-medium">
+            <FooterText label="Ajustes" onClick={() => openSettings()} />
+            <FooterText label="Tareas" onClick={openTareas} />
+            <FooterText label="Ayuda" onClick={openHelp} />
           </div>
         </div>
       </aside>
@@ -262,20 +251,14 @@ export function LeftSidebar() {
   )
 }
 
-function FooterIcon(props: {
-  icon: "settings-gear" | "help" | "monitor" | "plus" | "timer" | "server" | "image"
-  label: string
-  onClick: () => void
-}) {
+function FooterText(props: { label: string; onClick: () => void }) {
   return (
     <button
       type="button"
-      title={props.label}
-      aria-label={props.label}
-      class="flex size-8 items-center justify-center rounded-md text-v2-icon-icon-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-strong"
+      class="rounded-md px-2 py-1 text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-strong"
       onClick={props.onClick}
     >
-      <IconV2 name={props.icon} size="small" />
+      {props.label}
     </button>
   )
 }
