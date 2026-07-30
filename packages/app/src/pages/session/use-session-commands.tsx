@@ -346,6 +346,18 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       (x) => dialog.show(() => <x.DialogPolicyEngine />),
     )
   }
+  const zenkaiDigitalTwin = () => {
+    void openDialog(
+      () => import("@/components/dialog-digital-twin"),
+      (x) => dialog.show(() => <x.DialogDigitalTwin />),
+    )
+  }
+  const zenkaiEstadoIntegral = () => {
+    void openDialog(
+      () => import("@/components/dialog-estado-integral"),
+      (x) => dialog.show(() => <x.DialogEstadoIntegral />),
+    )
+  }
 
   const toggleAutoAccept = () => {
     const sessionID = params.id
@@ -711,6 +723,20 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: "Reglas declarativas: privacidad, presupuesto, tipo de tarea",
       slash: "politicas",
       onSelect: zenkaiPoliticas,
+    }),
+    mcpCommand({
+      id: "zenkai.digital-twin",
+      title: "Digital Twin del proyecto",
+      description: "Ficha viva: lenguaje, framework, arquitectura, deps",
+      slash: "twin",
+      onSelect: zenkaiDigitalTwin,
+    }),
+    mcpCommand({
+      id: "zenkai.estado-integral",
+      title: "Estado integral · todo on/off",
+      description: "Modelos, MCPs, agentes, upstreams, proveedores nube con estado real",
+      slash: "estado",
+      onSelect: zenkaiEstadoIntegral,
     }),
   ]
 
