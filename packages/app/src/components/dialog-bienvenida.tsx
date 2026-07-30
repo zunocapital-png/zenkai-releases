@@ -119,22 +119,24 @@ export function DialogBienvenida() {
           ZENKAI programa de dos formas, y podés usar las dos:
         </p>
         <ul class="flex flex-col gap-1.5 pl-1">
-          <li class="text-13-regular text-text-muted">
-            🖥️ <span class="text-text-strong">Local (gratis):</span> modelos que corren en tu PC con Ollama. Sin
-            internet, sin costo. Elegí uno abajo y se descarga.
+          <li class="text-13-regular text-text-muted flex items-start gap-2">
+            <span class="mt-0.5 text-[#EC5B2B] font-mono">›</span>
+            <span><span class="text-text-strong">Local (gratis):</span> modelos que corren en tu PC. Sin
+            internet, sin costo. Elegí uno abajo y se descarga.</span>
           </li>
-          <li class="text-13-regular text-text-muted">
-            ☁️ <span class="text-text-strong">Nube (API):</span> modelos como GPT, Claude o Gemini con tu propia clave.
-            Más potentes, pagás por uso al proveedor.
+          <li class="text-13-regular text-text-muted flex items-start gap-2">
+            <span class="mt-0.5 text-[#EC5B2B] font-mono">›</span>
+            <span><span class="text-text-strong">Nube (API):</span> modelos grandes con tu propia clave (varios con tier gratis).
+            Más potentes, pagás por uso al proveedor.</span>
           </li>
         </ul>
 
         {/* Recomendado según tu PC (escaneo automático) */}
         <Show when={recomendado()}>
           {(m) => (
-            <div class="flex flex-col gap-2 rounded-lg border border-orange-500/40 bg-orange-500/5 p-4">
+            <div class="flex flex-col gap-2 rounded-lg border border-[#EC5B2B]/40 bg-[#EC5B2B]/5 p-4">
               <div class="flex items-center gap-2">
-                <span class="text-16-medium">✨</span>
+                <span class="text-14-medium font-mono text-[#EC5B2B]">[✓]</span>
                 <span class="text-14-medium text-text-strong">Recomendado para tu PC</span>
                 <Show when={ramGB()}>
                   <span class="text-11-regular text-text-muted">· {ramGB()} GB RAM detectados</span>
@@ -147,13 +149,13 @@ export function DialogBienvenida() {
                 </div>
                 <Show
                   when={!instalado(m().id)}
-                  fallback={<span class="shrink-0 text-13-medium text-green-400">✅ Instalado</span>}
+                  fallback={<span class="shrink-0 text-13-medium text-[#22c55e]">Instalado</span>}
                 >
                   <button
                     type="button"
                     disabled={!!descargas()[m().id] && descargas()[m().id]!.pct >= 0 && descargas()[m().id]!.pct < 100}
                     onClick={() => void descargar(m().id)}
-                    class="shrink-0 rounded-lg bg-orange-500 px-4 py-2 text-13-medium text-white hover:bg-orange-600 disabled:opacity-50"
+                    class="shrink-0 rounded-lg bg-[#EC5B2B] px-4 py-2 text-13-medium text-white hover:opacity-90 disabled:opacity-50"
                   >
                     {descargas()[m().id] ? (descargas()[m().id]!.pct === -1 ? "Reintentar" : "Instalando…") : "Instalar ahora"}
                   </button>
@@ -161,7 +163,7 @@ export function DialogBienvenida() {
               </div>
               <Show when={descargas()[m().id] && !instalado(m().id) && descargas()[m().id]!.pct >= 0}>
                 <div class="h-1.5 w-full overflow-hidden rounded-full bg-border-base">
-                  <div class="h-full rounded-full bg-orange-500 transition-all" style={{ width: `${Math.max(2, descargas()[m().id]!.pct)}%` }} />
+                  <div class="h-full rounded-full bg-[#EC5B2B] transition-all" style={{ width: `${Math.max(2, descargas()[m().id]!.pct)}%` }} />
                 </div>
               </Show>
             </div>
@@ -171,7 +173,7 @@ export function DialogBienvenida() {
         {/* Modelos locales */}
         <div class="flex flex-col gap-2.5 rounded-lg border border-border-base bg-surface-raised p-4">
           <div class="flex items-center gap-2.5">
-            <span class="text-16-medium">📦</span>
+            <span class="text-14-medium font-mono text-[#EC5B2B]">[▼]</span>
             <span class="text-14-medium text-text-strong">Instalar un modelo local (recomendado para empezar)</span>
           </div>
           <Show
@@ -197,7 +199,7 @@ export function DialogBienvenida() {
                         </div>
                         <Show
                           when={!instalado(m.id)}
-                          fallback={<span class="shrink-0 text-13-medium text-green-400">✅ Instalado</span>}
+                          fallback={<span class="shrink-0 text-13-medium text-[#22c55e]">Instalado</span>}
                         >
                           <button
                             type="button"
@@ -217,7 +219,7 @@ export function DialogBienvenida() {
                           >
                             <div class="h-1.5 w-full overflow-hidden rounded-full bg-border-base">
                               <div
-                                class="h-full rounded-full bg-orange-500 transition-all"
+                                class="h-full rounded-full bg-[#EC5B2B] transition-all"
                                 style={{ width: `${Math.max(2, d().pct)}%` }}
                               />
                             </div>
@@ -242,12 +244,12 @@ export function DialogBienvenida() {
             onClick={conectarApi}
             class="rounded-lg border border-border-base bg-surface-raised px-4 py-2 text-13-medium text-text-strong hover:bg-surface-hover"
           >
-            ☁️ Conectar una API de nube
+            <span class="font-mono text-[#EC5B2B]">›</span> Conectar una API de nube
           </button>
           <button
             type="button"
             onClick={() => dialog.close()}
-            class="rounded-lg bg-orange-500 px-4 py-2 text-13-medium text-white hover:bg-orange-600"
+            class="rounded-lg bg-[#EC5B2B] px-4 py-2 text-13-medium text-white hover:opacity-90"
           >
             Empezar
           </button>

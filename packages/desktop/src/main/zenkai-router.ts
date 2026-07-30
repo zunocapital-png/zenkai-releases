@@ -31,16 +31,52 @@ const OLLAMA = "http://localhost:11434"
 
 let server: http.Server | undefined
 
-// Circuit breaker: si un upstream falla, lo saltamos por COOLDOWN_MS (evita martillar
-// caídos y pagar el timeout completo en cada request). name -> timestamp hasta el que sigue abierto.
-const breaker = new Map<string, number>()
+// Circuit breaker con 3 estados (closed / open / half-open) mejorado.
+// - closed: el upstream funciona, dejamos pasar todo.
+// - open: falló recientemente, saltamos por COOLDOWN_MS sin pagar timeout.
+// - half-open: cooldown vencido, dejamos pasar UN request de prueba. Si va
+//   bien vuelve a closed; si falla vuelve a open con backoff exponencial.
+type EstadoBreaker = { hasta: number; intentosFallidos: number; enPrueba: boolean }
+const breaker = new Map<string, EstadoBreaker>()
 const COOLDOWN_MS = 30_000
+const COOLDOWN_MAX = 5 * 60_000 // 5 min tope para no dejar caído para siempre.
 // Watchdog de primer byte. Antes eran 8s, pero un modelo local recién arrancado
 // (5-7 GB cargando a RAM la primera vez) TARDA 20-40s en emitir el primer token.
 // Con 8s el router abortaba, disparaba el circuit breaker y devolvía 503 sin
 // error visible — el usuario veía "la IA no responde". 60s es holgado sin ser
 // eterno; los upstreams de nube igual responden en < 5s.
 const PRIMER_BYTE_MS = 60_000
+
+// Latencia por upstream — media móvil. Sirve para preferir el más rápido
+// entre los que están disponibles y para métricas.
+const latenciaMs = new Map<string, number>()
+function registrarLatencia(nombre: string, ms: number) {
+  const previo = latenciaMs.get(nombre) ?? ms
+  // Media móvil exponencial: 30% del nuevo, 70% del histórico. Reactivo pero estable.
+  latenciaMs.set(nombre, previo * 0.7 + ms * 0.3)
+}
+
+function breakerAbierto(nombre: string): boolean {
+  const e = breaker.get(nombre)
+  if (!e) return false
+  if (Date.now() < e.hasta) return true
+  // Cooldown vencido: pasamos a half-open. Un único request de prueba.
+  if (!e.enPrueba) {
+    e.enPrueba = true
+    breaker.set(nombre, e)
+  }
+  return false
+}
+function breakerExito(nombre: string) {
+  breaker.delete(nombre) // reset total
+}
+function breakerFallo(nombre: string) {
+  const previo = breaker.get(nombre)
+  const fallos = (previo?.intentosFallidos ?? 0) + 1
+  // Backoff exponencial: 30s, 60s, 120s, 240s, 300s (tope 5 min).
+  const backoff = Math.min(COOLDOWN_MS * Math.pow(2, fallos - 1), COOLDOWN_MAX)
+  breaker.set(nombre, { hasta: Date.now() + backoff, intentosFallidos: fallos, enPrueba: false })
+}
 
 function portInUse(port: number, timeoutMs = 600): Promise<boolean> {
   return new Promise((resolve) => {
@@ -112,6 +148,30 @@ function readBody(req: http.IncomingMessage): Promise<string> {
     req.on("end", () => resolve(data))
     req.on("error", reject)
   })
+}
+
+// GET /v1/health — expone métricas internas del router para el widget de
+// estado global de la app: qué upstreams están arriba, latencia media,
+// cuántos fallos, si el breaker está abierto.
+function handleHealth(res: http.ServerResponse) {
+  const ahora = Date.now()
+  const ups = upstreams().map((u) => {
+    const b = breaker.get(u.name)
+    return {
+      name: u.name,
+      kind: u.kind,
+      base: u.base,
+      breaker: b
+        ? {
+            estado: ahora < b.hasta ? "open" : b.enPrueba ? "half-open" : "closed",
+            reabreEn: Math.max(0, b.hasta - ahora),
+            intentosFallidos: b.intentosFallidos,
+          }
+        : { estado: "closed", reabreEn: 0, intentosFallidos: 0 },
+      latenciaMediaMs: Math.round(latenciaMs.get(u.name) ?? 0),
+    }
+  })
+  sendJson(res, 200, { upstreams: ups, timestamp: ahora })
 }
 
 async function handleModels(res: http.ServerResponse) {
@@ -235,7 +295,7 @@ async function handleChat(req: http.IncomingMessage, res: http.ServerResponse) {
   const candidatos: Upstream[] = esAuto ? upstreams() : [{ name: "ollama", kind: "ollama", base: `${OLLAMA}/v1` }]
 
   for (const u of candidatos) {
-    if (Date.now() < (breaker.get(u.name) ?? 0)) continue // circuito abierto -> saltar sin esperar
+    if (breakerAbierto(u.name)) continue // circuito abierto -> saltar sin esperar
     const modelo = await resolverModelo(u, pedido, payload)
     if (!modelo) continue // p.ej. Ollama sin modelos -> probar el siguiente upstream
     const headers: Record<string, string> = { "content-type": "application/json" }
@@ -246,6 +306,7 @@ async function handleChat(req: http.IncomingMessage, res: http.ServerResponse) {
     const ac = new AbortController()
     const watchdog = setTimeout(() => ac.abort(), PRIMER_BYTE_MS)
     let upstream: Response
+    const t0 = Date.now()
     try {
       upstream = await fetch(`${u.base}/chat/completions`, {
         method: "POST",
@@ -255,22 +316,28 @@ async function handleChat(req: http.IncomingMessage, res: http.ServerResponse) {
       })
     } catch {
       clearTimeout(watchdog)
-      breaker.set(u.name, Date.now() + COOLDOWN_MS) // caído/timeout -> cooldown
+      breakerFallo(u.name)
       continue
     }
     clearTimeout(watchdog) // llegaron los headers: a partir de acá el stream puede tardar lo que sea
     if (upstream.status >= 500 || upstream.status === 429) {
-      breaker.set(u.name, Date.now() + COOLDOWN_MS) // agotado/caído -> cooldown
+      breakerFallo(u.name)
       continue
     }
-    breaker.delete(u.name) // respondió -> cerrar el circuito
+    breakerExito(u.name) // respondió con headers OK -> reset del circuito
+    registrarLatencia(u.name, Date.now() - t0)
     res.writeHead(upstream.status, {
       "content-type": upstream.headers.get("content-type") ?? "application/json",
     })
     if (upstream.body) {
       const stream = Readable.fromWeb(upstream.body as any)
-      // Si el upstream corta feo, cerramos la respuesta sin tirar el proceso.
-      stream.on("error", () => res.destroyed || res.end())
+      // Si el upstream corta feo en mid-stream, cerramos la respuesta sin tirar
+      // el proceso. Fallback graceful: no hacemos retry porque los tokens ya se
+      // enviaron al cliente; el cliente ve el corte y puede reintentar.
+      stream.on("error", () => {
+        breakerFallo(u.name)
+        if (!res.destroyed) res.end()
+      })
       // Si el cliente se desconecta a mitad, abortamos el upstream para liberar Ollama.
       res.on("close", () => ac.abort())
       stream.pipe(res)
@@ -370,6 +437,7 @@ export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
     server = http.createServer((req, res) => {
       const url = req.url ?? ""
       if (req.method === "GET" && url.startsWith("/v1/models")) return void handleModels(res)
+      if (req.method === "GET" && url === "/v1/health") return void handleHealth(res)
       if (req.method === "POST" && url.startsWith("/v1/chat/completions")) return void handleChat(req, res)
       if (req.method === "POST" && url === "/img") return void handleImagePost(req, res)
       if (req.method === "GET" && url.startsWith("/img/")) return handleImageGet(url, res)

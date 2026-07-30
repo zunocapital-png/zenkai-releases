@@ -202,6 +202,31 @@ function defaultConfig(model: string): string {
     // Orquestación multi-agente: el agente principal puede delegar en subagentes
     // (herramienta "task"). Permitimos anidamiento más profundo (director → equipos).
     subagent_depth: 3,
+    // Sub-agentes preconfigurados con especialización. El agente principal puede
+    // delegarles trabajo puntual con la tool "task". Cada uno tiene descripción
+    // clara para que el principal sepa cuándo llamarlo.
+    agent: {
+      reviewer: {
+        description:
+          "Revisor de código. Lee cambios y busca bugs, edge cases, problemas de performance y estilo. NO edita. Reporta findings priorizados por severidad.",
+      },
+      refactor: {
+        description:
+          "Refactorizador. Transforma código existente para mejorar legibilidad, eliminar duplicación y aplicar patrones. Preserva comportamiento. Reporta antes/después.",
+      },
+      explainer: {
+        description:
+          "Explica cómo funciona un pedazo de código o una lib desconocida. Didáctico, paso a paso, con analogías. NO edita, solo informa.",
+      },
+      debugger: {
+        description:
+          "Depurador por hipótesis. Ante un fallo, formula hipótesis ordenadas por probabilidad, propone experimentos de diagnóstico (solo lectura) y solo después propone fix.",
+      },
+      designer: {
+        description:
+          "Diseñador UI. Genera propuestas de layout, colores y componentes basadas en descripción del usuario. Puede llamar a la tool generar_imagen para maquetas.",
+      },
+    },
     provider: {
       // Auto-relevo: enruta solo y engancha el siguiente si uno se agota. Sin key, sin configurar.
       omniroute: {

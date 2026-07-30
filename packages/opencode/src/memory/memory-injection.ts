@@ -124,10 +124,17 @@ async function topRelevantSemantic(memories: Memory[], message: string, limit: n
     if (!e) return topRelevant(memories, message, limit) // si falla a mitad, fallback coherente
     scored.push({ m, score: cosine(msgEmb, e) })
   }
-  return scored
-    .sort((a, b) => b.score - a.score)
+  // Sort desc por score. Los MUY relevantes (>= 0.85 similitud) siempre entran
+  // aunque excedan `limit` — es una señal fuerte de que el usuario está pidiendo
+  // exactamente eso. Con esto la memoria auto-inyección se vuelve "atenta":
+  // si vas a preguntar sobre X y hay una memoria fuerte de X, aparece siempre.
+  scored.sort((a, b) => b.score - a.score)
+  const forzadas = scored.filter((x) => x.score >= 0.85).map((x) => x.m)
+  const rellenoTop = scored
     .slice(0, limit)
     .map((x) => x.m)
+    .filter((m) => !forzadas.includes(m))
+  return [...forzadas, ...rellenoTop].slice(0, Math.max(limit, forzadas.length))
 }
 
 function formatSection(title: string, memories: Memory[]): string {
