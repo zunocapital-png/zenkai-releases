@@ -2,7 +2,10 @@ export { LlamaServer, detectarBinario, nombreBinario, plataformaAsset, ensureDir
 export type { LlamaServerOptions, LlamaServerStatus } from "./llama-server"
 
 export { downloadGguf, MODELOS_RECOMENDADOS } from "./gguf-downloader"
-export type { DownloadOptions, DownloadProgress, DownloadResultado } from "./gguf-downloader"
+export type { DownloadOptions, DownloadProgress, DownloadResultado, ModeloRecomendado } from "./gguf-downloader"
+
+export { diagnosticar, evaluarModelos, elegirMejorPorTipo, resumenRecomendacion } from "./recomendador"
+export type { DiagnosticoHw, Recomendacion } from "./recomendador"
 
 export { ModelRegistry, inferirCapabilities } from "./model-registry"
 export type { ModelEntry, ModelRegistrySnapshot, ModelRegistryOptions } from "./model-registry"

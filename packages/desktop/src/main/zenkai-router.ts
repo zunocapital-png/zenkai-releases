@@ -42,6 +42,7 @@ import {
   HwMonitor,
   benchmarkYPersistir,
   leerBenchmarks,
+  resumenRecomendacion,
   bootstrapLlamaBinary,
   buscarModelosHf,
   listarGgufsDeModelo,
@@ -1090,6 +1091,14 @@ export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
       // Hardware monitor + benchmarks (automáticos, sin opciones).
       if (req.method === "GET" && url === "/v2/hw") {
         void (async () => sendJson(res, 200, await hwMonitor.snapshot()))()
+        return
+      }
+      // Diagnóstico + recomendación de modelos según HW.
+      if (req.method === "GET" && url === "/v2/engine/diagnostico") {
+        void (async () => {
+          const snap = await hwMonitor.snapshot()
+          sendJson(res, 200, resumenRecomendacion(snap))
+        })()
         return
       }
       if (req.method === "GET" && url === "/v2/engine/benchmarks") {

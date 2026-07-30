@@ -144,34 +144,209 @@ export async function downloadGguf(opts: DownloadOptions): Promise<DownloadResul
   }
 }
 
-/** Cataloga los GGUF típicos que ZENKAI soporta out-of-the-box. */
-export const MODELOS_RECOMENDADOS = [
+export type ModeloRecomendado = {
+  id: string
+  nombre: string
+  /** Bytes aproximados del archivo GGUF — sirve para chequeo de disco. */
+  bytesAprox: number
+  /** VRAM/RAM mínima recomendada para correr fluido en GPU o CPU. */
+  ramMinimaMB: number
+  url: string
+  tipo: "coding" | "general" | "reasoning" | "vision" | "embed" | "tiny"
+  /** Nivel de capacidad relativo (1 = tiny, 10 = frontera). */
+  potencia: number
+  /** Contexto máximo del modelo. */
+  ctxMax: number
+  /** Descripción corta para UI. */
+  descripcion: string
+}
+
+/**
+ * Catálogo curado — de tiny (1B) a frontier (72B). Ordenado por potencia asc.
+ * Los IDs son estables para que el registry no rompa entre releases.
+ */
+export const MODELOS_RECOMENDADOS: readonly ModeloRecomendado[] = [
+  // ── Embed ──
+  {
+    id: "nomic-embed-text-v1.5",
+    nombre: "Nomic Embed Text v1.5 (F16)",
+    bytesAprox: 274 * 1024 * 1024,
+    ramMinimaMB: 512,
+    url: "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf",
+    tipo: "embed",
+    potencia: 3,
+    ctxMax: 8192,
+    descripcion: "Embeddings de calidad para RAG. Corre en cualquier laptop.",
+  },
+  // ── Tiny (1-3B) — laptops flojas ──
+  {
+    id: "qwen2.5-1.5b-q4",
+    nombre: "Qwen 2.5 1.5B Instruct (Q4_K_M)",
+    bytesAprox: 1_100_000_000,
+    ramMinimaMB: 2048,
+    url: "https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
+    tipo: "tiny",
+    potencia: 2,
+    ctxMax: 32768,
+    descripcion: "El más chico que sirve. Ideal para máquinas con 4 GB RAM.",
+  },
+  {
+    id: "qwen2.5-3b-q4",
+    nombre: "Qwen 2.5 3B Instruct (Q4_K_M)",
+    bytesAprox: 2_000_000_000,
+    ramMinimaMB: 4096,
+    url: "https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf",
+    tipo: "general",
+    potencia: 3,
+    ctxMax: 32768,
+    descripcion: "Chico pero decente. Chats simples, no código complejo.",
+  },
+  // ── Small (7-8B) — sweet spot laptops modernas ──
   {
     id: "qwen2.5-coder-7b-q4",
-    nombre: "Qwen 2.5 Coder 7B (Q4_K_M)",
-    tamanoAprox: "4.4 GB",
+    nombre: "Qwen 2.5 Coder 7B Instruct (Q4_K_M)",
+    bytesAprox: 4_700_000_000,
+    ramMinimaMB: 6144,
     url: "https://huggingface.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF/resolve/main/Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf",
-    tipo: "coding" as const,
+    tipo: "coding",
+    potencia: 6,
+    ctxMax: 32768,
+    descripcion: "Sweet spot para código en 8 GB VRAM. Muy sólido para su tamaño.",
   },
   {
     id: "qwen2.5-7b-q4",
     nombre: "Qwen 2.5 7B Instruct (Q4_K_M)",
-    tamanoAprox: "4.4 GB",
+    bytesAprox: 4_700_000_000,
+    ramMinimaMB: 6144,
     url: "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF/resolve/main/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
-    tipo: "general" as const,
+    tipo: "general",
+    potencia: 6,
+    ctxMax: 32768,
+    descripcion: "General-purpose 7B. Balance calidad/velocidad.",
   },
   {
     id: "llama3.1-8b-q4",
     nombre: "Llama 3.1 8B Instruct (Q4_K_M)",
-    tamanoAprox: "4.9 GB",
+    bytesAprox: 4_900_000_000,
+    ramMinimaMB: 6144,
     url: "https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
-    tipo: "general" as const,
+    tipo: "general",
+    potencia: 6,
+    ctxMax: 131072,
+    descripcion: "Contexto largo (128k). Bueno para análisis de documentos.",
   },
   {
-    id: "nomic-embed-text-v1.5",
-    nombre: "Nomic Embed Text v1.5 (F16)",
-    tamanoAprox: "274 MB",
-    url: "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf",
-    tipo: "embed" as const,
+    id: "phi-4-14b-q4",
+    nombre: "Phi-4 14B (Q4_K_M)",
+    bytesAprox: 9_100_000_000,
+    ramMinimaMB: 10240,
+    url: "https://huggingface.co/bartowski/phi-4-GGUF/resolve/main/phi-4-Q4_K_M.gguf",
+    tipo: "reasoning",
+    potencia: 7,
+    ctxMax: 16384,
+    descripcion: "Microsoft Phi-4 — chico pero razona muy bien. Bueno para matemática y lógica.",
+  },
+  // ── Medium (14-22B) — GPU 12-16 GB ──
+  {
+    id: "qwen2.5-14b-q4",
+    nombre: "Qwen 2.5 14B Instruct (Q4_K_M)",
+    bytesAprox: 8_500_000_000,
+    ramMinimaMB: 12288,
+    url: "https://huggingface.co/bartowski/Qwen2.5-14B-Instruct-GGUF/resolve/main/Qwen2.5-14B-Instruct-Q4_K_M.gguf",
+    tipo: "general",
+    potencia: 7,
+    ctxMax: 32768,
+    descripcion: "Escalón medio. Mucho mejor que 7B para tareas complejas.",
+  },
+  {
+    id: "codestral-22b-q4",
+    nombre: "Codestral 22B (Q4_K_M)",
+    bytesAprox: 13_000_000_000,
+    ramMinimaMB: 16384,
+    url: "https://huggingface.co/bartowski/Codestral-22B-v0.1-GGUF/resolve/main/Codestral-22B-v0.1-Q4_K_M.gguf",
+    tipo: "coding",
+    potencia: 8,
+    ctxMax: 32768,
+    descripcion: "Mistral Codestral — código de nivel senior. Requiere 16 GB VRAM.",
+  },
+  // ── Large (32B) — GPU 24 GB o Mac 32 GB unified ──
+  {
+    id: "qwen2.5-coder-32b-q4",
+    nombre: "Qwen 2.5 Coder 32B Instruct (Q4_K_M)",
+    bytesAprox: 20_000_000_000,
+    ramMinimaMB: 24576,
+    url: "https://huggingface.co/bartowski/Qwen2.5-Coder-32B-Instruct-GGUF/resolve/main/Qwen2.5-Coder-32B-Instruct-Q4_K_M.gguf",
+    tipo: "coding",
+    potencia: 9,
+    ctxMax: 32768,
+    descripcion: "El mejor código open-weight hoy. Compite con Claude Sonnet en muchos benchmarks.",
+  },
+  {
+    id: "qwen2.5-32b-q4",
+    nombre: "Qwen 2.5 32B Instruct (Q4_K_M)",
+    bytesAprox: 20_000_000_000,
+    ramMinimaMB: 24576,
+    url: "https://huggingface.co/bartowski/Qwen2.5-32B-Instruct-GGUF/resolve/main/Qwen2.5-32B-Instruct-Q4_K_M.gguf",
+    tipo: "general",
+    potencia: 9,
+    ctxMax: 32768,
+    descripcion: "General 32B — nivel GPT-4o-mini local.",
+  },
+  {
+    id: "deepseek-r1-distill-qwen-32b-q4",
+    nombre: "DeepSeek R1 Distill Qwen 32B (Q4_K_M)",
+    bytesAprox: 20_000_000_000,
+    ramMinimaMB: 24576,
+    url: "https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-32B-GGUF/resolve/main/DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf",
+    tipo: "reasoning",
+    potencia: 9,
+    ctxMax: 131072,
+    descripcion: "Razonamiento tipo o1 local. Piensa antes de responder — más lento pero mucho más profundo.",
+  },
+  {
+    id: "qwq-32b-preview-q4",
+    nombre: "QwQ 32B Preview (Q4_K_M)",
+    bytesAprox: 20_000_000_000,
+    ramMinimaMB: 24576,
+    url: "https://huggingface.co/bartowski/QwQ-32B-Preview-GGUF/resolve/main/QwQ-32B-Preview-Q4_K_M.gguf",
+    tipo: "reasoning",
+    potencia: 9,
+    ctxMax: 32768,
+    descripcion: "Alibaba QwQ — reasoner experimental que compite con o1-preview.",
+  },
+  // ── Frontier (70B+) — GPU 48+ GB o Mac Studio 64+ GB ──
+  {
+    id: "llama3.3-70b-q4",
+    nombre: "Llama 3.3 70B Instruct (Q4_K_M)",
+    bytesAprox: 42_000_000_000,
+    ramMinimaMB: 49152,
+    url: "https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF/resolve/main/Llama-3.3-70B-Instruct-Q4_K_M.gguf",
+    tipo: "general",
+    potencia: 10,
+    ctxMax: 131072,
+    descripcion: "Frontera open-weight. Nivel Claude Sonnet / GPT-4o para muchas tareas.",
+  },
+  {
+    id: "qwen2.5-72b-q4",
+    nombre: "Qwen 2.5 72B Instruct (Q4_K_M)",
+    bytesAprox: 43_000_000_000,
+    ramMinimaMB: 49152,
+    url: "https://huggingface.co/bartowski/Qwen2.5-72B-Instruct-GGUF/resolve/main/Qwen2.5-72B-Instruct-Q4_K_M.gguf",
+    tipo: "general",
+    potencia: 10,
+    ctxMax: 32768,
+    descripcion: "Top-tier open-weight 72B. Enterprise-grade local.",
+  },
+  // ── Vision ──
+  {
+    id: "qwen2.5-vl-7b-q4",
+    nombre: "Qwen 2.5 VL 7B (Q4_K_M) · vision",
+    bytesAprox: 5_200_000_000,
+    ramMinimaMB: 8192,
+    url: "https://huggingface.co/bartowski/Qwen2.5-VL-7B-Instruct-GGUF/resolve/main/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf",
+    tipo: "vision",
+    potencia: 6,
+    ctxMax: 32768,
+    descripcion: "Vision-language 7B. Screenshot → código, análisis de UIs.",
   },
 ]
