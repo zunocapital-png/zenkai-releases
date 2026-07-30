@@ -229,6 +229,13 @@ function defaultConfig(model: string): string {
           "qwen2.5-coder:7b": { name: "[CODIGO] Qwen2.5 Coder 7B (recomendado)" },
           "qwen3:8b": { name: "[CODIGO] Qwen3 8B Rapido" },
           "qwen2.5:7b": { name: "[CHAT] Qwen2.5 7B" },
+          // ── VISION LOCAL ── modelos que "ven" imágenes que le adjuntes.
+          "qwen2.5vl:7b": { name: "[VISION] Qwen2.5 VL 7B (ve imágenes)" },
+          "llava:7b": { name: "[VISION] LLaVA 7B" },
+          "llava:13b": { name: "[VISION] LLaVA 13B (más precisa)" },
+          "bakllava:7b": { name: "[VISION] BakLLaVA 7B" },
+          "moondream:latest": { name: "[VISION] Moondream (ligera, 1.8GB)" },
+          "minicpm-v:latest": { name: "[VISION] MiniCPM-V (multilingüe)" },
         },
       },
       // Nube con modelos GRATIS o casi gratis. Conecta tu API key en "Conectar proveedor".
@@ -241,6 +248,23 @@ function defaultConfig(model: string): string {
           "qwen/qwq-32b:free": { name: "[RAZON] QwQ 32B Free" },
           "meta-llama/llama-3.3-70b-instruct:free": { name: "[CHAT] Llama 3.3 70B Free" },
           "google/gemini-2.0-flash-exp:free": { name: "[CHAT] Gemini 2.0 Flash Free" },
+          // ── VISION NUBE GRATIS ── vía OpenRouter (una sola key, decenas de modelos).
+          "meta-llama/llama-3.2-11b-vision-instruct:free": { name: "[VISION] Llama 3.2 11B Vision Free" },
+          "qwen/qwen2.5-vl-72b-instruct:free": { name: "[VISION] Qwen2.5 VL 72B Free (grande)" },
+          "google/gemini-flash-1.5-8b": { name: "[VISION] Gemini Flash 1.5 8B" },
+          "mistralai/pixtral-12b:free": { name: "[VISION] Pixtral 12B Free" },
+        },
+      },
+      // Together AI — nube con free tier generoso para vision.
+      together: {
+        name: "Together AI (nube · vision gratis con key)",
+        npm: "@ai-sdk/openai-compatible",
+        options: {
+          baseURL: "https://api.together.xyz/v1",
+        },
+        models: {
+          "meta-llama/Llama-Vision-Free": { name: "[VISION] Llama 3.2 11B Vision Free" },
+          "Qwen/Qwen2-VL-72B-Instruct": { name: "[VISION] Qwen2 VL 72B" },
         },
       },
       // NVIDIA NIM — modelos grandes GRATIS en la nube (405B, Nemotron 253B). Key gratis en build.nvidia.com

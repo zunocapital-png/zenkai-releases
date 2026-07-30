@@ -29,6 +29,7 @@ import { showToast } from "@/utils/toast"
 import { PromptInputV2, type PromptInputV2Suggestion } from "@opencode-ai/session-ui/v2/prompt-input"
 import { PermissionsModeMenu } from "@/components/permissions-mode-menu"
 import { PreflightModelo } from "@/components/preflight-modelo"
+import { BannerPermisoPendiente } from "@/components/banner-permiso-pendiente"
 import {
   createPromptInputV2Controller,
   createPromptInputV2State,
@@ -146,6 +147,9 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
       {/* Aviso pre-vuelo: si el modelo local no puede correr el agente, banner
           amarillo aquí ANTES del compositor. Segunda capa del fail-safe. */}
       <PreflightModelo />
+      {/* Banner ROJO cuando el agente pide permiso — antes quedaba invisible y
+          el chat se veía "colgado". Ahora el usuario ve Permitir / Rechazar. */}
+      <BannerPermisoPendiente />
       <PromptInputV2
         controller={props.controller}
         borderUnderlay={props.borderUnderlay}

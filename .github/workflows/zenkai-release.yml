@@ -1,0 +1,52 @@
+name: ZENKAI Release
+
+# Se dispara cuando pusheás un tag con formato v* (ej: v1.18.69).
+# Buildea Windows/macOS/Linux y publica los instaladores como GitHub Release.
+# Tus amigos descargan de https://github.com/zunocapital-png/zenkai-releases/releases
+# y la app instalada se actualiza sola vía electron-updater.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: # también permite disparar manual desde la UI de Actions
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            pkg: package:win
+          - os: macos-latest
+            pkg: package:mac
+          - os: ubuntu-latest
+            pkg: package:linux
+
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write # necesario para crear el Release y subir assets
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Build all packages
+        run: bun run build
+        working-directory: packages/desktop
+
+      - name: Package + Publish (${{ matrix.pkg }})
+        env:
+          # Este token lo provee GitHub Actions solo, no hay que setearlo.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENCODE_CHANNEL: prod
+        run: bun run ${{ matrix.pkg }} -- --publish always
+        working-directory: packages/desktop
