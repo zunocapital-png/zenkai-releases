@@ -14,3 +14,7 @@ export type {
   BashInput, BashOutput,
   GrepInput, GrepOutput, GrepMatch,
 } from "./tools/index.ts"
+
+// Fase 4: Provider adapter unificado + orchestrator con failover, cost tracking,
+// health scores, adaptive timeout, racing, cache, budget.
+export * from "./provider/index.ts"

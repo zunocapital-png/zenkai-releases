@@ -1,7 +1,7 @@
 {
   "name": "@opencode-ai/desktop",
   "private": true,
-  "version": "1.18.86",
+  "version": "1.18.87",
   "type": "module",
   "license": "MIT",
   "homepage": "https://zenkai.ai",
