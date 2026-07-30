@@ -1,0 +1,22 @@
+{
+  "name": "@zenkai/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Motor propio de ZENKAI - reemplaza gradualmente opencode. Fase 1: SessionStore.",
+  "author": "Zuno Company - Maycol Velazquez",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./session": "./src/session/store.ts",
+    "./types": "./src/types/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsgo -b",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "catalog:",
+    "typescript": "catalog:"
+  }
+}
