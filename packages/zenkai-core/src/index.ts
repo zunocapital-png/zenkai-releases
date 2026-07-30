@@ -22,3 +22,9 @@ export * from "./provider/index"
 // Fase 5: server OpenAI-compatible + streaming SSE con backpressure, heartbeat,
 // event IDs para reconnect, cancel bidireccional, metadata inline.
 export * from "./server/index"
+
+// Post-100% #1: Semantic cache con embeddings (dedup por similitud coseno).
+export * from "./embed/index"
+
+// Post-100% #2: Auto-repair loop harness (test fail → hipótesis → fix → retest).
+export * from "./harness/index"

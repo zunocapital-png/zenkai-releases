@@ -1,4 +1,6 @@
 import type { ChatChunk, ChatRequest, ChatResponse, Provider, ProviderStats } from "./types"
+import type { Embedder } from "../embed/embedder"
+import { SemanticCache } from "../embed/semantic-cache"
 
 // ProviderOrchestrator: capa sobre múltiples providers con las 10 mejoras del
 // diseño de Fase 4. Es lo que sale del router zenkai — el UI habla acá, no con
@@ -18,6 +20,10 @@ export type OrchestratorOptions = {
   regionPreferida?: string
   /** Timeout base en ms (se ajusta adaptativo por p95). */
   timeoutBaseMs?: number
+  /** Embedder para semantic cache. Sin él, cache es solo exacto. */
+  embedder?: Embedder
+  /** Umbral de similitud del semantic cache. Default 0.92. */
+  semanticThreshold?: number
 }
 
 export class ProviderOrchestrator {
@@ -25,10 +31,19 @@ export class ProviderOrchestrator {
   private latencias = new Map<string, number[]>() // rolling window para p95
   private stats = new Map<string, ProviderStats>()
   private cache = new Map<string, CachedResponse>()
+  private semanticCache?: SemanticCache<ChatResponse>
   private opts: OrchestratorOptions
 
   constructor(opts: OrchestratorOptions = {}) {
     this.opts = opts
+    // Si viene embedder, activamos el semantic cache (dedup por similitud).
+    if (opts.embedder) {
+      this.semanticCache = new SemanticCache<ChatResponse>({
+        embedder: opts.embedder,
+        threshold: opts.semanticThreshold ?? 0.92,
+        ttlMs: CACHE_TTL_MS,
+      })
+    }
   }
 
   register(p: Provider): void {
@@ -76,9 +91,18 @@ export class ProviderOrchestrator {
     // 1. Cache lookup (si el request es cacheable).
     const cacheKey = req.cacheable ? this.claveCache(req) : undefined
     if (cacheKey) {
+      // 1a. Cache exacto por hash de payload.
       const cached = this.cache.get(cacheKey)
       if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
         return { ...cached.response, fromCache: true }
+      }
+      // 1b. Semantic cache: dedup por similitud del último mensaje del usuario.
+      if (this.semanticCache) {
+        const ultimo = this.textoUltimoUsuario(req)
+        if (ultimo) {
+          const hit = await this.semanticCache.get(ultimo)
+          if (hit) return { ...hit.value, fromCache: true }
+        }
       }
     }
 
@@ -98,6 +122,11 @@ export class ProviderOrchestrator {
         clearTimeout(t)
         this.record(p.meta.name, res.latencyMs, res.usage?.costUsd ?? 0, false)
         if (cacheKey) this.cache.set(cacheKey, { response: res, at: Date.now() })
+        // También poblar semantic cache si aplica.
+        if (cacheKey && this.semanticCache) {
+          const ultimo = this.textoUltimoUsuario(req)
+          if (ultimo) await this.semanticCache.set(ultimo, res)
+        }
         return res
       } catch (e) {
         clearTimeout(t)
@@ -212,5 +241,17 @@ export class ProviderOrchestrator {
 
   private claveCache(req: ChatRequest): string {
     return JSON.stringify({ m: req.model, msgs: req.messages, t: req.temperature })
+  }
+
+  /** Extrae el último mensaje del usuario como texto plano para el semantic cache. */
+  private textoUltimoUsuario(req: ChatRequest): string | undefined {
+    for (let i = req.messages.length - 1; i >= 0; i--) {
+      const m = req.messages[i]
+      if (m && m.role === "user") {
+        const parts = m.parts.filter((p) => p.type === "text").map((p) => (p as { type: "text"; text: string }).text)
+        return parts.join(" ").trim() || undefined
+      }
+    }
+    return undefined
   }
 }
