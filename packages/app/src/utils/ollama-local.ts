@@ -227,6 +227,21 @@ export async function ollamaVivo(): Promise<boolean> {
   }
 }
 
+// Mismo orden de preferencia que usa el router (zenkai-router.ts) para elegir en "Auto".
+// Mantener sincronizado con PREFERENCIA de ahí.
+const PREFERENCIA_AUTO = ["qwen2.5-coder", "qwen3", "qwen2.5", "llama3.1", "deepseek", "mistral", "gemma"]
+
+// Qué modelo local usaría "Auto" ahora mismo (para mostrarlo en el chat con transparencia).
+// undefined si no hay ningún modelo local instalado.
+export async function modeloAutoResuelto(): Promise<string | undefined> {
+  const tags = await listarModelosOllama()
+  for (const pref of PREFERENCIA_AUTO) {
+    const hit = tags.find((t) => t.startsWith(pref))
+    if (hit) return hit
+  }
+  return tags[0]
+}
+
 // Lista los modelos ya descargados (tags) desde Ollama. [] si está apagado.
 export async function listarModelosOllama(): Promise<string[]> {
   try {

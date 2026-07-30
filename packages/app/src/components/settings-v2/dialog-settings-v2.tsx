@@ -5,6 +5,7 @@ import { Icon } from "@opencode-ai/ui/icon"
 import { useLanguage } from "@/context/language"
 import { usePlatform } from "@/context/platform"
 import { SettingsGeneralV2 } from "./general"
+import { SettingsPermisosV2 } from "./permisos"
 import { SettingsProvidersV2 } from "./providers"
 import { SettingsModelsV2 } from "./models"
 import "./settings-v2.css"
@@ -65,6 +66,10 @@ export const DialogSettings: Component<{
                       <Icon name="sliders" />
                       {language.t("settings.tab.general")}
                     </TabsV2.Trigger>
+                    <TabsV2.Trigger value="permisos">
+                      <Icon name="shield" />
+                      Permisos
+                    </TabsV2.Trigger>
                     <TabsV2.Trigger value="shortcuts">
                       <Icon name="keyboard" />
                       {language.t("settings.tab.shortcuts")}
@@ -73,14 +78,6 @@ export const DialogSettings: Component<{
                       <Icon name="palette" />
                       Themes
                     </TabsV2.Trigger>
-                    <TabsV2.Trigger value="plugins">
-                      <Icon name="puzzle" />
-                      Plugins
-                    </TabsV2.Trigger>
-                    <TabsV2.Trigger value="performance">
-                      <Icon name="gauge" />
-                      Performance
-                    </TabsV2.Trigger>
                     <TabsV2.Trigger value="about">
                       <Icon name="info" />
                       About
@@ -88,20 +85,36 @@ export const DialogSettings: Component<{
                   </div>
                 </div>
 
+                {/* Conectores: todo lo que enchufa ZENKAI con el exterior (modelos, APIs, MCP, plugins) */}
                 <div class="flex flex-col gap-1.5">
-                  <TabsV2.SectionTitle>{language.t("settings.section.server")}</TabsV2.SectionTitle>
+                  <TabsV2.SectionTitle>Conectores</TabsV2.SectionTitle>
                   <div class="flex flex-col gap-1.5 w-full">
-                    <TabsV2.Trigger value="servers">
-                      <Icon name="server" />
-                      {language.t("status.popover.tab.servers")}
+                    <TabsV2.Trigger value="models">
+                      <Icon name="models" />
+                      {language.t("settings.models.title")}
                     </TabsV2.Trigger>
                     <TabsV2.Trigger value="providers">
                       <Icon name="providers" />
                       {language.t("settings.providers.title")}
                     </TabsV2.Trigger>
-                    <TabsV2.Trigger value="models">
-                      <Icon name="models" />
-                      {language.t("settings.models.title")}
+                    <TabsV2.Trigger value="servers">
+                      <Icon name="server" />
+                      {language.t("status.popover.tab.servers")}
+                    </TabsV2.Trigger>
+                    <TabsV2.Trigger value="plugins">
+                      <Icon name="puzzle" />
+                      Plugins
+                    </TabsV2.Trigger>
+                  </div>
+                </div>
+
+                {/* Avanzado: herramientas técnicas, fuera del flujo principal */}
+                <div class="flex flex-col gap-1.5">
+                  <TabsV2.SectionTitle>Avanzado</TabsV2.SectionTitle>
+                  <div class="flex flex-col gap-1.5 w-full">
+                    <TabsV2.Trigger value="performance">
+                      <Icon name="gauge" />
+                      Performance
                     </TabsV2.Trigger>
                   </div>
                 </div>
@@ -116,6 +129,9 @@ export const DialogSettings: Component<{
         </TabsV2.List>
         <TabsV2.Content value="general" class="settings-v2-panel">
           <SettingsGeneralV2 sessionID={props.sessionID} />
+        </TabsV2.Content>
+        <TabsV2.Content value="permisos" class="settings-v2-panel">
+          <SettingsPermisosV2 />
         </TabsV2.Content>
         <TabsV2.Content value="shortcuts" class="settings-v2-panel">
           <LazyKeyboardShortcuts />

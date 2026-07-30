@@ -5,7 +5,8 @@ import { Icon } from "@opencode-ai/ui/v2/icon"
 import { KeybindV2 } from "@opencode-ai/ui/v2/keybind-v2"
 import { TooltipV2 } from "@opencode-ai/ui/v2/tooltip-v2"
 import type { ReferenceInfo } from "@opencode-ai/sdk/v2/client"
-import { createEffect, createMemo, on, Show } from "solid-js"
+import { createEffect, createMemo, createSignal, on, Show } from "solid-js"
+import { modeloAutoResuelto } from "@/utils/ollama-local"
 import { ModelSelectorPopoverV2 } from "@/components/dialog-select-model"
 import { DialogSelectModelUnpaidV2 } from "@/components/dialog-select-model-unpaid-v2"
 import type { PromptInputProps } from "@/components/prompt-input/contracts"
@@ -56,6 +57,18 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
     })
   }
 
+  // Transparencia del Auto: cuando el proveedor es "omniroute" (ZENKAI Auto), resolvemos y
+  // mostramos QUÉ modelo local está usando ahora mismo (antes era una caja negra).
+  const [autoModelo, setAutoModelo] = createSignal<string | undefined>(undefined)
+  createEffect(() => {
+    const pid = props.controller.model.selection.current()?.provider?.id
+    if (pid !== "omniroute") {
+      setAutoModelo(undefined)
+      return
+    }
+    void modeloAutoResuelto().then(setAutoModelo)
+  })
+
   return (
     <div class="flex flex-col gap-2">
       <PromptInputV2
@@ -82,9 +95,10 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
               modelName={(() => {
                 const pid = props.controller.model.selection.current()?.provider?.id
                 if (!pid) return language.t("dialog.model.select.title")
-                // Badge Local/Nube (sin nombre de modelo, para no filtrar branding).
-                const local = pid === "ollama" || pid === "omniroute"
-                return local ? "ZENKAI · Local" : "ZENKAI · Nube"
+                // Auto (omniroute): mostramos el modelo local real que está usando (transparencia).
+                if (pid === "omniroute") return autoModelo() ? `ZENKAI · Auto → ${autoModelo()}` : "ZENKAI · Auto"
+                // Modelo local puntual, o nube (sin nombre para no filtrar branding de terceros).
+                return pid === "ollama" ? "ZENKAI · Local" : "ZENKAI · Nube"
               })()}
               onClose={props.controller.restoreFocus}
               onUnpaidClick={() =>
