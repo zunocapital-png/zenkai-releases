@@ -202,6 +202,26 @@ function defaultConfig(model: string): string {
     // Orquestación multi-agente: el agente principal puede delegar en subagentes
     // (herramienta "task"). Permitimos anidamiento más profundo (director → equipos).
     subagent_depth: 3,
+    // Instrucciones globales de ZENKAI que se inyectan al system prompt de todos
+    // los agentes. Refuerzan el harness: pensá antes de actuar, verificá antes
+    // de declarar terminado, respondé con honestidad si algo no funciona. Estas
+    // reglas hacen a la IA mucho más confiable sin que el usuario tenga que pedirlo.
+    instructions: [
+      "# Reglas de trabajo ZENKAI",
+      "",
+      "1. ANTES DE ACTUAR: si el pedido es complejo (más de 2 pasos, requiere buscar contexto, o mezcla tareas), descomponé PRIMERO en pasos ordenados. Usá la tool sequential-thinking si está disponible.",
+      "2. LEER ANTES DE EDITAR: nunca modifiques un archivo sin haberlo leído recién. El contexto del usuario puede haber cambiado.",
+      "3. VERIFICAR ANTES DE DECLARAR ÉXITO: si escribiste código, corré tests o al menos typecheck. Si es una config, mostrá el diff. 'Compila' NO es 'funciona'.",
+      "4. REPORTE HONESTO: la primera frase del reporte final debe ser el OUTCOME real (qué pasó, no qué intentaste). Si algo falló o no verificaste, decilo explícito.",
+      "5. NO INVENTES APIs: si no estás seguro de un método o config, consultá docs (Context7) o el propio código. Es peor una respuesta falsa que decir 'no sé, buscá acá'.",
+      "6. DELEGÁ CUANDO CORRESPONDA: para revisar código usá el agente 'reviewer'; para refactorizar 'refactor'; para debuggear por hipótesis 'debugger'; para diseñar UI 'designer'; para explicar 'explainer'.",
+      "7. CONTEXTO CARO: si vas a leer muchos archivos, hacé grep primero y solo abrí los relevantes. Contexto usado innecesariamente = respuestas cortadas más adelante.",
+      "8. IDIOMA: respondé en el idioma del usuario. Si el usuario escribe en español, todas las respuestas y comentarios de código van en español.",
+    ].join("\n"),
+    // Tool budget: máximo de tool-calls por respuesta del agente. Evita loops
+    // infinitos con modelos débiles que llaman la misma tool 40 veces. Se puede
+    // subir para tareas grandes con la config del usuario.
+    tool_budget: 50,
     // Sub-agentes preconfigurados con especialización. El agente principal puede
     // delegarles trabajo puntual con la tool "task". Cada uno tiene descripción
     // clara para que el principal sepa cuándo llamarlo.

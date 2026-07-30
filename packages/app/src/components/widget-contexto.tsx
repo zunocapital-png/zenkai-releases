@@ -1,13 +1,17 @@
-import { createMemo, Show } from "solid-js"
+import { createMemo, createSignal, Show } from "solid-js"
 import { useSync } from "@/context/sync"
 import { useLayout } from "@/context/layout"
+import { useCommand } from "@/context/command"
 
 // Widget mínimo en el compositor que muestra el uso del contexto (tokens usados
 // vs límite del modelo). Antes el usuario NO tenía visibilidad y las respuestas
 // cortaban de golpe. Se muestra solo cuando el uso pasa 40% para no ser ruido.
+// Cuando pasa 88% ofrece compactar la sesión con un click.
 export function WidgetContexto() {
   const sync = useSync()
   const layout = useLayout()
+  const command = useCommand()
+  const [avisoCerrado, setAvisoCerrado] = createSignal(false)
 
   const sessionID = createMemo(() => {
     const route = layout.route()
@@ -42,6 +46,13 @@ export function WidgetContexto() {
     return `${n}`
   }
 
+  // Cuando el contexto pasa 88%, ofrecer compactar con un click. Compactar
+  // resume los mensajes viejos y libera contexto para seguir sin cortes.
+  const compactar = () => {
+    const cmd = command.options.find((o) => o.id === "session.compact")
+    if (cmd?.onSelect) cmd.onSelect()
+  }
+
   return (
     <Show when={uso() && uso()!.pct > 0.4 ? uso() : undefined}>
       {(u) => (
@@ -59,6 +70,26 @@ export function WidgetContexto() {
           <span class="opacity-75">
             {fmt(u().total)}/{fmt(u().limite)}
           </span>
+          <Show when={u().pct > 0.88 && !avisoCerrado()}>
+            <button
+              type="button"
+              onClick={compactar}
+              title="Compactar sesión y liberar contexto"
+              class="ml-1 rounded px-1.5 py-[1px] font-semibold border transition-opacity hover:opacity-80"
+              style={{ "border-color": color(), background: color(), color: "white" }}
+            >
+              compactar
+            </button>
+            <button
+              type="button"
+              onClick={() => setAvisoCerrado(true)}
+              title="Descartar aviso"
+              class="opacity-50 hover:opacity-100 -mr-1"
+              aria-label="Descartar aviso"
+            >
+              ×
+            </button>
+          </Show>
         </div>
       )}
     </Show>
