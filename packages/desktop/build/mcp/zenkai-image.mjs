@@ -91,6 +91,21 @@ async function runTool(name, args) {
   if (!prompt) throw new Error("Falta el prompt de la imagen.")
   const size = [512, 768, 1024].includes(args?.size) ? args.size : 1024
   const b64 = cfg.mode === "local" ? await generarLocal(cfg, prompt, size) : await generarNube(cfg, prompt, size)
+  // Subimos la imagen al router de ZENKAI y devolvemos un markdown ![](url) COMPACTO: el chat
+  // lo renderiza como imagen sin meter el base64 gigante en el contexto del modelo.
+  try {
+    const up = await fetch("http://localhost:20128/img", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ data: b64, mime: "image/png" }),
+    })
+    if (up.ok) {
+      const { id } = await up.json()
+      if (id) return { text: `![imagen generada](http://localhost:20128/img/${id})` }
+    }
+  } catch {
+    /* si el router no está, caemos a imagen MCP (el modelo al menos la ve) */
+  }
   return { image: b64 }
 }
 

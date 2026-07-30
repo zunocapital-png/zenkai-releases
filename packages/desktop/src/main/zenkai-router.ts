@@ -11,9 +11,22 @@
 
 import http from "node:http"
 import net from "node:net"
+import { randomUUID } from "node:crypto"
 import { Readable } from "node:stream"
 
 export const ZENKAI_ROUTER_PORT = 20128
+
+// Almacén efímero de imágenes generadas por tools (ej. generar_imagen). La tool sube la
+// imagen acá y devuelve un markdown ![](/img/<id>) compacto; el chat lo renderiza sin
+// inundar el contexto con base64. Guardamos las últimas N en memoria (se pierden al cerrar).
+const imgStore = new Map<string, { buf: Buffer; type: string }>()
+const IMG_MAX = 40
+function guardarImagen(buf: Buffer, type: string): string {
+  const id = randomUUID()
+  imgStore.set(id, { buf, type })
+  while (imgStore.size > IMG_MAX) imgStore.delete(imgStore.keys().next().value as string)
+  return id
+}
 const OLLAMA = "http://localhost:11434"
 
 let server: http.Server | undefined
@@ -190,6 +203,28 @@ async function handleChat(req: http.IncomingMessage, res: http.ServerResponse) {
   })
 }
 
+// POST /img: recibe { data: base64, mime } y guarda la imagen; devuelve { id }.
+async function handleImagePost(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as { data?: string; mime?: string }
+    if (!body?.data) return sendJson(res, 400, { error: { message: "falta data" } })
+    const buf = Buffer.from(body.data, "base64")
+    const id = guardarImagen(buf, body.mime || "image/png")
+    sendJson(res, 200, { id })
+  } catch {
+    sendJson(res, 400, { error: { message: "JSON inválido" } })
+  }
+}
+
+// GET /img/<id>: sirve la imagen guardada.
+function handleImageGet(url: string, res: http.ServerResponse) {
+  const id = url.slice("/img/".length).split("?")[0]!
+  const img = imgStore.get(id)
+  if (!img) return sendJson(res, 404, { error: { message: "imagen no encontrada" } })
+  res.writeHead(200, { "content-type": img.type, "cache-control": "no-store" })
+  res.end(img.buf)
+}
+
 export type ZenkaiRouterStatus = "already-running" | "started" | "skipped"
 
 export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
@@ -199,6 +234,8 @@ export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
       const url = req.url ?? ""
       if (req.method === "GET" && url.startsWith("/v1/models")) return void handleModels(res)
       if (req.method === "POST" && url.startsWith("/v1/chat/completions")) return void handleChat(req, res)
+      if (req.method === "POST" && url === "/img") return void handleImagePost(req, res)
+      if (req.method === "GET" && url.startsWith("/img/")) return handleImageGet(url, res)
       if (req.method === "GET" && (url === "/" || url.startsWith("/health"))) return sendJson(res, 200, { ok: true })
       sendJson(res, 404, { error: { message: "No encontrado" } })
     })
