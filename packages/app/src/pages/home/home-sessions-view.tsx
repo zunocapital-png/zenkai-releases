@@ -74,20 +74,29 @@ function useEstadoVivo() {
   const [datos] = createResource(
     pulse,
     async () => {
-      try {
-        const res = await fetch("http://localhost:11434/api/tags", { signal: AbortSignal.timeout(1500) })
-        if (!res.ok) return { iaLista: false, modelosListos: 0, totalModelos: 0 }
-        const data = (await res.json()) as {
-          models?: Array<{ name: string; capabilities?: string[] }>
-        }
-        const total = (data.models ?? []).length
-        const listos = (data.models ?? []).filter((m) => (m.capabilities ?? []).includes("tools")).length
-        return { iaLista: listos > 0, modelosListos: listos, totalModelos: total }
-      } catch {
-        return { iaLista: false, modelosListos: 0, totalModelos: 0 }
+      const zero = { iaLista: false, modelosListos: 0, totalModelos: 0, routerVivo: false }
+      // IA local
+      const ia = await fetch("http://localhost:11434/api/tags", { signal: AbortSignal.timeout(1500) })
+        .then(async (res) => {
+          if (!res.ok) return { total: 0, listos: 0 }
+          const data = (await res.json()) as { models?: Array<{ name: string; capabilities?: string[] }> }
+          const arr = data.models ?? []
+          return { total: arr.length, listos: arr.filter((m) => (m.capabilities ?? []).includes("tools")).length }
+        })
+        .catch(() => ({ total: 0, listos: 0 }))
+      // Router local
+      const routerVivo = await fetch("http://localhost:20128/v1/models", { signal: AbortSignal.timeout(1000) })
+        .then((r) => r.ok)
+        .catch(() => false)
+      if (ia.total === 0 && !routerVivo) return zero
+      return {
+        iaLista: ia.listos > 0,
+        modelosListos: ia.listos,
+        totalModelos: ia.total,
+        routerVivo,
       }
     },
-    { initialValue: { iaLista: false, modelosListos: 0, totalModelos: 0 } },
+    { initialValue: { iaLista: false, modelosListos: 0, totalModelos: 0, routerVivo: false } },
   )
 
   return datos
@@ -210,8 +219,13 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
                 clave="Modelos"
                 valor={`${estado().modelosListos} listos · ${estado().totalModelos} instalados`}
               />
-              <EstadoLinea estado="ok" clave="Skills" valor="conectadas · MCP activo" />
-              <EstadoLinea estado="ok" clave="Router" valor="operativo" />
+              {/* Skills asumido activo — el bundle de MCPs viene con el instalador. */}
+              <EstadoLinea estado="ok" clave="Skills" valor="8 herramientas MCP integradas" />
+              <EstadoLinea
+                estado={estado().routerVivo ? "ok" : "err"}
+                clave="Router"
+                valor={estado().routerVivo ? "operativo · failover activo" : "apagado"}
+              />
             </div>
           </TerminalPanel>
         </div>

@@ -56,8 +56,7 @@ export function LeftSidebar() {
   const listaProyectos = createMemo(() => projects.project.list())
   const servidorActivo = () => projects.server.list()[0]
 
-  const [query] = createSignal("")
-  // Grupos de días colapsables (como Claude): guardamos los títulos ocultos.
+  // Grupos de días colapsables: guardamos los títulos ocultos en un Set.
   const [colapsados, setColapsados] = createSignal<Set<string>>(new Set())
   const estaColapsado = (t: string) => colapsados().has(t)
   const toggleGrupo = (t: string) =>
@@ -110,19 +109,9 @@ export function LeftSidebar() {
       .filter((group) => group.sessions.length > 0)
   })
 
-  // Filtro por título (case-insensitive); descarta grupos que queden vacíos.
-  const filteredGroups = createMemo(() => {
-    const q = query().trim().toLowerCase()
-    if (!q) return dedupedGroups()
-    return dedupedGroups()
-      .map((group) => ({
-        ...group,
-        sessions: group.sessions.filter((record) =>
-          (sessionTitle(record.session.title) || "Nuevo chat").toLowerCase().includes(q),
-        ),
-      }))
-      .filter((group) => group.sessions.length > 0)
-  })
+  // Antes había un signal `query` sin input real que lo alimentara — se removió.
+  // Si en el futuro sumamos buscador, se re-agrega acá con su <input> asociado.
+  const filteredGroups = dedupedGroups
 
   // Quita la sesión del store local para reflejar el cambio al instante.
   // El borrado de sesión vive en un solo lugar: sessions.session.archive
@@ -314,7 +303,7 @@ export function LeftSidebar() {
               each={filteredGroups()}
               fallback={
                 <p class="px-2 pt-2 text-13-regular text-v2-text-text-faint select-none">
-                  {query().trim() ? "Sin resultados" : "Sin chats todavía"}
+                  Sin chats todavía
                 </p>
               }
             >

@@ -346,6 +346,36 @@ function defaultConfig(model: string): string {
         command: ["npx", "-y", "@tokenizin/mcp-npx-fetch"],
         enabled: true,
       },
+      // ── MCPs nuevos preinstalados (todos sin key, sin cuenta) ────────────
+      // Git: status, diff, log, branch. Offline. Al agente le sirve para leer
+      // qué cambió antes de proponer una edición.
+      git: {
+        type: "local",
+        command: ["npx", "-y", "@cyanheads/git-mcp-server"],
+        enabled: true,
+      },
+      // Time: fecha, timezone, conversiones. Útil cuando el usuario pide
+      // "algo para mañana a las 9 en Buenos Aires".
+      time: {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-time"],
+        enabled: true,
+      },
+      // Puppeteer: automatización de navegador (headless Chromium). Habilita
+      // scraping / testing UI / capturas desde el chat. Apagado por defecto
+      // porque descarga Chromium al primer uso (~200 MB).
+      puppeteer: {
+        type: "local",
+        command: ["npx", "-y", "puppeteer-mcp-server"],
+        enabled: false,
+      },
+      // SQLite: consultar bases locales con SQL. Sin key. Apagado por defecto:
+      // el usuario lo prende y le indica qué archivo .db abrir.
+      sqlite: {
+        type: "local",
+        command: ["npx", "-y", "@modelcontextprotocol/server-sqlite"],
+        enabled: false,
+      },
     },
   }
   // Control de PC (experimental): el desktop expone la ruta del MCP propio por env.

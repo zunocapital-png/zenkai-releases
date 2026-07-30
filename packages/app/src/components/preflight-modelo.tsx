@@ -9,7 +9,10 @@ export function PreflightModelo() {
   const [pulse, setPulse] = createSignal(0)
   const t = setInterval(() => setPulse((n) => n + 1), 10_000)
   onCleanup(() => clearInterval(t))
-  const [descartado, setDescartado] = createSignal(false)
+  // "Descartado" recuerda el ESTADO en el que se descartó, no un boolean.
+  // Cuando el estado cambia, el banner reaparece: la promesa del title
+  // ("vuelve a aparecer si sigue el problema") pasa a ser real.
+  const [descartadoEstado, setDescartadoEstado] = createSignal<string | undefined>(undefined)
 
   const [diag] = createResource(
     pulse,
@@ -34,7 +37,7 @@ export function PreflightModelo() {
     { initialValue: { estado: "ok" as const } },
   )
 
-  const debeMostrar = () => !descartado() && diag().estado !== "ok"
+  const debeMostrar = () => diag().estado !== "ok" && descartadoEstado() !== diag().estado
 
   return (
     <Show when={debeMostrar()}>
@@ -85,10 +88,10 @@ export function PreflightModelo() {
         </div>
         <button
           type="button"
-          onClick={() => setDescartado(true)}
+          onClick={() => setDescartadoEstado(diag().estado)}
           class="shrink-0 rounded p-1 opacity-60 hover:opacity-100 transition-opacity"
           aria-label="Descartar aviso"
-          title="Descartar (vuelve a aparecer si sigue el problema)"
+          title="Descartar (vuelve a aparecer si el problema cambia)"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
             <path d="M6 6l12 12M18 6L6 18" />
