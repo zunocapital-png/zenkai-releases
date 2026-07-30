@@ -22,9 +22,9 @@ export async function getRelevantMemories(
 
   // User/feedback/project son preferencias globales: se inyectan SIEMPRE (deben aplicar
   // aunque no matcheen el mensaje). Los "Learned Facts" pueden crecer mucho y meter ruido:
-  // si son muchos, quedamos con los mas relevantes al mensaje (overlap de palabras, sin
-  // embeddings -> determinista y sin depender de Ollama).
-  const relevantFacts = topRelevant(factMems, userMessage, 8)
+  // si son muchos, quedamos con los mas relevantes. Intentamos relevancia SEMÁNTICA
+  // (embeddings locales de Ollama); si no está disponible, caemos a overlap de palabras.
+  const relevantFacts = await topRelevantSemantic(factMems, userMessage, 8)
 
   if (userMems.length > 0) {
     sections.push(formatSection("User Preferences", userMems))
@@ -67,6 +67,64 @@ function topRelevant(memories: Memory[], message: string, limit: number): Memory
   if (memories.length <= limit) return memories
   return memories
     .map((m) => ({ m, score: overlap(m.content, message) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((x) => x.m)
+}
+
+// ── Relevancia semántica con embeddings locales (Ollama nomic-embed-text) ──
+// Mucho mejor que overlap de palabras: entiende sinónimos y contexto. Si Ollama o el modelo
+// de embeddings no están, cae a overlap sin romper nada. Cachea embeddings por contenido.
+const OLLAMA_EMBED = "http://localhost:11434/api/embeddings"
+const EMBED_MODEL = "nomic-embed-text"
+const embCache = new Map<string, number[]>()
+
+async function embed(text: string): Promise<number[] | null> {
+  const cached = embCache.get(text)
+  if (cached) return cached
+  try {
+    const res = await fetch(OLLAMA_EMBED, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ model: EMBED_MODEL, prompt: text.slice(0, 2000) }),
+      signal: AbortSignal.timeout(4000),
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { embedding?: number[] }
+    const v = data.embedding
+    if (!Array.isArray(v) || v.length === 0) return null
+    embCache.set(text, v)
+    if (embCache.size > 500) embCache.delete(embCache.keys().next().value as string) // tope simple
+    return v
+  } catch {
+    return null
+  }
+}
+
+function cosine(a: number[], b: number[]): number {
+  let dot = 0
+  let na = 0
+  let nb = 0
+  const n = Math.min(a.length, b.length)
+  for (let i = 0; i < n; i++) {
+    dot += a[i]! * b[i]!
+    na += a[i]! * a[i]!
+    nb += b[i]! * b[i]!
+  }
+  return na && nb ? dot / (Math.sqrt(na) * Math.sqrt(nb)) : 0
+}
+
+async function topRelevantSemantic(memories: Memory[], message: string, limit: number): Promise<Memory[]> {
+  if (memories.length <= limit) return memories
+  const msgEmb = await embed(message)
+  if (!msgEmb) return topRelevant(memories, message, limit) // sin embeddings -> overlap
+  const scored: { m: Memory; score: number }[] = []
+  for (const m of memories) {
+    const e = await embed(m.content)
+    if (!e) return topRelevant(memories, message, limit) // si falla a mitad, fallback coherente
+    scored.push({ m, score: cosine(msgEmb, e) })
+  }
+  return scored
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((x) => x.m)
