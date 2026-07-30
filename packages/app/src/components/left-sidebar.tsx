@@ -1,6 +1,6 @@
 import { Icon as IconV2 } from "@opencode-ai/ui/v2/icon"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
-import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js"
+import { createMemo, createSignal, For, type JSX, onCleanup, onMount, Show } from "solid-js"
 import { produce } from "solid-js/store"
 import { Binary } from "@opencode-ai/core/util/binary"
 import type { Session } from "@opencode-ai/sdk/v2/client"
@@ -241,9 +241,9 @@ export function LeftSidebar() {
               Modelos, imagen y skills viven en el chat (selector de modelos / barra del compositor),
               no acá, para no duplicar ni ocupar espacio. */}
           <div class="flex items-center gap-1 px-3 pb-2 pt-1 text-12-medium">
-            <FooterText label="Ajustes" onClick={() => openSettings()} />
-            <FooterText label="Tareas" onClick={openTareas} />
-            <FooterText label="Ayuda" onClick={openHelp} />
+            <FooterText icon={<IcoAjustes />} label="Ajustes" onClick={() => openSettings()} />
+            <FooterText icon={<IcoTareas />} label="Tareas" onClick={openTareas} />
+            <FooterText icon={<IcoAyuda />} label="Ayuda" onClick={openHelp} />
           </div>
         </div>
       </aside>
@@ -251,17 +251,28 @@ export function LeftSidebar() {
   )
 }
 
-function FooterText(props: { label: string; onClick: () => void }) {
+function FooterText(props: { icon: JSX.Element; label: string; onClick: () => void }) {
   return (
     <button
       type="button"
-      class="rounded-md px-2 py-1 text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-strong"
+      class="flex items-center gap-1.5 rounded-md px-2 py-1 text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-strong"
       onClick={props.onClick}
     >
+      {props.icon}
       {props.label}
     </button>
   )
 }
+
+// Íconos de línea (SVG inline) para el footer — así no dependemos del sprite ni de emojis.
+const fsvg = (path: JSX.Element) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    {path}
+  </svg>
+)
+const IcoAjustes = () => fsvg(<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>)
+const IcoTareas = () => fsvg(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>)
+const IcoAyuda = () => fsvg(<><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3" /><path d="M12 17h.01" /></>)
 
 function SessionRow(props: {
   record: HomeSessionRecord
