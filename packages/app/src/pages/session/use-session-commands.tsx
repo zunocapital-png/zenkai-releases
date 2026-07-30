@@ -370,6 +370,24 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       (x) => dialog.show(() => <x.DialogCostTracker />),
     )
   }
+  const zenkaiReflector = () => {
+    void openDialog(
+      () => import("@/components/dialog-reflector"),
+      (x) => dialog.show(() => <x.DialogReflector />),
+    )
+  }
+  const zenkaiAutoRepair = () => {
+    void openDialog(
+      () => import("@/components/dialog-auto-repair"),
+      (x) => dialog.show(() => <x.DialogAutoRepair />),
+    )
+  }
+  const zenkaiSandbox = () => {
+    void openDialog(
+      () => import("@/components/dialog-sandbox"),
+      (x) => dialog.show(() => <x.DialogSandbox />),
+    )
+  }
 
   const toggleAutoAccept = () => {
     const sessionID = params.id
@@ -763,6 +781,27 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: "Gastos USD por provider + health + budget del motor propio",
       slash: "costos",
       onSelect: zenkaiCostTracker,
+    }),
+    mcpCommand({
+      id: "zenkai.reflector",
+      title: "Reflector cognitivo",
+      description: "Otro modelo re-lee una respuesta, la puntúa y sugiere mejora",
+      slash: "reflexionar",
+      onSelect: zenkaiReflector,
+    }),
+    mcpCommand({
+      id: "zenkai.repair",
+      title: "Auto-repair loop",
+      description: "Test → si falla, LLM propone fix → aplica → retesta",
+      slash: "reparar",
+      onSelect: zenkaiAutoRepair,
+    }),
+    mcpCommand({
+      id: "zenkai.sandbox",
+      title: "Cognitive Sandbox",
+      description: "Ejecuta código Node/Python/Bash aislado con timeout duro",
+      slash: "sandbox",
+      onSelect: zenkaiSandbox,
     }),
   ]
 

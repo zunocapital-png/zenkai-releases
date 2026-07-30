@@ -5,6 +5,8 @@
 export * from "./types/index"
 export { SessionStore } from "./session/store"
 export type { SessionStoreOptions } from "./session/store"
+export { SessionStoreSqlite } from "./session/store-sqlite"
+export type { SessionStoreSqliteOptions } from "./session/store-sqlite"
 export { ToolExecutor } from "./tools/executor"
 export type { Tool, ToolMeta, ToolContext, ToolInvocationResult, ToolRiesgo } from "./tools/types"
 export { readTool, writeTool, bashTool, grepTool, registrarBuiltins } from "./tools/index"
@@ -28,3 +30,24 @@ export * from "./embed/index"
 
 // Post-100% #2: Auto-repair loop harness (test fail → hipótesis → fix → retest).
 export * from "./harness/index"
+
+// Post-100% #4: Vision attach validado — normalizador file/http/data URI.
+export * from "./vision/index"
+
+// Medio plazo #7: Vector store SQLite persistente para memoria semántica.
+export * from "./vectorstore/index"
+
+// Medio plazo #8: Fine-tune dataset builder (JSONL ollama/sharegpt + Modelfile).
+export * from "./finetune/index"
+
+// Medio plazo #9: Plugin registry con checksum + sync remoto.
+export * from "./plugins/index"
+
+// Medio plazo #10: Collab hub (transport-agnostic broadcast + presence).
+export * from "./collab/index"
+
+// Largo plazo #11-#13: AIOS Kernel (event bus + sandbox + parliament).
+export * from "./aios/index"
+
+// Largo plazo #14: Skill Store distribuido (registry local + remote + rating).
+export * from "./skills/index"

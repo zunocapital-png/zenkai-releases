@@ -15,7 +15,22 @@ import http from "node:http"
 import net from "node:net"
 import { randomUUID } from "node:crypto"
 import { Readable } from "node:stream"
-import { ProviderOrchestrator, crearProviderOpenAICompat, crearZenkaiCoreServer } from "@zenkai/core"
+import {
+  ProviderOrchestrator,
+  crearProviderOpenAICompat,
+  crearZenkaiCoreServer,
+  reflexionar,
+  correrAutoRepair,
+  ToolExecutor,
+  registrarBuiltins,
+  consultarParlamento,
+  correrCodigo,
+  EventBus,
+} from "@zenkai/core"
+import type { LlmProposer, FixPropuesto, MiembroParlamento } from "@zenkai/core"
+
+// Bus global de eventos del motor — expuesto vía /v2/events (SSE).
+const eventBus = new EventBus()
 
 // ── Bridge Fase 6: @zenkai/core como motor alternativo del router ──
 // Instancia perezosa del orquestador propio. Se inicializa la primera vez
@@ -518,6 +533,187 @@ function handleImageGet(url: string, res: http.ServerResponse) {
   res.end(img.buf)
 }
 
+// POST /v2/reflect — invoca el reflector real contra el orquestador propio.
+async function handleReflect(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as {
+      pregunta?: string
+      respuesta?: string
+      modelo?: string
+      contexto?: string
+      mejorar?: boolean
+    }
+    if (!body?.pregunta || !body?.respuesta || !body?.modelo) {
+      return sendJson(res, 400, { error: { message: "faltan campos: pregunta, respuesta, modelo" } })
+    }
+    const orch = coreOrchestrator()
+    const v = await reflexionar(
+      {
+        pregunta: body.pregunta,
+        respuesta: body.respuesta,
+        modelo: body.modelo,
+        contexto: body.contexto,
+      },
+      (r, c) => orch.chat(r, c),
+      { mejorar: !!body.mejorar },
+    )
+    sendJson(res, 200, v)
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+// POST /v2/repair — corre auto-repair contra el ToolExecutor propio.
+// El proposer usa el orchestrator para pedirle al modelo un fix estructurado.
+async function handleRepair(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as {
+      testCmd?: string
+      modelo?: string
+      cwd?: string
+      maxIntentos?: number
+    }
+    if (!body?.testCmd || !body?.modelo) {
+      return sendJson(res, 400, { error: { message: "faltan campos: testCmd, modelo" } })
+    }
+    const orch = coreOrchestrator()
+    const ex = new ToolExecutor()
+    registrarBuiltins(ex)
+    const proposer: LlmProposer = async ({ testOutput, testExitCode, intentosPrevios }) => {
+      const prompt = [
+        "Eres un ingeniero. El siguiente test falló. Propone UN fix concreto en JSON.",
+        `Comando: ${body.testCmd}`,
+        `Exit code: ${testExitCode}`,
+        `Intento #${intentosPrevios.length + 1}`,
+        "",
+        "Salida del test (últimos 3000 chars):",
+        testOutput.slice(-3000),
+        "",
+        'Responde SOLO JSON: {"hipotesis":"...", "fix":{"tipo":"bash","cmd":"..."}} o {"fix":{"tipo":"escribir","path":"...","contenido":"..."}} o {"fix":{"tipo":"manual","nota":"..."}}',
+      ].join("\n")
+      try {
+        const resp = await orch.chat({
+          model: body.modelo!,
+          messages: [{ id: "u", role: "user", parts: [{ type: "text", text: prompt }], createdAt: 0 }],
+          temperature: 0.2,
+          cacheable: false,
+        })
+        const parsed = extraerJsonBalanceado(resp.content)
+        if (!parsed?.fix) return undefined
+        return { hipotesis: String(parsed.hipotesis ?? "sin hipótesis"), fix: parsed.fix as FixPropuesto }
+      } catch {
+        return undefined
+      }
+    }
+    const r = await correrAutoRepair(
+      { testCmd: body.testCmd, cwd: body.cwd, maxIntentos: body.maxIntentos },
+      ex,
+      proposer,
+    )
+    sendJson(res, 200, r)
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+// POST /v2/parliament — consulta a N modelos y devuelve el resultado del voto.
+async function handleParliament(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as {
+      pregunta?: string
+      contexto?: string
+      miembros?: MiembroParlamento[]
+    }
+    if (!body?.pregunta || !Array.isArray(body?.miembros) || body.miembros.length === 0) {
+      return sendJson(res, 400, { error: { message: "faltan campos: pregunta, miembros[]" } })
+    }
+    const orch = coreOrchestrator()
+    const r = await consultarParlamento({
+      pregunta: body.pregunta,
+      contexto: body.contexto,
+      miembros: body.miembros,
+      chat: (rq, c) => orch.chat(rq, c),
+    })
+    eventBus.emit("parliament.decided", { decision: r.decision, quorum: r.quorum })
+    sendJson(res, 200, r)
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+// POST /v2/sandbox — corre código en child_process aislado y devuelve stdout/stderr.
+async function handleSandbox(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as {
+      lenguaje?: "node" | "python" | "bash"
+      codigo?: string
+      timeoutMs?: number
+      env?: Record<string, string>
+    }
+    if (!body?.lenguaje || !body?.codigo) {
+      return sendJson(res, 400, { error: { message: "faltan campos: lenguaje, codigo" } })
+    }
+    const r = await correrCodigo({
+      lenguaje: body.lenguaje,
+      codigo: body.codigo,
+      timeoutMs: body.timeoutMs,
+      env: body.env,
+    })
+    eventBus.emit("sandbox.run", { lenguaje: body.lenguaje, ok: r.ok, duracionMs: r.duracionMs })
+    sendJson(res, 200, r)
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+// GET /v2/events — stream SSE del event bus. Cliente escucha cambios en vivo.
+function handleEventsStream(res: http.ServerResponse) {
+  res.writeHead(200, {
+    "content-type": "text/event-stream",
+    "cache-control": "no-store",
+    "connection": "keep-alive",
+  })
+  res.write(`: connected\n\n`)
+  const unsub = eventBus.on("*", (e) => {
+    try {
+      res.write(`event: ${e.tipo}\n`)
+      res.write(`data: ${JSON.stringify({ tipo: e.tipo, data: e.data, ts: e.ts })}\n\n`)
+    } catch {
+      /* si el write falla, el close handler limpia */
+    }
+  })
+  const heartbeat = setInterval(() => {
+    try { res.write(`: ping\n\n`) } catch { /* ignore */ }
+  }, 15_000)
+  res.on("close", () => {
+    unsub()
+    clearInterval(heartbeat)
+  })
+}
+
+function extraerJsonBalanceado(text: string): Record<string, unknown> | undefined {
+  const start = text.indexOf("{")
+  if (start < 0) return undefined
+  let depth = 0
+  let inString = false
+  let escape = false
+  for (let i = start; i < text.length; i++) {
+    const c = text[i]!
+    if (escape) { escape = false; continue }
+    if (c === "\\") { escape = true; continue }
+    if (c === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (c === "{") depth++
+    else if (c === "}") {
+      depth--
+      if (depth === 0) {
+        try { return JSON.parse(text.slice(start, i + 1)) as Record<string, unknown> } catch { return undefined }
+      }
+    }
+  }
+  return undefined
+}
+
 export type ZenkaiRouterStatus = "already-running" | "started" | "skipped"
 
 export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
@@ -525,6 +721,26 @@ export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
     if (await portInUse(ZENKAI_ROUTER_PORT)) return "already-running"
     server = http.createServer((req, res) => {
       const url = req.url ?? ""
+      // Endpoints custom del motor propio (fuera del OpenAI-compat).
+      if (req.method === "POST" && url === "/v2/reflect") {
+        void handleReflect(req, res)
+        return
+      }
+      if (req.method === "POST" && url === "/v2/repair") {
+        void handleRepair(req, res)
+        return
+      }
+      if (req.method === "POST" && url === "/v2/parliament") {
+        void handleParliament(req, res)
+        return
+      }
+      if (req.method === "POST" && url === "/v2/sandbox") {
+        void handleSandbox(req, res)
+        return
+      }
+      if (req.method === "GET" && url.startsWith("/v2/events")) {
+        return handleEventsStream(res)
+      }
       // Rutas /v2/* van 100% al motor @zenkai/core (Fase 6).
       if (url.startsWith("/v2/")) {
         void (async () => {
