@@ -23,8 +23,9 @@ import { ProviderOrchestrator, crearProviderOpenAICompat, crearZenkaiCoreServer 
 // Registra Ollama como provider local por default y expone endpoints
 // OpenAI-compatible sobre esa capa.
 let coreServerCache: ReturnType<typeof crearZenkaiCoreServer> | undefined
-function coreServer() {
-  if (coreServerCache) return coreServerCache
+let coreOrchestratorCache: ProviderOrchestrator | undefined
+function coreOrchestrator(): ProviderOrchestrator {
+  if (coreOrchestratorCache) return coreOrchestratorCache
   const orchestrator = new ProviderOrchestrator({ regionPreferida: "local" })
   orchestrator.register(
     crearProviderOpenAICompat({
@@ -36,8 +37,37 @@ function coreServer() {
       region: "local",
     }),
   )
-  coreServerCache = crearZenkaiCoreServer(orchestrator)
+  coreOrchestratorCache = orchestrator
+  // Persistencia: cada 5s escribimos las stats del orchestrator a un archivo
+  // que el renderer lee via IPC/localStorage para el widget /costos.
+  setInterval(() => void persistirStatsAlDisco(orchestrator), 5000).unref()
+  return orchestrator
+}
+function coreServer() {
+  if (coreServerCache) return coreServerCache
+  coreServerCache = crearZenkaiCoreServer(coreOrchestrator())
   return coreServerCache
+}
+
+// Persiste stats del ProviderOrchestrator para que /costos las lea. Usa tmpdir
+// para evitar tocar userData del renderer (que corre en otro proceso).
+async function persistirStatsAlDisco(orchestrator: ProviderOrchestrator) {
+  try {
+    const { writeFile, mkdir } = await import("node:fs/promises")
+    const { tmpdir } = await import("node:os")
+    const { join } = await import("node:path")
+    const dir = join(tmpdir(), "zenkai-core")
+    await mkdir(dir, { recursive: true })
+    await writeFile(join(dir, "provider-stats.json"), JSON.stringify(orchestrator.getStats(), null, 2), "utf8")
+  } catch {
+    /* best effort */
+  }
+}
+
+/** Si ZENKAI_USE_CORE=1, /v1/* se redirige a /v2/* (motor propio). Toggle
+ *  desde Ajustes → General escribe esta env var y reinicia el server. */
+function motorPropioActivo(): boolean {
+  return process.env.ZENKAI_USE_CORE === "1"
 }
 
 // Traduce IncomingMessage → Fetch API Request para @zenkai/core.
@@ -510,7 +540,24 @@ export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
       }
       if (req.method === "GET" && url.startsWith("/v1/models")) return void handleModels(res)
       if (req.method === "GET" && url === "/v1/health") return void handleHealth(res)
-      if (req.method === "POST" && url.startsWith("/v1/chat/completions")) return void handleChat(req, res)
+      if (req.method === "POST" && url.startsWith("/v1/chat/completions")) {
+        // Toggle: si el motor propio está activo, /v1 se sirve por @zenkai/core.
+        // Sin toggle, sigue el pipeline legacy con Ollama passthrough.
+        if (motorPropioActivo()) {
+          void (async () => {
+            try {
+              const webReq = await toWebRequest(req)
+              const target = new Request(webReq.url.replace("/v1/chat/completions", "/v1/chat/completions"), webReq)
+              const webRes = await coreServer().handle(target)
+              await copyResponse(webRes, res)
+            } catch (e) {
+              sendJson(res, 500, { error: { message: String(e) } })
+            }
+          })()
+          return
+        }
+        return void handleChat(req, res)
+      }
       if (req.method === "POST" && url === "/img") return void handleImagePost(req, res)
       if (req.method === "GET" && url.startsWith("/img/")) return handleImageGet(url, res)
       if (req.method === "GET" && (url === "/" || url.startsWith("/health"))) return sendJson(res, 200, { ok: true })

@@ -280,6 +280,38 @@ export const SettingsGeneralV2: Component<{
             del compositor (junto al botón Enviar) — como Claude. Acá quedaba
             duplicado y sin visibilidad. */}
 
+        {/* Toggle motor propio @zenkai/core. Cuando está activo, el chat pasa
+            por el orchestrator con failover, cost tracking, health scores,
+            adaptive timeout, cache y racing (v1.19+). Reinicia la app para
+            que aplique. */}
+        <SettingsRowV2
+          title="Motor @zenkai/core (experimental)"
+          description="Usa el motor propio con failover, cost tracking y health scores en vez del legacy. Requiere reiniciar."
+        >
+          <div data-action="settings-zenkai-core-toggle">
+            <Switch
+              checked={(() => {
+                try {
+                  return localStorage.getItem("zenkai.useCore") === "1"
+                } catch {
+                  return false
+                }
+              })()}
+              onChange={(v) => {
+                try {
+                  localStorage.setItem("zenkai.useCore", v ? "1" : "0")
+                  // Notificamos al main via IPC para que setee la env var y
+                  // reinicie el zenkai-router server.
+                  const w = window as unknown as { platform?: { setEnv?: (k: string, v: string) => void } }
+                  w.platform?.setEnv?.("ZENKAI_USE_CORE", v ? "1" : "0")
+                } catch {
+                  /* ignore */
+                }
+              }}
+            />
+          </div>
+        </SettingsRowV2>
+
         <SettingsRowV2
           title={language.t("settings.general.row.shell.title")}
           description={language.t("settings.general.row.shell.description")}
