@@ -63,10 +63,13 @@ $g = [System.Drawing.Graphics]::FromImage($bmp);
 $g.CopyFromScreen($b.X, $b.Y, 0, 0, $bmp.Size);
 $ms = New-Object System.IO.MemoryStream;
 $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png);
-[Console]::Out.Write([System.Convert]::ToBase64String($ms.ToArray()));
+[Console]::Out.Write("$($b.Width)x$($b.Height)|" + [System.Convert]::ToBase64String($ms.ToArray()));
 `
-  const b64 = (await powershell(script)).trim()
-  return { image: b64 }
+  const out = (await powershell(script)).trim()
+  const sep = out.indexOf("|")
+  const meta = sep > 0 ? out.slice(0, sep) : ""
+  const b64 = sep > 0 ? out.slice(sep + 1) : out
+  return { image: b64, size: meta } // meta = "WIDTHxHEIGHT" para mapear coordenadas
 }
 
 async function moveMouse(x, y) {
@@ -192,7 +195,10 @@ async function handle(msg) {
     try {
       const out = await runTool(params?.name, params?.arguments ?? {})
       const content = out.image
-        ? [{ type: "image", data: out.image, mimeType: "image/png" }]
+        ? [
+            { type: "text", text: `Pantalla ${out.size || "?"} px. Las coordenadas de clic son en estos píxeles.` },
+            { type: "image", data: out.image, mimeType: "image/png" },
+          ]
         : [{ type: "text", text: out.text ?? "ok" }]
       return send({ jsonrpc: "2.0", id, result: { content } })
     } catch (e) {

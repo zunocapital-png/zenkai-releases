@@ -18,6 +18,12 @@ const OLLAMA = "http://localhost:11434"
 
 let server: http.Server | undefined
 
+// Circuit breaker: si un upstream falla, lo saltamos por COOLDOWN_MS (evita martillar
+// caídos y pagar el timeout completo en cada request). name -> timestamp hasta el que sigue abierto.
+const breaker = new Map<string, number>()
+const COOLDOWN_MS = 30_000
+const PRIMER_BYTE_MS = 8_000 // watchdog: si no llega respuesta en este tiempo, failover
+
 function portInUse(port: number, timeoutMs = 600): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = new net.Socket()
@@ -124,6 +130,7 @@ async function handleChat(req: http.IncomingMessage, res: http.ServerResponse) {
   const candidatos: Upstream[] = esAuto ? upstreams() : [{ name: "ollama", kind: "ollama", base: `${OLLAMA}/v1` }]
 
   for (const u of candidatos) {
+    if (Date.now() < (breaker.get(u.name) ?? 0)) continue // circuito abierto -> saltar sin esperar
     const modelo = await resolverModelo(u, pedido)
     if (!modelo) continue // p.ej. Ollama sin modelos -> probar el siguiente upstream
     const headers: Record<string, string> = { "content-type": "application/json" }
@@ -134,11 +141,17 @@ async function handleChat(req: http.IncomingMessage, res: http.ServerResponse) {
         method: "POST",
         headers,
         body: JSON.stringify({ ...payload, model: modelo }),
+        signal: AbortSignal.timeout(PRIMER_BYTE_MS), // watchdog: sin respuesta a tiempo -> failover
       })
     } catch {
-      continue // upstream caído -> failover al siguiente
+      breaker.set(u.name, Date.now() + COOLDOWN_MS) // caído/timeout -> cooldown
+      continue
     }
-    if (upstream.status >= 500 || upstream.status === 429) continue // agotado/caído -> failover
+    if (upstream.status >= 500 || upstream.status === 429) {
+      breaker.set(u.name, Date.now() + COOLDOWN_MS) // agotado/caído -> cooldown
+      continue
+    }
+    breaker.delete(u.name) // respondió -> cerrar el circuito
     res.writeHead(upstream.status, {
       "content-type": upstream.headers.get("content-type") ?? "application/json",
     })
