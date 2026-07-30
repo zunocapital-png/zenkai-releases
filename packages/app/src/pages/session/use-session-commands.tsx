@@ -394,6 +394,12 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       (x) => dialog.show(() => <x.DialogZenkaiEngine />),
     )
   }
+  const zenkaiComandos = () => {
+    void openDialog(
+      () => import("@/components/dialog-comandos"),
+      (x) => dialog.show(() => <x.DialogComandos />),
+    )
+  }
 
   const toggleAutoAccept = () => {
     const sessionID = params.id
@@ -815,6 +821,13 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: "Descarga y gestiona modelos GGUF con el motor propio, cargar/descargar por demanda",
       slash: "motor",
       onSelect: zenkaiMotor,
+    }),
+    mcpCommand({
+      id: "zenkai.comandos",
+      title: "Catálogo de comandos",
+      description: "Lista completa de slashes con descripción y ejemplos, agrupados por categoría",
+      slash: "comandos",
+      onSelect: zenkaiComandos,
     }),
   ]
 

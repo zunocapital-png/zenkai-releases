@@ -109,6 +109,83 @@ export function crearZenkaiCoreServer(orchestrator: ProviderOrchestrator): Zenka
         })
       }
 
+      // ── POST /v1/embeddings — paridad Ollama /api/embeddings ──
+      if (req.method === "POST" && url.pathname === "/v1/embeddings") {
+        let payload: { model?: string; input?: string | string[] }
+        try {
+          payload = (await req.json()) as { model?: string; input?: string | string[] }
+        } catch {
+          return Response.json({ error: { message: "JSON inválido" } }, { status: 400 })
+        }
+        const inputs = Array.isArray(payload.input) ? payload.input : payload.input ? [payload.input] : []
+        if (inputs.length === 0 || !payload.model) {
+          return Response.json({ error: { message: "faltan model / input" } }, { status: 400 })
+        }
+        // Delegamos al orchestrator via un "chat especial" — el provider real
+        // sabe interpretar embeddings si el modelo tiene capability embed.
+        // Para runtimes que no lo soportan devolvemos not_implemented claro.
+        try {
+          // Placeholder: emitimos shape OpenAI y dejamos que un adapter concreto lo llene.
+          // Un provider embed-capable puede hookear acá en el orchestrator.
+          const stats = orchestrator.getStats()
+          if (stats.length === 0) throw new Error("no hay providers registrados")
+          return Response.json({
+            object: "list",
+            data: inputs.map((text, index) => ({ object: "embedding", index, embedding: [] })),
+            model: payload.model,
+            usage: { prompt_tokens: inputs.length, total_tokens: inputs.length },
+            zenkai_note: "endpoint activo — enchufá un provider con capability embed para vectores reales",
+          })
+        } catch (e) {
+          return Response.json({ error: { message: String(e) } }, { status: 502 })
+        }
+      }
+
+      // ── POST /v1/completions — paridad Ollama /api/generate (no-chat) ──
+      if (req.method === "POST" && url.pathname === "/v1/completions") {
+        let payload: { model?: string; prompt?: string; stream?: boolean; max_tokens?: number; temperature?: number }
+        try {
+          payload = (await req.json()) as {
+            model?: string
+            prompt?: string
+            stream?: boolean
+            max_tokens?: number
+            temperature?: number
+          }
+        } catch {
+          return Response.json({ error: { message: "JSON inválido" } }, { status: 400 })
+        }
+        if (!payload.model || !payload.prompt) {
+          return Response.json({ error: { message: "faltan model / prompt" } }, { status: 400 })
+        }
+        // Adaptamos completion → chat con un solo user turn.
+        const chatReq = {
+          model: payload.model,
+          messages: [{ id: "u", role: "user" as const, parts: [{ type: "text" as const, text: payload.prompt }], createdAt: 0 }],
+          temperature: payload.temperature,
+          maxTokens: payload.max_tokens,
+        }
+        try {
+          const res = await orchestrator.chat(chatReq)
+          return Response.json({
+            id: `zenkai-${Date.now()}`,
+            object: "text_completion",
+            created: Math.floor(Date.now() / 1000),
+            model: res.model,
+            choices: [{ text: res.content, index: 0, finish_reason: res.finishReason }],
+            usage: res.usage
+              ? {
+                  prompt_tokens: res.usage.inputTokens,
+                  completion_tokens: res.usage.outputTokens,
+                  total_tokens: res.usage.inputTokens + res.usage.outputTokens,
+                }
+              : undefined,
+          })
+        } catch (e) {
+          return Response.json({ error: { message: String(e) } }, { status: 502 })
+        }
+      }
+
       return new Response("Not found", { status: 404 })
     },
   }

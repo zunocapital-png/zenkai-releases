@@ -39,6 +39,18 @@ import {
   detectarPiper,
   VOCES_PIPER,
   inferirCapabilities,
+  HwMonitor,
+  benchmarkYPersistir,
+  leerBenchmarks,
+  bootstrapLlamaBinary,
+  buscarModelosHf,
+  listarGgufsDeModelo,
+  importarOllamaAlRegistry,
+  descubrirModelosOllama,
+  ollamaEstaInstalado,
+  parseZenkaiFile,
+  crearModeloDesdeZenkaiFile,
+  serializarZenkaiFile,
 } from "@zenkai/core"
 import type { LlmProposer, FixPropuesto, MiembroParlamento } from "@zenkai/core"
 import { tmpdir } from "node:os"
@@ -62,6 +74,11 @@ function getEngine(): ZenkaiEngine {
 
 // Pairing service singleton.
 const pairing = new PairingService()
+
+// Hardware monitor singleton — silencioso hasta que alguien se subscribe.
+const hwMonitor = new HwMonitor({ intervalMs: 2000 })
+// El monitor emite al event bus continuo — la UI se suscribe a /v2/events.
+hwMonitor.subscribe((snap) => eventBus.emit("hw.snapshot", snap))
 
 // ── Bridge Fase 6: @zenkai/core como motor alternativo del router ──
 // Instancia perezosa del orquestador propio. Se inicializa la primera vez
@@ -755,8 +772,87 @@ async function handleEngineLoad(req: http.IncomingMessage, res: http.ServerRespo
   try {
     const body = JSON.parse(await readBody(req)) as { id?: string }
     if (!body?.id) return sendJson(res, 400, { error: { message: "falta id" } })
-    const r = await getEngine().asegurar(body.id)
+    const engine = getEngine()
+    const r = await engine.asegurar(body.id)
     sendJson(res, 200, { id: body.id, puerto: r.puerto, entry: r.entry })
+    // Auto-benchmark en background — invisible al usuario. Si ya tiene bench
+    // reciente (<30 días), skip. Si falla, best-effort. Emite al event bus.
+    void (async () => {
+      try {
+        const bench = await benchmarkYPersistir(engine.getRegistry(), body.id!, r.puerto)
+        if (bench?.ok) eventBus.emit("engine.benchmark", bench)
+      } catch { /* noop */ }
+    })()
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+async function handleEngineCreate(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as { id?: string; zenkaifile?: string }
+    if (!body?.id || !body?.zenkaifile) {
+      return sendJson(res, 400, { error: { message: "faltan campos: id, zenkaifile (contenido texto)" } })
+    }
+    const spec = parseZenkaiFile(body.zenkaifile)
+    const entry = crearModeloDesdeZenkaiFile(getEngine().getRegistry(), body.id, spec)
+    eventBus.emit("engine.model.created", { id: body.id })
+    sendJson(res, 200, { entry, spec: serializarZenkaiFile(spec) })
+  } catch (e) {
+    sendJson(res, 400, { error: { message: String((e as Error).message) } })
+  }
+}
+
+async function handleBootstrap(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const path = require("node:path") as typeof import("node:path")
+    const binDir = path.join(tmpdir(), "zenkai-bin")
+    const r = await bootstrapLlamaBinary({
+      binDir,
+      onProgress: (p) => eventBus.emit("bootstrap.progress", p),
+    })
+    if (r.ok && r.binaryPath) {
+      // Setear env var para que futuras detecciones lo encuentren.
+      process.env.ZENKAI_LLAMA_SERVER = r.binaryPath
+      eventBus.emit("bootstrap.done", { binaryPath: r.binaryPath, version: r.version })
+    }
+    sendJson(res, r.ok ? 200 : 500, r)
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+async function handleHfSearch(url: string, res: http.ServerResponse) {
+  try {
+    const u = new URL(url, "http://localhost")
+    const query = u.searchParams.get("q") ?? ""
+    const limit = Number(u.searchParams.get("limit") ?? "20")
+    const modelos = await buscarModelosHf(query, limit)
+    sendJson(res, 200, modelos)
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+async function handleHfFiles(url: string, res: http.ServerResponse) {
+  try {
+    const modelId = decodeURIComponent(url.slice("/v2/hf/files/".length).split("?")[0]!)
+    const files = await listarGgufsDeModelo(modelId)
+    sendJson(res, 200, files)
+  } catch (e) {
+    sendJson(res, 500, { error: { message: String((e as Error).message) } })
+  }
+}
+
+async function handleEngineBench(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = JSON.parse(await readBody(req)) as { id?: string; forzar?: boolean }
+    if (!body?.id) return sendJson(res, 400, { error: { message: "falta id" } })
+    const engine = getEngine()
+    const inst = engine.status().instancias.find((i) => i.id === body.id)
+    if (!inst) return sendJson(res, 400, { error: { message: "modelo no está cargado — cargá primero" } })
+    const r = await benchmarkYPersistir(engine.getRegistry(), body.id, inst.puerto, { forzar: body.forzar })
+    sendJson(res, 200, r ?? { ok: false })
   } catch (e) {
     sendJson(res, 500, { error: { message: String((e as Error).message) } })
   }
@@ -991,6 +1087,49 @@ export async function startZenkaiRouter(): Promise<ZenkaiRouterStatus> {
         return void handlePairStatus(url, res)
       }
       // TTS Piper.
+      // Hardware monitor + benchmarks (automáticos, sin opciones).
+      if (req.method === "GET" && url === "/v2/hw") {
+        void (async () => sendJson(res, 200, await hwMonitor.snapshot()))()
+        return
+      }
+      if (req.method === "GET" && url === "/v2/engine/benchmarks") {
+        const eng = getEngine()
+        const modelsDir = process.env.ZENKAI_MODELS_DIR ?? (require("node:path") as typeof import("node:path")).join(tmpdir(), "zenkai-models")
+        return sendJson(res, 200, leerBenchmarks(modelsDir))
+        void eng // silenciar lint
+      }
+      if (req.method === "POST" && url === "/v2/engine/benchmark") {
+        void handleEngineBench(req, res)
+        return
+      }
+      // Independencia total: bootstrap del binario llama-server (descarga auto).
+      if (req.method === "POST" && url === "/v2/engine/bootstrap") {
+        void handleBootstrap(req, res)
+        return
+      }
+      // HuggingFace search (LM Studio-like).
+      if (req.method === "GET" && url.startsWith("/v2/hf/search")) {
+        void handleHfSearch(url, res)
+        return
+      }
+      if (req.method === "GET" && url.startsWith("/v2/hf/files/")) {
+        void handleHfFiles(url, res)
+        return
+      }
+      // Ollama import (feature opcional — puente para usuarios que ya usan Ollama).
+      if (req.method === "GET" && url === "/v2/ollama/status") {
+        return sendJson(res, 200, { instalado: ollamaEstaInstalado(), modelos: descubrirModelosOllama() })
+      }
+      if (req.method === "POST" && url === "/v2/ollama/import") {
+        const r = importarOllamaAlRegistry(getEngine().getRegistry())
+        eventBus.emit("ollama.imported", r)
+        return sendJson(res, 200, r)
+      }
+      // ZenkaiFile — modelo custom con SYSTEM/PARAMETER/TEMPLATE (paridad + mejora Modelfile).
+      if (req.method === "POST" && url === "/v2/engine/create") {
+        void handleEngineCreate(req, res)
+        return
+      }
       if (req.method === "GET" && url === "/v2/tts/status") {
         void (async () => {
           const p = await detectarPiper()

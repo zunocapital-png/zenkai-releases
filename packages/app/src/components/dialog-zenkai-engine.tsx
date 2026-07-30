@@ -1,4 +1,4 @@
-import { createSignal, For, Show, onMount } from "solid-js"
+import { createSignal, For, Show, onMount, onCleanup } from "solid-js"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 
 // Zenkai Engine: reemplaza Ollama. Descarga GGUF, gestiona modelos, carga/descarga.
@@ -7,6 +7,8 @@ import { useDialog } from "@opencode-ai/ui/context/dialog"
 type CatalogoItem = { id: string; nombre: string; tamanoAprox: string; url: string; tipo: string }
 type ModelEntry = { id: string; nombre: string; path: string; bytes: number; capabilities?: string[]; installedAt: number }
 type EngineStatus = { binaryDetectado?: string; cargadosCount: number; maxCargados: number; instancias: Array<{ id: string; puerto: number; requestsActivos: number }> }
+type HwSnapshot = { ram: { totalMB: number; libreMB: number; usadoPct: number }; cpu: { cores: number; modelo?: string }; gpu?: { nombre: string; vramTotalMB?: number; vramUsadoMB?: number; utilizacionPct?: number; tempC?: number } }
+type BenchInfo = { at: number; tokensPorSegundo: number; primerTokenMs: number }
 
 export function DialogZenkaiEngine() {
   const dialog = useDialog()
@@ -16,26 +18,32 @@ export function DialogZenkaiEngine() {
   const [descargando, setDescargando] = createSignal<string | undefined>()
   const [progreso, setProgreso] = createSignal(0)
   const [msg, setMsg] = createSignal<string | undefined>()
+  const [hw, setHw] = createSignal<HwSnapshot | undefined>()
+  const [benchmarks, setBenchmarks] = createSignal<Record<string, BenchInfo>>({})
 
   const cargar = async () => {
     try {
-      const [s, m] = await Promise.all([
+      const [s, m, b, h] = await Promise.all([
         fetch("/v2/engine/status").then((r) => r.json()) as Promise<EngineStatus>,
         fetch("/v2/engine/models").then((r) => r.json()) as Promise<{ catalogo: CatalogoItem[]; instalados: ModelEntry[] }>,
+        fetch("/v2/engine/benchmarks").then((r) => r.json()) as Promise<Record<string, BenchInfo>>,
+        fetch("/v2/hw").then((r) => r.json()) as Promise<HwSnapshot>,
       ])
       setStatus(s)
       setCatalogo(m.catalogo)
       setInstalados(m.instalados)
+      setBenchmarks(b)
+      setHw(h)
     } catch (e) {
       setMsg("Error cargando estado del motor: " + String((e as Error).message))
     }
   }
 
+  let es: EventSource | undefined
   onMount(() => {
     void cargar()
-    // Suscribimos al event bus para progreso de descargas.
     try {
-      const es = new EventSource("/v2/events")
+      es = new EventSource("/v2/events")
       es.addEventListener("engine.download.progress", (e: MessageEvent) => {
         try {
           const data = JSON.parse(e.data as string) as { data: { percent?: number; id?: string } }
@@ -49,7 +57,33 @@ export function DialogZenkaiEngine() {
         setProgreso(0)
         void cargar()
       })
+      // Hardware en vivo (RAM/GPU cada 2s desde el backend).
+      es.addEventListener("hw.snapshot", (e: MessageEvent) => {
+        try {
+          const data = JSON.parse(e.data as string) as { data: HwSnapshot }
+          if (data?.data) setHw(data.data)
+        } catch { /* ignore */ }
+      })
+      es.addEventListener("engine.benchmark", (e: MessageEvent) => {
+        try {
+          const data = JSON.parse(e.data as string) as { data: { modelId: string; tokensPorSegundo: number; primerTokenMs: number } }
+          if (data?.data?.modelId) {
+            setBenchmarks((prev) => ({
+              ...prev,
+              [data.data.modelId]: {
+                at: Date.now(),
+                tokensPorSegundo: data.data.tokensPorSegundo,
+                primerTokenMs: data.data.primerTokenMs,
+              },
+            }))
+          }
+        } catch { /* ignore */ }
+      })
     } catch { /* SSE no disponible en algunos entornos */ }
+  })
+
+  onCleanup(() => {
+    try { es?.close() } catch { /* noop */ }
   })
 
   const descargar = async (item: CatalogoItem) => {
