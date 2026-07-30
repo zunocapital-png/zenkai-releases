@@ -78,8 +78,6 @@ export function DialogGaleriaDiseno() {
       d.nombre,
     )
 
-  const total = DISENOS_HTML.length + PLANTILLAS_DISENO.length
-
   return (
     <Dialog
       size="large"
@@ -88,9 +86,9 @@ export function DialogGaleriaDiseno() {
     >
       <div class="relative flex flex-col gap-4 overflow-y-auto p-6 text-14-regular text-text-base">
         <p class="text-13-regular text-text-muted">
-          {total} diseños (web, app, 3D, componentes y más). Los <b class="text-text-strong">destacados</b> muestran el
-          diseño real; el resto son prompts listos. Tocá "Usar" y el material va al chat para que ZENKAI lo genere o
-          lo adapte.
+          Diseños listos para web, apps, 3D, componentes y más. Los <b class="text-text-strong">destacados</b> muestran
+          el diseño real; el resto son prompts. Tocá "Usar" y el material va al chat para que ZENKAI lo genere o lo
+          adapte.
         </p>
 
         <div class="flex flex-wrap gap-2">

@@ -2,14 +2,18 @@ import { createSignal, onMount, onCleanup, For, Show } from "solid-js"
 import { Dialog } from "@opencode-ai/ui/dialog"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useServerSDK } from "@/context/server-sdk"
+import { usePlatform } from "@/context/platform"
 import { useQueryClient } from "@tanstack/solid-query"
 import {
   MODELOS_RECOMENDADOS,
   type Descarga,
+  type ModeloLocal,
   listarModelosOllama,
   ollamaVivo,
   estaInstalado,
   descargarModeloOllama,
+  presupuestoGB,
+  modeloRecomendado,
 } from "@/utils/ollama-local"
 
 // Onboarding de primer arranque: da la bienvenida y guía a instalar un modelo local
@@ -18,9 +22,13 @@ export function DialogBienvenida() {
   const dialog = useDialog()
   const serverSDK = useServerSDK()
   const queryClient = useQueryClient()
+  const platform = usePlatform()
   const [ollamaOk, setOllamaOk] = createSignal<boolean | undefined>(undefined)
   const [instalados, setInstalados] = createSignal<string[]>([])
   const [descargas, setDescargas] = createSignal<Record<string, Descarga>>({})
+  // Escaneo de la PC → modelo recomendado que entra en tu equipo (onboarding que decide por vos).
+  const [ramGB, setRamGB] = createSignal<number | undefined>(undefined)
+  const [recomendado, setRecomendado] = createSignal<ModeloLocal | undefined>(undefined)
   // Un AbortController por descarga; al cerrar el diálogo abortamos las que sigan vivas
   // (antes el stream seguía corriendo y escribía sobre un componente desmontado).
   const aborters: Record<string, AbortController> = {}
@@ -37,6 +45,14 @@ export function DialogBienvenida() {
     void refrescar()
     const t = setTimeout(() => void refrescar(), 4000)
     onCleanup(() => clearTimeout(t))
+    // Analizamos el hardware y elegimos el mejor modelo que entra en tu PC.
+    void platform
+      .analyzeHardware?.()
+      .then((hw) => {
+        setRamGB(hw.ramGB)
+        setRecomendado(modeloRecomendado(presupuestoGB(hw.ramGB, hw.vramGB, hw.freeRamGB)))
+      })
+      .catch(() => {})
   })
 
   const instalado = (id: string) => estaInstalado(id, instalados())
@@ -94,6 +110,45 @@ export function DialogBienvenida() {
             Más potentes, pagás por uso al proveedor.
           </li>
         </ul>
+
+        {/* Recomendado según tu PC (escaneo automático) */}
+        <Show when={recomendado()}>
+          {(m) => (
+            <div class="flex flex-col gap-2 rounded-lg border border-orange-500/40 bg-orange-500/5 p-4">
+              <div class="flex items-center gap-2">
+                <span class="text-16-medium">✨</span>
+                <span class="text-14-medium text-text-strong">Recomendado para tu PC</span>
+                <Show when={ramGB()}>
+                  <span class="text-11-regular text-text-muted">· {ramGB()} GB RAM detectados</span>
+                </Show>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="flex min-w-0 flex-1 flex-col">
+                  <span class="text-13-medium text-text-strong">{m().nombre}</span>
+                  <span class="text-12-regular text-text-muted">{m().nota} · {m().tam}</span>
+                </div>
+                <Show
+                  when={!instalado(m().id)}
+                  fallback={<span class="shrink-0 text-13-medium text-green-400">✅ Instalado</span>}
+                >
+                  <button
+                    type="button"
+                    disabled={!!descargas()[m().id] && descargas()[m().id]!.pct >= 0 && descargas()[m().id]!.pct < 100}
+                    onClick={() => void descargar(m().id)}
+                    class="shrink-0 rounded-lg bg-orange-500 px-4 py-2 text-13-medium text-white hover:bg-orange-600 disabled:opacity-50"
+                  >
+                    {descargas()[m().id] ? (descargas()[m().id]!.pct === -1 ? "Reintentar" : "Instalando…") : "Instalar ahora"}
+                  </button>
+                </Show>
+              </div>
+              <Show when={descargas()[m().id] && !instalado(m().id) && descargas()[m().id]!.pct >= 0}>
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-border-base">
+                  <div class="h-full rounded-full bg-orange-500 transition-all" style={{ width: `${Math.max(2, descargas()[m().id]!.pct)}%` }} />
+                </div>
+              </Show>
+            </div>
+          )}
+        </Show>
 
         {/* Modelos locales */}
         <div class="flex flex-col gap-2.5 rounded-lg border border-border-base bg-surface-raised p-4">
