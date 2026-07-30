@@ -73,17 +73,14 @@ export function LeftSidebar() {
   const openDiagnostico = () => {
     void import("@/components/dialog-diagnostico").then((x) => dialog.show(() => <x.DialogDiagnostico />))
   }
-  const openCrearAgente = () => {
-    void import("@/components/dialog-crear-agente").then((x) => dialog.show(() => <x.DialogCrearAgente />))
-  }
-  const openPlantillas = () => {
-    void import("@/components/dialog-plantillas").then((x) => dialog.show(() => <x.DialogPlantillas />))
-  }
   const openTareas = () => {
     void import("@/components/dialog-tareas-programadas").then((x) => dialog.show(() => <x.DialogTareasProgramadas />))
   }
   const openMcp = () => {
     void import("@/components/dialog-conectores-mcp").then((x) => dialog.show(() => <x.DialogConectoresMcp />))
+  }
+  const openImagenes = () => {
+    void import("@/components/dialog-imagenes").then((x) => dialog.show(() => <x.DialogImagenes />))
   }
 
   const loading = createMemo(() => sessions.data.loading())
@@ -249,15 +246,11 @@ export function LeftSidebar() {
               </Show>
             </div>
           </div>
-          {/* Accesos principales, etiquetados (antes eran iconitos y no se encontraban) */}
-          <div class="flex flex-col gap-1 px-2 pt-0.5">
-            <FooterAction icon="grid-plus" label="Modelos locales" hint="Descargá modelos gratis" onClick={openDiagnostico} />
-            <FooterAction icon="outline-copy" label="Plantillas" hint="Agentes listos por sector" onClick={openPlantillas} />
-            <FooterAction icon="plus" label="Crear agente" hint="Tu asistente a medida" onClick={openCrearAgente} />
-          </div>
-          {/* Fila de íconos secundarios */}
+          {/* Footer minimal estilo Claude: solo íconos chicos. Modelos y agentes NO viven acá
+              (están en sus propios selectores del chat) para no duplicar ni ocupar espacio. */}
           <div class="flex items-center gap-1 px-2 pb-1.5 pt-1">
             <FooterIcon icon="settings-gear" label="Ajustes" onClick={() => openSettings()} />
+            <FooterIcon icon="image" label="Generar imagen" onClick={openImagenes} />
             <FooterIcon icon="server" label="Conectores (MCP / skills)" onClick={openMcp} />
             <FooterIcon icon="timer" label="Tareas programadas" onClick={openTareas} />
             <FooterIcon icon="monitor" label="Diagnóstico" onClick={openDiagnostico} />
@@ -269,35 +262,8 @@ export function LeftSidebar() {
   )
 }
 
-// Botón etiquetado (ícono + texto + hint) para los accesos que antes se perdían.
-function FooterAction(props: {
-  icon: "grid-plus" | "plus" | "outline-copy"
-  label: string
-  hint: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={props.onClick}
-      class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left transition-colors hover:bg-v2-overlay-simple-overlay-hover"
-    >
-      <span
-        class="flex size-7 shrink-0 items-center justify-center rounded-md"
-        style={{ background: "rgba(236,91,43,0.12)", color: "#EC5B2B" }}
-      >
-        <IconV2 name={props.icon} size="small" />
-      </span>
-      <span class="flex min-w-0 flex-col">
-        <span class="truncate text-13-medium text-v2-text-text-strong">{props.label}</span>
-        <span class="truncate text-11-regular text-v2-text-text-faint">{props.hint}</span>
-      </span>
-    </button>
-  )
-}
-
 function FooterIcon(props: {
-  icon: "settings-gear" | "help" | "monitor" | "plus" | "timer" | "server"
+  icon: "settings-gear" | "help" | "monitor" | "plus" | "timer" | "server" | "image"
   label: string
   onClick: () => void
 }) {

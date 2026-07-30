@@ -432,15 +432,21 @@ export function usePromptInputV2Controller(props: PromptInputV2ControllerProps):
       get agent() {
         return props.controls.agents.visible && props.controls.agents.options.length > 0
           ? {
-              // Acción rápida "Crear agente" dentro del propio selector del chat (estilo Claude).
+              // Acciones rápidas dentro del propio selector de agentes (estilo Claude): crear
+              // uno a medida o elegir una plantilla por sector. Su lugar natural es acá, no el sidebar.
               options: () => [
                 ...props.controls.agents.options.map((name) => ({ id: name, label: name })),
+                { id: "__plantillas__", label: "▤ Plantillas por sector" },
                 { id: "__crear_agente__", label: "＋ Crear agente" },
               ],
               current: () => props.controls.agents.current,
               onSelect: (value: string) => {
                 if (value === "__crear_agente__") {
                   void import("@/components/dialog-crear-agente").then((x) => dialog.show(() => <x.DialogCrearAgente />))
+                  return
+                }
+                if (value === "__plantillas__") {
+                  void import("@/components/dialog-plantillas").then((x) => dialog.show(() => <x.DialogPlantillas />))
                   return
                 }
                 props.controls.agents.select(value)
