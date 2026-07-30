@@ -29,8 +29,8 @@ const BREAKDOWN_COLOR: Record<SessionContextBreakdownKey, string> = {
 
 function Stat(props: { label: string; value: JSX.Element }) {
   return (
-    <div class="flex flex-col gap-1">
-      <div class="text-12-regular text-text-weak">{props.label}</div>
+    <div class="flex flex-col gap-0.5">
+      <div class="text-11-regular text-text-weak">{props.label}</div>
       <div class="text-12-medium text-text-strong">{props.value}</div>
     </div>
   )
@@ -278,8 +278,8 @@ export function SessionContextTab() {
       }}
       onScroll={handleScroll}
     >
-      <div class="px-6 pt-4 pb-10 flex flex-col gap-10">
-        <div class="grid grid-cols-1 @[32rem]:grid-cols-2 gap-4">
+      <div class="px-5 pt-3 pb-6 flex flex-col gap-6">
+        <div class="grid grid-cols-2 @[40rem]:grid-cols-3 gap-x-4 gap-y-3">
           <For each={stats}>
             {(stat) => <Stat label={language.t(stat.label as Parameters<typeof language.t>[0])} value={stat.value()} />}
           </For>

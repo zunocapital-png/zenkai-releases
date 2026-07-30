@@ -1,8 +1,33 @@
+import { onMount } from "solid-js"
+import { useDialog } from "@opencode-ai/ui/context/dialog"
 import type { HomeProjectsController } from "./home-projects-controller"
 import { HomeProjectsView } from "./home-projects-view"
 import type { HomeScrollController } from "./home-scroll-controller"
 
+const WELCOME_FLAG = "zenkai.welcome.shown.v1"
+
 export function HomeProjects(props: { projects: HomeProjectsController; scroll: HomeScrollController }) {
+  const dialog = useDialog()
+
+  // Primer arranque: mostramos la bienvenida una sola vez (guía para instalar un
+  // modelo local o conectar una API). Se marca en localStorage para no repetir.
+  onMount(() => {
+    let ya = false
+    try {
+      ya = localStorage.getItem(WELCOME_FLAG) === "1"
+    } catch {
+      /* sin localStorage: mejor no molestar */
+      ya = true
+    }
+    if (ya) return
+    try {
+      localStorage.setItem(WELCOME_FLAG, "1")
+    } catch {
+      /* noop */
+    }
+    void import("@/components/dialog-bienvenida").then((x) => dialog.show(() => <x.DialogBienvenida />))
+  })
+
   return (
     <HomeProjectsView
       language={props.projects.copy.language}

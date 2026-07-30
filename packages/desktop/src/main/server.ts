@@ -49,6 +49,14 @@ export function preferAppEnv(userDataPath: string) {
     OPENCODE_EXPERIMENTAL_FILEWATCHER: "true",
     OPENCODE_CLIENT: "desktop",
     XDG_STATE_HOME: process.env.XDG_STATE_HOME ?? userDataPath,
+    // Control de PC (MCP propio): ruta del server + runtime Node (el propio Electron,
+    // así no exigimos Node instalado). auto-setup lo registra apagado por defecto.
+    ZENKAI_COMPUTER_MCP: app.isPackaged
+      ? join(process.resourcesPath, "mcp", "zenkai-computer.mjs")
+      : join(process.cwd(), "packages", "desktop", "build", "mcp", "zenkai-computer.mjs"),
+    ZENKAI_COMPUTER_NODE: process.execPath,
+    // Archivo de permiso del control de PC: existe = permitido. El toggle lo crea/borra.
+    ZENKAI_COMPUTER_ALLOW_FILE: join(userDataPath, "zenkai-computer-allow"),
   })
 }
 

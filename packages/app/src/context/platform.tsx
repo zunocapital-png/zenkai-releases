@@ -123,6 +123,30 @@ type PlatformBase = {
 
   /** Record a fatal renderer error in platform logs (desktop only) */
   recordFatalRendererError?(error: FatalRendererErrorLog): Promise<void>
+
+  /** Analyze the machine's hardware to recommend local models (desktop only) */
+  analyzeHardware?(): Promise<HardwareInfo>
+
+  /** Read whether PC control is currently allowed (desktop only) */
+  computerUseGet?(): Promise<boolean>
+
+  /** Allow/disallow PC control (writes/removes the permission flag) (desktop only) */
+  computerUseSet?(allowed: boolean): Promise<boolean>
+
+  /** Get scheduled tasks as JSON (desktop only) */
+  scheduledGet?(): Promise<string>
+
+  /** Save scheduled tasks (JSON) and restart the scheduler (desktop only) */
+  scheduledSet?(json: string): Promise<boolean>
+}
+
+/** Specs de la PC para recomendar modelos locales. */
+export type HardwareInfo = {
+  ramGB: number
+  cpuModel: string
+  cpuCores: number
+  gpuName: string | null
+  vramGB: number | null
 }
 
 export type Platform = PlatformBase &

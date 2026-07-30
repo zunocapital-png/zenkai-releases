@@ -33,7 +33,9 @@ import {
   type SidecarListener,
 } from "./server"
 import { injectTeamKeys } from "./team-keys"
-import { startOmniRoute, stopOmniRoute } from "./omniroute"
+import { startZenkaiRouter, stopZenkaiRouter } from "./zenkai-router"
+import { analyzeHardware } from "./hardware"
+import { startScheduler, stopScheduler } from "./scheduler"
 import { ensureOllama } from "./ollama"
 import { setupAutoUpdater, showUpdaterDialog } from "./updater"
 import { safeWebContentsURL } from "./window-state"
@@ -207,9 +209,12 @@ const main = Effect.gen(function* () {
   if (injectedKeys.length) logger.log("team keys injected", { providers: injectedKeys })
 
   // Gateway de auto-relevo (failover). No bloquea el arranque; si no hay Node se omite.
-  const omniStatus = yield* Effect.promise(() => startOmniRoute())
-  logger.log("omniroute", { status: omniStatus })
-  app.on("will-quit", () => stopOmniRoute())
+  const routerStatus = yield* Effect.promise(() => startZenkaiRouter())
+  logger.log("zenkai-router", { status: routerStatus })
+  app.on("will-quit", () => stopZenkaiRouter())
+
+  startScheduler()
+  app.on("will-quit", () => stopScheduler())
 
   // Modelos locales: garantiza Ollama instalado y PRENDIDO (nunca apagado).
   const ollamaStatus = yield* Effect.promise(() => ensureOllama())
@@ -313,6 +318,7 @@ const main = Effect.gen(function* () {
     setBackgroundColor: (color) => setBackgroundColor(color),
     exportDebugLogs: () => exportDebugLogs(),
     recordFatalRendererError: (error) => writeLog("renderer", "fatal renderer error", { ...error }, "error"),
+    analyzeHardware: () => analyzeHardware(),
   })
   registerWslIpcHandlers(wslServers)
   void updater.start()

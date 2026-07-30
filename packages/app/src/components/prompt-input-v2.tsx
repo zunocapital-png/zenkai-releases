@@ -407,9 +407,19 @@ export function usePromptInputV2Controller(props: PromptInputV2ControllerProps):
       get agent() {
         return props.controls.agents.visible && props.controls.agents.options.length > 0
           ? {
-              options: () => props.controls.agents.options.map((name) => ({ id: name, label: name })),
+              // Acción rápida "Crear agente" dentro del propio selector del chat (estilo Claude).
+              options: () => [
+                ...props.controls.agents.options.map((name) => ({ id: name, label: name })),
+                { id: "__crear_agente__", label: "＋ Crear agente" },
+              ],
               current: () => props.controls.agents.current,
-              onSelect: (value: string) => props.controls.agents.select(value),
+              onSelect: (value: string) => {
+                if (value === "__crear_agente__") {
+                  void import("@/components/dialog-crear-agente").then((x) => dialog.show(() => <x.DialogCrearAgente />))
+                  return
+                }
+                props.controls.agents.select(value)
+              },
               keybind: () => command.keybindParts("agent.cycle"),
             }
           : undefined

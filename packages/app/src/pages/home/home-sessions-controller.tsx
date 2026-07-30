@@ -2,7 +2,7 @@ import type { Session } from "@opencode-ai/sdk/v2/client"
 import { preloadMarkdown } from "@opencode-ai/session-ui/markdown-cache"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useMarked } from "@opencode-ai/ui/context/marked"
-import { useQuery } from "@tanstack/solid-query"
+import { useQuery, useQueryClient } from "@tanstack/solid-query"
 import { DateTime } from "luxon"
 import { type Accessor, createEffect, createMemo, createRoot, type JSX, startTransition } from "solid-js"
 import { produce } from "solid-js/store"
@@ -45,6 +45,7 @@ export function createHomeSessionsController(home: HomeController) {
   const dialog = useDialog()
   const language = useLanguage()
   const marked = useMarked()
+  const queryClient = useQueryClient()
   const projectDirectories = createMemo(() => {
     const project = home.project.selected()
     if (!project) return home.project.list().flatMap(directories)
@@ -221,13 +222,18 @@ export function createHomeSessionsController(home: HomeController) {
               directory: session.directory,
               time: { archived: Date.now() },
             }),
-          remove: () =>
+          remove: () => {
             setStore(
               produce((draft) => {
                 const match = Binary.search(draft.session, session.id, (item) => item.id)
                 if (match.found) draft.session.splice(match.index, 1)
               }),
-            ),
+            )
+            // La lista del home/sidebar se arma desde el índice home (otro store),
+            // así que lo refrescamos: parseHomeSessionIndex excluye las archivadas,
+            // por eso la sesión borrada desaparece de verdad y no reaparece.
+            void queryClient.refetchQueries({ queryKey: homeSessions().indexKey, exact: true })
+          },
           onError: (cause) =>
             showToast({
               title: language.t("common.requestFailed"),

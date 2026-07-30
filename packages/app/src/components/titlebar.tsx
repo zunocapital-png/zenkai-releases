@@ -16,7 +16,6 @@ import { usePlatform } from "@/context/platform"
 import { useCommand } from "@/context/command"
 import { useLanguage } from "@/context/language"
 import { useSettings } from "@/context/settings"
-import { WindowsAppMenu } from "./windows-app-menu"
 import { applyPath, backPath, forwardPath } from "./titlebar-history"
 import { TitlebarTabStrip } from "@/components/titlebar-tab-strip"
 import { makeEventListener } from "@solid-primitives/event-listener"
@@ -389,9 +388,8 @@ export function Titlebar(props: { update?: TitlebarUpdate; debugTools?: { visibl
                 }}
               >
                 <ChannelIndicator debugTools={props.debugTools} />
-                <Show when={windows() || linux()}>
-                  <WindowsAppMenu command={command} platform={platform} variant="v2" />
-                </Show>
+                {/* Menú ☰ removido: estilo Claude, titlebar limpio. Las acciones
+                    viven en botones directos, atajos y el menú nativo (Alt). */}
                 <TooltipV2 placement="bottom" value="Mostrar/ocultar panel" class="shrink-0">
                   <IconButtonV2
                     type="button"
@@ -456,9 +454,6 @@ export function Titlebar(props: { update?: TitlebarUpdate; debugTools?: { visibl
                 "pl-2": !macTrafficLights(),
               }}
             >
-              <Show when={windows() || linux()}>
-                <WindowsAppMenu command={command} platform={platform} />
-              </Show>
               <Show when={mac()}>
                 <div class="xl:hidden w-10 shrink-0 flex items-center justify-center">
                   <IconButton

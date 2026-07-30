@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process"
 import { stat } from "node:fs/promises"
-import { basename } from "node:path"
+import { existsSync, writeFileSync, rmSync } from "node:fs"
+import { basename, join } from "node:path"
 import { app, BrowserWindow, Notification, clipboard, dialog, ipcMain, shell } from "electron"
 import type { IpcMainEvent, IpcMainInvokeEvent } from "electron"
 import type { DesktopMenuAction } from "@opencode-ai/app/desktop-menu"
@@ -10,6 +11,7 @@ import { runDesktopMenuAction } from "./desktop-menu-actions"
 import { setForceFocus } from "./debug"
 import { assertAttachmentBudget, createPickedFileAuthorizations } from "./attachment-picker"
 import { getStore, removeStoreFileIfEmpty } from "./store"
+import { getScheduledTasks, setScheduledTasks } from "./scheduler"
 import { getPinchZoomEnabled, getWindowID, setPinchZoomEnabled, setTitlebar, updateTitlebar } from "./windows"
 import type { UpdaterController } from "./updater-controller"
 import { createUpdaterSubscriptions } from "./updater-subscriptions"
@@ -41,6 +43,7 @@ type Deps = {
   setBackgroundColor: (color: string) => void
   exportDebugLogs: () => Promise<string>
   recordFatalRendererError: (error: FatalRendererError) => Promise<void> | void
+  analyzeHardware: () => Promise<import("./hardware").HardwareInfo>
 }
 
 export function registerIpcHandlers(deps: Deps) {
@@ -88,6 +91,27 @@ export function registerIpcHandlers(deps: Deps) {
   ipcMain.handle("record-fatal-renderer-error", (_event: IpcMainInvokeEvent, error: FatalRendererError) =>
     deps.recordFatalRendererError(error),
   )
+  ipcMain.handle("analyze-hardware", () => deps.analyzeHardware())
+
+  // Control de PC: prender/apagar el permiso = crear/borrar el archivo de permiso.
+  const computerAllowFile = () => join(app.getPath("userData"), "zenkai-computer-allow")
+  ipcMain.handle("scheduled-get", () => JSON.stringify(getScheduledTasks()))
+  ipcMain.handle("scheduled-set", (_event: IpcMainInvokeEvent, json: string) => {
+    try {
+      setScheduledTasks(JSON.parse(json))
+      return true
+    } catch {
+      return false
+    }
+  })
+
+  ipcMain.handle("computer-use-get", () => existsSync(computerAllowFile()))
+  ipcMain.handle("computer-use-set", (_event: IpcMainInvokeEvent, allowed: boolean) => {
+    const file = computerAllowFile()
+    if (allowed) writeFileSync(file, "1")
+    else if (existsSync(file)) rmSync(file)
+    return existsSync(file)
+  })
   ipcMain.handle("store-get", (_event: IpcMainInvokeEvent, name: string, key: string) => {
     try {
       const store = getStore(name)

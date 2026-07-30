@@ -1,0 +1,179 @@
+import { createSignal, onMount, onCleanup, For, Show } from "solid-js"
+import { Dialog } from "@opencode-ai/ui/dialog"
+import { useDialog } from "@opencode-ai/ui/context/dialog"
+import { useServerSDK } from "@/context/server-sdk"
+import { useQueryClient } from "@tanstack/solid-query"
+import {
+  MODELOS_RECOMENDADOS,
+  type Descarga,
+  listarModelosOllama,
+  estaInstalado,
+  descargarModeloOllama,
+} from "@/utils/ollama-local"
+
+// Onboarding de primer arranque: da la bienvenida y guía a instalar un modelo local
+// (gratis, por Ollama) o a conectar una API de nube. Se muestra una sola vez.
+export function DialogBienvenida() {
+  const dialog = useDialog()
+  const serverSDK = useServerSDK()
+  const queryClient = useQueryClient()
+  const [ollamaOk, setOllamaOk] = createSignal<boolean | undefined>(undefined)
+  const [instalados, setInstalados] = createSignal<string[]>([])
+  const [descargas, setDescargas] = createSignal<Record<string, Descarga>>({})
+
+  async function refrescar() {
+    const modelos = await listarModelosOllama()
+    setInstalados(modelos)
+    setOllamaOk(true)
+  }
+
+  onMount(() => {
+    // Damos un margen a que Ollama termine de prenderse/instalarse tras el setup.
+    void listarModelosOllama().then((m) => {
+      setInstalados(m)
+      // Si /api/tags respondió (aunque sea []), Ollama está vivo.
+      setOllamaOk(true)
+    })
+    const t = setTimeout(() => void refrescar(), 4000)
+    onCleanup(() => clearTimeout(t))
+  })
+
+  const instalado = (id: string) => estaInstalado(id, instalados())
+
+  async function sincronizarConZenkai() {
+    try {
+      await serverSDK().client.global.dispose()
+    } catch {
+      /* si falla, aparece al reiniciar la app */
+    }
+    queryClient.invalidateQueries({
+      predicate: (q) => q.queryKey[0] === serverSDK().scope && q.queryKey[2] === "providers",
+    })
+  }
+
+  async function descargar(id: string) {
+    try {
+      await descargarModeloOllama(id, (d) => setDescargas((prev) => ({ ...prev, [id]: d })))
+      await refrescar()
+      void sincronizarConZenkai()
+    } catch (e) {
+      setDescargas((prev) => ({
+        ...prev,
+        [id]: { pct: -1, estado: "Error", error: e instanceof Error ? e.message : "No se pudo descargar." },
+      }))
+    }
+  }
+
+  function conectarApi() {
+    void import("@/components/dialog-connect-provider").then((x) => dialog.show(() => <x.DialogConnectProvider />))
+  }
+
+  return (
+    <Dialog
+      size="large"
+      title="Bienvenido a ZENKAI"
+      class="w-[min(calc(100vw-40px),640px)] h-[min(calc(100vh-40px),600px)] min-h-0 overflow-hidden"
+    >
+      <div class="flex flex-col gap-4 overflow-y-auto p-6 text-14-regular text-text-base">
+        <p class="text-14-regular text-text-base">
+          ZENKAI programa de dos formas, y podés usar las dos:
+        </p>
+        <ul class="flex flex-col gap-1.5 pl-1">
+          <li class="text-13-regular text-text-muted">
+            🖥️ <span class="text-text-strong">Local (gratis):</span> modelos que corren en tu PC con Ollama. Sin
+            internet, sin costo. Elegí uno abajo y se descarga.
+          </li>
+          <li class="text-13-regular text-text-muted">
+            ☁️ <span class="text-text-strong">Nube (API):</span> modelos como GPT, Claude o Gemini con tu propia clave.
+            Más potentes, pagás por uso al proveedor.
+          </li>
+        </ul>
+
+        {/* Modelos locales */}
+        <div class="flex flex-col gap-2.5 rounded-lg border border-border-base bg-surface-raised p-4">
+          <div class="flex items-center gap-2.5">
+            <span class="text-16-medium">📦</span>
+            <span class="text-14-medium text-text-strong">Instalar un modelo local (recomendado para empezar)</span>
+          </div>
+          <Show
+            when={ollamaOk() !== false}
+            fallback={
+              <p class="text-13-regular text-yellow-400">
+                Ollama todavía se está preparando. Esperá unos segundos y reabrí esta ventana desde Diagnóstico.
+              </p>
+            }
+          >
+            <div class="flex flex-col gap-2">
+              <For each={MODELOS_RECOMENDADOS}>
+                {(m) => {
+                  const d = () => descargas()[m.id]
+                  return (
+                    <div class="flex flex-col gap-1.5 rounded-md border border-border-base bg-surface-base p-3">
+                      <div class="flex items-center gap-3">
+                        <div class="flex min-w-0 flex-1 flex-col">
+                          <span class="text-13-medium text-text-strong">{m.nombre}</span>
+                          <span class="text-12-regular text-text-muted">
+                            {m.nota} · {m.tam}
+                          </span>
+                        </div>
+                        <Show
+                          when={!instalado(m.id)}
+                          fallback={<span class="shrink-0 text-13-medium text-green-400">✅ Instalado</span>}
+                        >
+                          <button
+                            type="button"
+                            disabled={!!d() && d().pct >= 0 && d().pct < 100}
+                            onClick={() => void descargar(m.id)}
+                            class="shrink-0 rounded-md border border-border-base bg-surface-raised px-3 py-1.5 text-12-medium text-text-strong hover:bg-surface-hover disabled:opacity-50"
+                          >
+                            {d() ? (d().pct === -1 ? "Reintentar" : "Descargando…") : "Descargar"}
+                          </button>
+                        </Show>
+                      </div>
+                      <Show when={d() && !instalado(m.id)}>
+                        <div class="flex flex-col gap-1">
+                          <Show
+                            when={d().pct !== -1}
+                            fallback={<span class="text-12-regular text-red-400">{d().error}</span>}
+                          >
+                            <div class="h-1.5 w-full overflow-hidden rounded-full bg-border-base">
+                              <div
+                                class="h-full rounded-full bg-orange-500 transition-all"
+                                style={{ width: `${Math.max(2, d().pct)}%` }}
+                              />
+                            </div>
+                            <span class="text-12-regular text-text-muted">
+                              {d().estado} {d().pct > 0 ? `· ${d().pct}%` : ""}
+                            </span>
+                          </Show>
+                        </div>
+                      </Show>
+                    </div>
+                  )
+                }}
+              </For>
+            </div>
+          </Show>
+        </div>
+
+        {/* Acciones */}
+        <div class="mt-1 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={conectarApi}
+            class="rounded-lg border border-border-base bg-surface-raised px-4 py-2 text-13-medium text-text-strong hover:bg-surface-hover"
+          >
+            ☁️ Conectar una API de nube
+          </button>
+          <button
+            type="button"
+            onClick={() => dialog.close()}
+            class="rounded-lg bg-orange-500 px-4 py-2 text-13-medium text-white hover:bg-orange-600"
+          >
+            Empezar
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  )
+}

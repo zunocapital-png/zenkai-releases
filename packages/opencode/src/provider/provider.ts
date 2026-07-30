@@ -1416,6 +1416,58 @@ const layer = Layer.effect(
           })
         }
 
+        // ZENKAI: sincronizar en vivo los modelos locales que el usuario bajó con
+        // `ollama pull`. El config solo trae una lista curada; acá agregamos cualquier
+        // modelo instalado que falte, consultando el propio Ollama (/api/tags). Así todo
+        // lo que se descargue aparece en el selector sin editar el config a mano.
+        yield* Effect.promise(async () => {
+          const ollamaEntry = configProviders.find(([id]) => id === "ollama")
+          if (!ollamaEntry) return
+          const [, ollamaProvider] = ollamaEntry
+          const baseURL = (ollamaProvider.options as { baseURL?: string } | undefined)?.baseURL
+          const host = baseURL ? baseURL.replace(/\/v1\/?$/, "") : "http://localhost:11434"
+          try {
+            const res = await fetch(`${host}/api/tags`, { signal: AbortSignal.timeout(1500) })
+            if (!res.ok) return
+            const data = (await res.json()) as { models?: Array<{ name?: string }> }
+            const models = (ollamaProvider.models ??= {}) as Record<string, { name?: string }>
+            for (const m of data.models ?? []) {
+              const id = m?.name
+              if (!id || models[id]) continue
+              models[id] = { name: id }
+            }
+          } catch {
+            // Ollama apagado o sin modelos: queda la lista estática del config.
+          }
+        })
+
+        // ZENKAI: sincronizar en vivo los modelos que expone OmniRoute (ZENKAI Auto)
+        // en /v1/models (OpenAI-compatible). Así los modelos gratis/de nube que el
+        // gateway tenga disponibles aparecen en el selector, además del "auto". Con
+        // tope para no inundar el selector con cientos de modelos.
+        yield* Effect.promise(async () => {
+          const omniEntry = configProviders.find(([id]) => id === "omniroute")
+          if (!omniEntry) return
+          const [, omniProvider] = omniEntry
+          const baseURL = (omniProvider.options as { baseURL?: string } | undefined)?.baseURL
+          const url = `${(baseURL ?? "http://localhost:20128/v1").replace(/\/$/, "")}/models`
+          try {
+            const res = await fetch(url, { signal: AbortSignal.timeout(1500) })
+            if (!res.ok) return
+            const data = (await res.json()) as { data?: Array<{ id?: string }> }
+            const models = (omniProvider.models ??= {}) as Record<string, { name?: string }>
+            let agregados = 0
+            for (const m of data.data ?? []) {
+              const id = m?.id
+              if (!id || models[id]) continue
+              models[id] = { name: `🆓 ${id}` }
+              if (++agregados >= 60) break
+            }
+          } catch {
+            // OmniRoute apagado: quedan las variantes "auto" del config.
+          }
+        })
+
         // extend database from config
         for (const [providerID, provider] of configProviders) {
           const existing = database[providerID]

@@ -5,8 +5,6 @@ import { produce } from "solid-js/store"
 import { Binary } from "@opencode-ai/core/util/binary"
 import type { Session } from "@opencode-ai/sdk/v2/client"
 import { useSettingsCommand } from "@/components/settings-dialog"
-import { notifySessionTabsRemoved } from "@/components/titlebar-session-events"
-import { ServerConnection } from "@/context/server"
 import { getAuthInfo } from "@/auth/license-manager"
 import { createHomeController } from "@/pages/home/home-controller"
 import { createHomeSessionsController, type HomeSessionRecord } from "@/pages/home/home-sessions-controller"
@@ -67,6 +65,12 @@ export function LeftSidebar() {
   const openDiagnostico = () => {
     void import("@/components/dialog-diagnostico").then((x) => dialog.show(() => <x.DialogDiagnostico />))
   }
+  const openCrearAgente = () => {
+    void import("@/components/dialog-crear-agente").then((x) => dialog.show(() => <x.DialogCrearAgente />))
+  }
+  const openTareas = () => {
+    void import("@/components/dialog-tareas-programadas").then((x) => dialog.show(() => <x.DialogTareasProgramadas />))
+  }
 
   const loading = createMemo(() => sessions.data.loading())
   // Dedup: una misma sesión no debe aparecer dos veces (ni entre grupos).
@@ -101,41 +105,9 @@ export function LeftSidebar() {
   })
 
   // Quita la sesión del store local para reflejar el cambio al instante.
-  const removeFromStore = (session: Session) => {
-    const ctx = home.server.focusedContext()
-    if (!ctx) return
-    const [, setStore] = ctx.sync.child(session.directory)
-    setStore(
-      produce((draft) => {
-        const match = Binary.search(draft.session, session.id, (item) => item.id)
-        if (match.found) draft.session.splice(match.index, 1)
-      }),
-    )
-  }
-
-  const deleteSession = async (session: Session) => {
-    const conn = home.server.focused()
-    const ctx = home.server.focusedContext()
-    if (!conn || !ctx) return
-    try {
-      await ctx.sdk.client.session.update({
-        sessionID: session.id,
-        directory: session.directory,
-        time: { archived: Date.now() },
-      })
-      removeFromStore(session)
-      notifySessionTabsRemoved({
-        server: ServerConnection.key(conn),
-        directory: session.directory,
-        sessionIDs: [session.id],
-      })
-    } catch (cause) {
-      showToast({
-        title: "No se pudo borrar el chat",
-        description: errorMessage(cause, "No se pudo borrar el chat"),
-      })
-    }
-  }
+  // El borrado de sesión vive en un solo lugar: sessions.session.archive
+  // (home-sessions-controller). Antes había un deleteSession duplicado acá que
+  // hacía splice del store equivocado y por eso la sesión no desaparecía.
 
   const renameSession = async (session: Session, title: string) => {
     const ctx = home.server.focusedContext()
@@ -206,7 +178,7 @@ export function LeftSidebar() {
         </div>
 
         {/* Historial */}
-        <div class="min-h-0 flex-1 overflow-y-auto px-2">
+        <div class="min-h-0 flex-1 overflow-y-auto no-scrollbar px-2">
           <Show
             when={!loading()}
             fallback={
@@ -236,7 +208,7 @@ export function LeftSidebar() {
                         record={record}
                         sessions={sessions}
                         onRename={(title) => renameSession(record.session, title)}
-                        onDelete={() => deleteSession(record.session)}
+                        onDelete={() => void sessions.session.archive(record.session)}
                       />
                     )}
                   </For>
@@ -266,6 +238,8 @@ export function LeftSidebar() {
           {/* Fila de íconos */}
           <div class="flex items-center gap-1 px-2 pb-1.5">
             <FooterIcon icon="settings-gear" label="Ajustes" onClick={() => openSettings()} />
+            <FooterIcon icon="plus" label="Crear agente" onClick={openCrearAgente} />
+            <FooterIcon icon="timer" label="Tareas programadas" onClick={openTareas} />
             <FooterIcon icon="monitor" label="Diagnóstico" onClick={openDiagnostico} />
             <FooterIcon icon="help" label="Ayuda" onClick={openHelp} />
           </div>
@@ -275,7 +249,11 @@ export function LeftSidebar() {
   )
 }
 
-function FooterIcon(props: { icon: "settings-gear" | "help" | "monitor"; label: string; onClick: () => void }) {
+function FooterIcon(props: {
+  icon: "settings-gear" | "help" | "monitor" | "plus" | "timer"
+  label: string
+  onClick: () => void
+}) {
   return (
     <button
       type="button"

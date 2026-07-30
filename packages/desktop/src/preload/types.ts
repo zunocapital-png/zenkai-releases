@@ -108,4 +108,15 @@ export type ElectronAPI = {
   exportDebugLogs: () => Promise<string>
   setForceFocus: (enabled: boolean) => Promise<void>
   recordFatalRendererError: (error: FatalRendererError) => Promise<void>
+  analyzeHardware: () => Promise<{
+    ramGB: number
+    cpuModel: string
+    cpuCores: number
+    gpuName: string | null
+    vramGB: number | null
+  }>
+  computerUseGet: () => Promise<boolean>
+  computerUseSet: (allowed: boolean) => Promise<boolean>
+  scheduledGet: () => Promise<string>
+  scheduledSet: (json: string) => Promise<boolean>
 }

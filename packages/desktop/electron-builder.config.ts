@@ -68,6 +68,19 @@ const getBase = (appId: string): Configuration => ({
       to: "native/",
       filter: ["index.js", "index.d.ts", "build/Release/mac_window.node", "swift-build/**"],
     },
+    // Instalador de Ollama empacado: el custom NSIS (build/installer.nsh) lo corre en
+    // silencio durante el setup y luego lo borra. Solo se usa en Windows.
+    {
+      from: "build/ollama/",
+      to: "ollama/",
+      filter: ["OllamaSetup.exe"],
+    },
+    // Servidor MCP de control de PC (se corre con el Node de Electron, apagado por defecto).
+    {
+      from: "build/mcp/",
+      to: "mcp/",
+      filter: ["*.mjs"],
+    },
   ],
   mac: {
     category: "public.app-category.developer-tools",
@@ -100,6 +113,8 @@ const getBase = (appId: string): Configuration => ({
     perMachine: false,
     installerIcon: `resources/icons/icon.ico`,
     installerHeaderIcon: `resources/icons/icon.ico`,
+    // Corre OllamaSetup.exe empacado durante la instalación (ver build/installer.nsh).
+    include: "build/installer.nsh",
   },
   linux: {
     icon: `resources/icons`,

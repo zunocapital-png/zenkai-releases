@@ -129,6 +129,11 @@ const api: ElectronAPI = {
   exportDebugLogs: () => ipcRenderer.invoke("export-debug-logs"),
   setForceFocus: (enabled) => ipcRenderer.invoke("set-force-focus", enabled),
   recordFatalRendererError: (error) => ipcRenderer.invoke("record-fatal-renderer-error", error),
+  analyzeHardware: () => ipcRenderer.invoke("analyze-hardware"),
+  computerUseGet: () => ipcRenderer.invoke("computer-use-get"),
+  computerUseSet: (allowed: boolean) => ipcRenderer.invoke("computer-use-set", allowed),
+  scheduledGet: () => ipcRenderer.invoke("scheduled-get"),
+  scheduledSet: (json: string) => ipcRenderer.invoke("scheduled-set", json),
 }
 
 contextBridge.exposeInMainWorld("api", api)

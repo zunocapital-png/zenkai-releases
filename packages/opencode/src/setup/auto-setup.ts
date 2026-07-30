@@ -321,6 +321,24 @@ function defaultConfig(model: string): string {
       },
     },
   }
+  // Control de PC (experimental): el desktop expone la ruta del MCP propio por env.
+  // Se registra APAGADO por defecto (seguridad); el usuario lo prende a propósito.
+  const computerMcp = process.env.ZENKAI_COMPUTER_MCP
+  if (computerMcp && existsSync(computerMcp)) {
+    ;(config.mcp as Record<string, unknown>)["zenkai-computer"] = {
+      type: "local",
+      command: [process.env.ZENKAI_COMPUTER_NODE || "node", computerMcp],
+      environment: {
+        ELECTRON_RUN_AS_NODE: "1",
+        ...(process.env.ZENKAI_COMPUTER_ALLOW_FILE
+          ? { ZENKAI_COMPUTER_ALLOW_FILE: process.env.ZENKAI_COMPUTER_ALLOW_FILE }
+          : {}),
+      },
+      // El server corre siempre, pero TODAS sus acciones están bloqueadas hasta que
+      // el usuario prenda el toggle "Permitir control de PC" (crea el archivo de permiso).
+      enabled: true,
+    }
+  }
   return JSON.stringify(config, null, 2) + "\n"
 }
 

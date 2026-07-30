@@ -172,6 +172,26 @@ const createPlatform = (windowState: DesktopWindowState): Platform => {
     version: pkg.version,
     windowID: windowState.id,
 
+    async analyzeHardware() {
+      return window.api.analyzeHardware()
+    },
+
+    async computerUseGet() {
+      return window.api.computerUseGet()
+    },
+
+    async computerUseSet(allowed: boolean) {
+      return window.api.computerUseSet(allowed)
+    },
+
+    async scheduledGet() {
+      return window.api.scheduledGet()
+    },
+
+    async scheduledSet(json: string) {
+      return window.api.scheduledSet(json)
+    },
+
     async openDirectoryPickerDialog(opts) {
       return window.api.openDirectoryPicker({
         multiple: opts?.multiple ?? false,
