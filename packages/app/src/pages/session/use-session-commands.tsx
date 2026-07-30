@@ -328,6 +328,18 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       (x) => dialog.show(() => <x.DialogEvolution />),
     )
   }
+  const zenkaiComputer = () => {
+    void openDialog(
+      () => import("@/components/dialog-computer-viewer"),
+      (x) => dialog.show(() => <x.DialogComputerViewer />),
+    )
+  }
+  const zenkaiParliament = () => {
+    void openDialog(
+      () => import("@/components/dialog-parliament"),
+      (x) => dialog.show(() => <x.DialogParliament />),
+    )
+  }
 
   const toggleAutoAccept = () => {
     const sessionID = params.id
@@ -672,6 +684,20 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: "Propuestas de mejora en base al estado real del sistema",
       slash: "evolution",
       onSelect: zenkaiEvolution,
+    }),
+    mcpCommand({
+      id: "zenkai.computer",
+      title: "Ver lo que hace la IA en tu PC",
+      description: "Computer Viewer con marco naranja REC + screenshot en vivo",
+      slash: "computer",
+      onSelect: zenkaiComputer,
+    }),
+    mcpCommand({
+      id: "zenkai.parliament",
+      title: "AI Parliament · debate 2 modelos",
+      description: "Misma pregunta a 2 modelos en paralelo con jurado local",
+      slash: "parliament",
+      onSelect: zenkaiParliament,
     }),
   ]
 
