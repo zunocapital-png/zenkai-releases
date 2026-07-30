@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0a0a"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EC5B2B"/>
+      <stop offset="100%" stop-color="#EE7948"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#EC5B2B"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="720" fill="url(#bg)"/>
+
+  <!-- Titlebar -->
+  <rect x="0" y="0" width="1200" height="36" fill="#151515"/>
+  <circle cx="20" cy="18" r="6" fill="#EC5B2B"/>
+  <text x="36" y="22" font-size="12" fill="#e4e4e4" font-weight="600" letter-spacing="0.2em">ZENKAI</text>
+  <text x="150" y="22" font-size="11" fill="#7a7a7a">Motor · Gestor de modelos</text>
+
+  <!-- Sidebar -->
+  <rect x="0" y="36" width="180" height="684" fill="#0f0f0f"/>
+  <text x="14" y="66" font-size="10" fill="#7a7a7a" letter-spacing="0.15em">SESIONES</text>
+  <rect x="10" y="80" width="160" height="34" fill="rgba(236,91,43,0.12)" stroke="#EC5B2B" stroke-width="1" rx="4"/>
+  <text x="20" y="102" font-size="11" fill="#e4e4e4">▶ Refactor auth.ts</text>
+  <text x="20" y="140" font-size="11" fill="#7a7a7a">  Diseño landing</text>
+  <text x="20" y="164" font-size="11" fill="#7a7a7a">  Analizar SQL</text>
+  <text x="14" y="220" font-size="10" fill="#7a7a7a" letter-spacing="0.15em">PROYECTOS</text>
+  <text x="20" y="244" font-size="11" fill="#7a7a7a">  /zenkai</text>
+  <text x="20" y="268" font-size="11" fill="#7a7a7a">  /portfolio</text>
+
+  <!-- Dialog Motor -->
+  <rect x="220" y="90" width="780" height="580" fill="#0a0a0a" stroke="rgba(255,255,255,0.09)" stroke-width="1" rx="6"/>
+
+  <!-- Dialog header -->
+  <text x="245" y="130" font-size="20" fill="#e4e4e4" font-weight="700">Zenkai Engine</text>
+  <text x="245" y="152" font-size="12" fill="#7a7a7a">Runtime propio 100% local. Sin depender de servicios externos.</text>
+
+  <!-- Diagnóstico block -->
+  <rect x="245" y="170" width="730" height="90" fill="rgba(236,91,43,0.06)" stroke="#EC5B2B" stroke-width="1" rx="4"/>
+  <rect x="245" y="170" width="4" height="90" fill="#EC5B2B"/>
+  <text x="260" y="192" font-size="10" fill="#EC5B2B" letter-spacing="0.15em" font-weight="700">DIAGNÓSTICO</text>
+  <text x="900" y="192" font-size="10" fill="#7a7a7a" text-anchor="end">GPU 24.0 GB · RAM libre 42.5 GB</text>
+  <text x="260" y="216" font-size="12" fill="#e4e4e4">Estación ML — podés correr modelos frontera 70B con calidad enterprise local.</text>
+  <g transform="translate(260, 230)">
+    <rect x="0" y="0" width="240" height="22" fill="rgba(74,222,128,0.1)" stroke="rgba(74,222,128,0.3)" stroke-width="1" rx="3"/>
+    <text x="8" y="15" font-size="11" fill="#4ade80">💻 mejor coding: Qwen 2.5 Coder 32B</text>
+    <rect x="250" y="0" width="220" height="22" fill="rgba(97,175,239,0.1)" stroke="rgba(97,175,239,0.3)" stroke-width="1" rx="3"/>
+    <text x="258" y="15" font-size="11" fill="#61afef">🧠 mejor general: Qwen 2.5 72B</text>
+  </g>
+
+  <!-- Instalados -->
+  <text x="245" y="298" font-size="14" fill="#e4e4e4" font-weight="600">Modelos instalados (2)</text>
+
+  <g transform="translate(245, 312)">
+    <rect x="0" y="0" width="730" height="52" fill="#0f0f0f" stroke="rgba(74,222,128,0.4)" stroke-width="1" rx="4"/>
+    <rect x="0" y="0" width="3" height="52" fill="#4ade80"/>
+    <text x="16" y="20" font-size="13" fill="#e4e4e4" font-weight="600">Qwen 2.5 Coder 32B Instruct</text>
+    <text x="16" y="38" font-size="10" fill="#7a7a7a">qwen2.5-coder-32b-q4 · 20 GB · [tools, completion] · 34 tok/s</text>
+    <text x="710" y="30" font-size="11" fill="#4ade80" text-anchor="end">● cargado</text>
+  </g>
+
+  <g transform="translate(245, 372)">
+    <rect x="0" y="0" width="730" height="52" fill="#0f0f0f" stroke="rgba(255,255,255,0.09)" stroke-width="1" rx="4"/>
+    <text x="16" y="20" font-size="13" fill="#e4e4e4" font-weight="600">Qwen 2.5 Coder 7B</text>
+    <text x="16" y="38" font-size="10" fill="#7a7a7a">qwen2.5-coder-7b-q4 · 4.7 GB · [tools, completion] · 128 tok/s</text>
+    <rect x="580" y="14" width="70" height="24" fill="rgba(74,222,128,0.15)" rx="3"/>
+    <text x="615" y="30" font-size="10" fill="#4ade80" text-anchor="middle" font-weight="600">CARGAR</text>
+  </g>
+
+  <!-- Catálogo -->
+  <text x="245" y="452" font-size="14" fill="#e4e4e4" font-weight="600">Catálogo (ordenado por lo que corre)</text>
+  <g transform="translate(245, 466)">
+    <rect x="0" y="0" width="730" height="48" fill="#0f0f0f" stroke="rgba(74,222,128,0.4)" stroke-width="1" rx="4"/>
+    <rect x="0" y="0" width="3" height="48" fill="#4ade80"/>
+    <text x="16" y="20" font-size="12" fill="#e4e4e4" font-weight="600">Llama 3.3 70B Instruct</text>
+    <text x="180" y="20" font-size="10" fill="#4ade80" font-weight="700">ÓPTIMO</text>
+    <text x="16" y="36" font-size="10" fill="#7a7a7a">42 GB · pide 48 GB · general · potencia 10/10 · corre fluido en tu GPU</text>
+    <rect x="640" y="10" width="80" height="28" fill="#EC5B2B" rx="3"/>
+    <text x="680" y="28" font-size="11" fill="#000" text-anchor="middle" font-weight="700">Descargar</text>
+  </g>
+  <g transform="translate(245, 522)">
+    <rect x="0" y="0" width="730" height="48" fill="#0f0f0f" stroke="rgba(97,175,239,0.3)" stroke-width="1" rx="4"/>
+    <rect x="0" y="0" width="3" height="48" fill="#61afef"/>
+    <text x="16" y="20" font-size="12" fill="#e4e4e4" font-weight="600">DeepSeek R1 Distill Qwen 32B</text>
+    <text x="16" y="36" font-size="10" fill="#7a7a7a">20 GB · pide 24 GB · reasoning · razonamiento tipo o1 local · corre fluido</text>
+    <rect x="640" y="10" width="80" height="28" fill="#EC5B2B" rx="3"/>
+    <text x="680" y="28" font-size="11" fill="#000" text-anchor="middle" font-weight="700">Descargar</text>
+  </g>
+
+  <!-- Botón cerrar -->
+  <rect x="880" y="620" width="90" height="30" fill="transparent" stroke="rgba(255,255,255,0.15)" stroke-width="1" rx="4"/>
+  <text x="925" y="640" font-size="12" fill="#7a7a7a" text-anchor="middle">Cerrar</text>
+
+  <!-- ═══════ FLECHAS ANOTADORAS ═══════ -->
+
+  <!-- Flecha 1: Diagnóstico HW automático -->
+  <g>
+    <path d="M 1160 215 Q 1080 215 1000 215" stroke="#EC5B2B" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+    <rect x="1010" y="180" width="180" height="52" fill="rgba(236,91,43,0.14)" stroke="#EC5B2B" stroke-width="1.5" rx="4"/>
+    <text x="1100" y="200" font-size="10.5" fill="#EC5B2B" text-anchor="middle" font-weight="700">DIAGNÓSTICO AUTO</text>
+    <text x="1100" y="218" font-size="9" fill="#e4e4e4" text-anchor="middle">detecta tu GPU/RAM</text>
+    <text x="1100" y="228" font-size="9" fill="#e4e4e4" text-anchor="middle">sugiere el mejor modelo</text>
+  </g>
+
+  <!-- Flecha 2: Tok/s en vivo -->
+  <g>
+    <path d="M 1155 340 Q 1050 340 990 340" stroke="#4ade80" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+    <rect x="1010" y="308" width="180" height="52" fill="rgba(74,222,128,0.12)" stroke="#4ade80" stroke-width="1.5" rx="4"/>
+    <text x="1100" y="328" font-size="10.5" fill="#4ade80" text-anchor="middle" font-weight="700">TOK/S REAL</text>
+    <text x="1100" y="346" font-size="9" fill="#e4e4e4" text-anchor="middle">benchmark automático</text>
+    <text x="1100" y="356" font-size="9" fill="#e4e4e4" text-anchor="middle">al primer uso</text>
+  </g>
+
+  <!-- Flecha 3: Óptimo/borroso -->
+  <g>
+    <path d="M 190 490 Q 190 490 240 490" stroke="#4ade80" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+    <rect x="10" y="464" width="170" height="52" fill="rgba(74,222,128,0.12)" stroke="#4ade80" stroke-width="1.5" rx="4"/>
+    <text x="95" y="484" font-size="10.5" fill="#4ade80" text-anchor="middle" font-weight="700">MARCA ÓPTIMOS</text>
+    <text x="95" y="502" font-size="9" fill="#e4e4e4" text-anchor="middle">verde = corre en tu HW</text>
+    <text x="95" y="512" font-size="9" fill="#e4e4e4" text-anchor="middle">rojo = no entra</text>
+  </g>
+
+  <!-- Flecha 4: Descarga con progreso -->
+  <g>
+    <path d="M 1140 495 Q 900 495 730 495" stroke="#EC5B2B" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+    <rect x="1010" y="470" width="180" height="52" fill="rgba(236,91,43,0.14)" stroke="#EC5B2B" stroke-width="1.5" rx="4"/>
+    <text x="1100" y="490" font-size="10.5" fill="#EC5B2B" text-anchor="middle" font-weight="700">DESCARGA SSE</text>
+    <text x="1100" y="508" font-size="9" fill="#e4e4e4" text-anchor="middle">progreso en vivo</text>
+    <text x="1100" y="518" font-size="9" fill="#e4e4e4" text-anchor="middle">con resume si se corta</text>
+  </g>
+
+  <!-- Nota inferior -->
+  <text x="600" y="700" font-size="10" fill="#7a7a7a" text-anchor="middle">Zenkai Engine · sin depender de servicios externos · todo en tu PC</text>
+</svg>

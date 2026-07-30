@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0a0a"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </linearGradient>
+    <linearGradient id="orange2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EC5B2B"/>
+      <stop offset="100%" stop-color="#EE7948"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffd77a"/>
+      <stop offset="100%" stop-color="#ffb84a"/>
+    </linearGradient>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#EC5B2B"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="720" fill="url(#bg2)"/>
+
+  <!-- Titlebar -->
+  <rect x="0" y="0" width="1200" height="36" fill="#151515"/>
+  <circle cx="20" cy="18" r="6" fill="#EC5B2B"/>
+  <text x="36" y="22" font-size="12" fill="#e4e4e4" font-weight="600" letter-spacing="0.2em">ZENKAI</text>
+  <text x="150" y="22" font-size="11" fill="#7a7a7a">Chat · Refactor auth.ts</text>
+
+  <!-- Sidebar -->
+  <rect x="0" y="36" width="180" height="684" fill="#0f0f0f"/>
+  <text x="14" y="66" font-size="10" fill="#7a7a7a" letter-spacing="0.15em">SESIONES</text>
+  <rect x="10" y="80" width="160" height="34" fill="rgba(236,91,43,0.12)" stroke="#EC5B2B" stroke-width="1" rx="4"/>
+  <text x="20" y="102" font-size="11" fill="#e4e4e4">▶ Refactor auth.ts</text>
+
+  <!-- Chat area -->
+  <rect x="180" y="36" width="820" height="684" fill="#0a0a0a"/>
+
+  <!-- User message -->
+  <g transform="translate(200, 60)">
+    <rect x="0" y="0" width="780" height="52" fill="rgba(255,255,255,0.03)" rx="4"/>
+    <text x="16" y="24" font-size="10" fill="#7a7a7a" letter-spacing="0.1em">MAYCOL</text>
+    <text x="16" y="42" font-size="12" fill="#e4e4e4">Añadí null-check y refactor a async/await al login handler.</text>
+  </g>
+
+  <!-- Assistant response start -->
+  <g transform="translate(200, 130)">
+    <text x="0" y="16" font-size="10" fill="#EC5B2B" letter-spacing="0.1em" font-weight="700">ZENKAI · QWEN 2.5 CODER 32B</text>
+    <text x="0" y="36" font-size="12" fill="#e4e4e4">Perfecto. Acá va la versión refactorizada con validación explícita:</text>
+  </g>
+
+  <!-- CODE BLOCK con header pulido (v1.23 style) -->
+  <g transform="translate(200, 180)">
+    <!-- Wrapper -->
+    <rect x="0" y="0" width="780" height="240" fill="#0f0f0f" stroke="rgba(255,255,255,0.09)" stroke-width="1" rx="6"/>
+
+    <!-- Header -->
+    <rect x="0" y="0" width="780" height="38" fill="#151515"/>
+    <rect x="0" y="38" width="780" height="1" fill="rgba(255,255,255,0.09)"/>
+    <text x="16" y="24" font-size="11" fill="#EC5B2B" letter-spacing="0.1em" font-weight="700">&lt;/&gt;</text>
+    <text x="42" y="24" font-size="11" fill="#e4e4e4" letter-spacing="0.1em" font-weight="700">TYPESCRIPT</text>
+
+    <!-- Copiar dorado -->
+    <rect x="590" y="6" width="70" height="26" fill="url(#gold)" stroke="#a76d1a" stroke-width="1" rx="4"/>
+    <text x="625" y="24" font-size="10" fill="#1a1a1a" text-anchor="middle" font-weight="700" letter-spacing="0.06em">COPIAR</text>
+
+    <!-- Iconos acción -->
+    <rect x="668" y="6" width="26" height="26" fill="#0f0f0f" stroke="rgba(255,255,255,0.09)" stroke-width="1" rx="4"/>
+    <text x="681" y="24" font-size="11" fill="#7a7a7a" text-anchor="middle">✎</text>
+    <rect x="700" y="6" width="26" height="26" fill="#0f0f0f" stroke="rgba(255,255,255,0.09)" stroke-width="1" rx="4"/>
+    <text x="713" y="24" font-size="11" fill="#7a7a7a" text-anchor="middle">+</text>
+    <rect x="732" y="6" width="26" height="26" fill="#0f0f0f" stroke="rgba(255,255,255,0.09)" stroke-width="1" rx="4"/>
+    <text x="745" y="24" font-size="11" fill="#4ade80" text-anchor="middle">▶</text>
+
+    <!-- Code content -->
+    <g transform="translate(16, 60)" font-size="12">
+      <text y="0"><tspan fill="#c678dd">export async function</tspan> <tspan fill="#61afef">loginHandler</tspan><tspan fill="#abb2bf">(req: Request)</tspan> <tspan fill="#abb2bf">{</tspan></text>
+      <text y="20"><tspan fill="#abb2bf">  </tspan><tspan fill="#c678dd">const</tspan> <tspan fill="#e5c07b">{ email, password }</tspan> = <tspan fill="#c678dd">await</tspan> <tspan fill="#61afef">req.json</tspan><tspan fill="#abb2bf">()</tspan></text>
+      <text y="40"><tspan fill="#abb2bf">  </tspan><tspan fill="#c678dd">if</tspan> <tspan fill="#abb2bf">(!email || !password)</tspan> <tspan fill="#abb2bf">{</tspan></text>
+      <text y="60"><tspan fill="#abb2bf">    </tspan><tspan fill="#c678dd">return</tspan> <tspan fill="#c678dd">new</tspan> <tspan fill="#61afef">Response</tspan><tspan fill="#abb2bf">(</tspan><tspan fill="#98c379">"credenciales faltantes"</tspan><tspan fill="#abb2bf">, { status: </tspan><tspan fill="#d19a66">400</tspan><tspan fill="#abb2bf"> })</tspan></text>
+      <text y="80"><tspan fill="#abb2bf">  }</tspan></text>
+      <text y="100"><tspan fill="#abb2bf">  </tspan><tspan fill="#c678dd">const</tspan> user = <tspan fill="#c678dd">await</tspan> <tspan fill="#61afef">findUser</tspan><tspan fill="#abb2bf">(email)</tspan></text>
+      <text y="120"><tspan fill="#abb2bf">  </tspan><tspan fill="#c678dd">if</tspan> <tspan fill="#abb2bf">(!user)</tspan> <tspan fill="#c678dd">return</tspan> <tspan fill="#c678dd">new</tspan> <tspan fill="#61afef">Response</tspan><tspan fill="#abb2bf">(</tspan><tspan fill="#98c379">"401"</tspan><tspan fill="#abb2bf">, { status: </tspan><tspan fill="#d19a66">401</tspan><tspan fill="#abb2bf"> })</tspan></text>
+      <text y="140"><tspan fill="#abb2bf">  </tspan><tspan fill="#c678dd">return</tspan> <tspan fill="#61afef">issueToken</tspan><tspan fill="#abb2bf">(user)</tspan></text>
+      <text y="160"><tspan fill="#abb2bf">}</tspan></text>
+    </g>
+  </g>
+
+  <!-- Composer bottom -->
+  <g transform="translate(200, 640)">
+    <rect x="0" y="0" width="780" height="50" fill="#0f0f0f" stroke="rgba(236,91,43,0.4)" stroke-width="1" rx="6"/>
+    <text x="16" y="30" font-size="12" fill="#EC5B2B">›</text>
+    <text x="30" y="30" font-size="12" fill="rgba(255,255,255,0.3)">Escribí algo o usá /comandos...</text>
+    <rect x="700" y="10" width="70" height="30" fill="#EC5B2B" rx="4"/>
+    <text x="735" y="30" font-size="11" fill="#000" text-anchor="middle" font-weight="700">Enviar</text>
+  </g>
+
+  <!-- ═════════ FLECHAS ANOTADORAS ═════════ -->
+
+  <!-- 1. Copiar dorado -->
+  <g>
+    <path d="M 1170 195 Q 900 195 830 195" stroke="#ffd77a" stroke-width="2.5" fill="none" marker-end="url(#arrow2)" opacity="0.9"/>
+    <rect x="1000" y="165" width="190" height="56" fill="rgba(255,215,122,0.14)" stroke="#ffd77a" stroke-width="1.5" rx="4"/>
+    <text x="1095" y="185" font-size="10.5" fill="#ffd77a" text-anchor="middle" font-weight="700">COPIAR DORADO</text>
+    <text x="1095" y="203" font-size="9" fill="#e4e4e4" text-anchor="middle">siempre visible</text>
+    <text x="1095" y="213" font-size="9" fill="#e4e4e4" text-anchor="middle">estilo pixel Zenkai</text>
+  </g>
+
+  <!-- 2. Iconos ✎ + ▶ -->
+  <g>
+    <path d="M 1170 305 Q 900 305 800 305" stroke="#4ade80" stroke-width="2.5" fill="none" marker-end="url(#arrow2)"/>
+    <rect x="1000" y="275" width="190" height="56" fill="rgba(74,222,128,0.12)" stroke="#4ade80" stroke-width="1.5" rx="4"/>
+    <text x="1095" y="295" font-size="10.5" fill="#4ade80" text-anchor="middle" font-weight="700">EDITAR · INSERTAR · RUN</text>
+    <text x="1095" y="313" font-size="9" fill="#e4e4e4" text-anchor="middle">disparan CustomEvent</text>
+    <text x="1095" y="323" font-size="9" fill="#e4e4e4" text-anchor="middle">para el compositor</text>
+  </g>
+
+  <!-- 3. Modelo local visible -->
+  <g>
+    <path d="M 190 150 Q 190 150 240 150" stroke="#EC5B2B" stroke-width="2.5" fill="none" marker-end="url(#arrow2)"/>
+    <rect x="10" y="120" width="170" height="60" fill="rgba(236,91,43,0.14)" stroke="#EC5B2B" stroke-width="1.5" rx="4"/>
+    <text x="95" y="140" font-size="10.5" fill="#EC5B2B" text-anchor="middle" font-weight="700">100% LOCAL</text>
+    <text x="95" y="158" font-size="9" fill="#e4e4e4" text-anchor="middle">Qwen 32B en tu PC</text>
+    <text x="95" y="168" font-size="9" fill="#e4e4e4" text-anchor="middle">nada sube a la nube</text>
+    <text x="95" y="177" font-size="9" fill="#e4e4e4" text-anchor="middle">privacidad total</text>
+  </g>
+
+  <!-- 4. Slashes en el compositor -->
+  <g>
+    <path d="M 190 665 Q 190 665 260 665" stroke="#c678dd" stroke-width="2.5" fill="none" marker-end="url(#arrow2)"/>
+    <rect x="10" y="635" width="170" height="60" fill="rgba(198,120,221,0.12)" stroke="#c678dd" stroke-width="1.5" rx="4"/>
+    <text x="95" y="655" font-size="10.5" fill="#c678dd" text-anchor="middle" font-weight="700">SLASH COMMANDS</text>
+    <text x="95" y="673" font-size="9" fill="#e4e4e4" text-anchor="middle">/motor /reparar</text>
+    <text x="95" y="683" font-size="9" fill="#e4e4e4" text-anchor="middle">/parliament /sandbox</text>
+    <text x="95" y="692" font-size="9" fill="#e4e4e4" text-anchor="middle">y 20+ más</text>
+  </g>
+</svg>

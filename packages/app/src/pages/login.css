@@ -1,0 +1,373 @@
+/* Login estilo terminal — Matrix rain de fondo + panels que replican
+   el lenguaje visual del home. Selectores prefijados zenkai-login-* para
+   no chocar con el resto del CSS de la app. */
+
+.zenkai-login {
+  --zk-bg: #0a0a0a;
+  --zk-border-muted: rgba(255, 255, 255, 0.09);
+  --zk-border-accent: rgba(236, 91, 43, 0.42);
+  --zk-text: #e4e4e4;
+  --zk-text-strong: #ffffff;
+  --zk-text-muted: #808080;
+  --zk-accent: #ec5b2b;
+  --zk-accent-warm: #ee7948;
+  --zk-ok: #22c55e;
+  --zk-warn: #f59e0b;
+  --zk-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, Menlo, Consolas, monospace;
+
+  position: fixed;
+  inset: 0;
+  background: var(--zk-bg);
+  color: var(--zk-text);
+  font-family: var(--zk-mono);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.zenkai-login-matrix {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+}
+
+.zenkai-login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 50%,
+      rgba(10, 10, 10, 0.85) 0%,
+      rgba(10, 10, 10, 0.65) 30%,
+      rgba(10, 10, 10, 0.15) 60%,
+      transparent 100%),
+    linear-gradient(180deg,
+      rgba(10, 10, 10, 0.35) 0%,
+      transparent 15%,
+      transparent 85%,
+      rgba(10, 10, 10, 0.55) 100%);
+}
+
+.zenkai-login-scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(255, 255, 255, 0.015) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+}
+
+.zenkai-login-stage {
+  position: relative;
+  z-index: 3;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.zenkai-login-container {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Header logo + wordmark */
+.zenkai-login-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 4px;
+}
+
+.zenkai-login-logo-mark {
+  width: 60px;
+  height: 60px;
+  position: relative;
+  flex-shrink: 0;
+}
+.zenkai-login-logo-mark::before,
+.zenkai-login-logo-mark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--zk-accent);
+  animation: zk-pulse-border 2.4s ease-in-out infinite;
+}
+.zenkai-login-logo-mark::after {
+  transform: rotate(45deg);
+  opacity: 0.5;
+  animation-delay: 0.4s;
+}
+.zenkai-login-logo-mark .core {
+  position: absolute;
+  inset: 22%;
+  background: linear-gradient(135deg, var(--zk-accent) 0%, var(--zk-accent-warm) 100%);
+  box-shadow: 0 0 24px rgba(236, 91, 43, 0.55);
+}
+@keyframes zk-pulse-border {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.05); opacity: 0.4; }
+}
+
+.zenkai-login-wordmark {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.zenkai-login-wordmark h1 {
+  margin: 0;
+  font-family: var(--zk-mono);
+  font-size: 36px;
+  letter-spacing: 0.24em;
+  line-height: 1;
+  color: var(--zk-text-strong);
+  font-weight: 700;
+  background: linear-gradient(135deg, #ec5b2b 0%, #ee7948 50%, #ec5b2b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.zenkai-login-wordmark .subtitle {
+  font-size: 11px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.zenkai-login-wordmark .subtitle .k {
+  color: var(--zk-accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.zenkai-login-wordmark .subtitle .sep { opacity: 0.4; }
+.zenkai-login-wordmark .subtitle .m { opacity: 0.7; }
+
+/* Panels */
+.zenkai-login-panel {
+  position: relative;
+  padding: 22px 22px 20px;
+  border: 1px solid var(--zk-border-accent);
+  background: rgba(236, 91, 43, 0.035);
+  border-radius: 6px;
+  backdrop-filter: blur(2px);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.zenkai-login-panel.panel-muted {
+  border-color: var(--zk-border-muted);
+  background: transparent;
+}
+.zenkai-login-panel .label {
+  position: absolute;
+  top: -8px;
+  left: 14px;
+  padding: 0 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--zk-accent);
+  background: var(--zk-bg);
+}
+.zenkai-login-panel .label.label-plain { color: var(--zk-text-muted); }
+
+/* Prompts */
+.zenkai-login-panel .prompt-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.zenkai-login-panel .prompt-line {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.zenkai-login-panel .field-label {
+  font-size: 10px;
+  color: var(--zk-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.zenkai-login-panel .input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--zk-border-muted);
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+}
+.zenkai-login-panel .input-row:focus-within,
+.zenkai-login-panel .input-row:hover {
+  border-color: var(--zk-accent);
+}
+.zenkai-login-panel .caret {
+  color: var(--zk-accent);
+  font-weight: 700;
+  user-select: none;
+}
+.zenkai-login-panel input {
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--zk-text);
+  font-family: var(--zk-mono);
+  font-size: 13px;
+  flex: 1;
+  padding: 0;
+}
+.zenkai-login-panel input::placeholder { color: rgba(255, 255, 255, 0.28); }
+.zenkai-login-panel .blinker {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: var(--zk-accent);
+  animation: zk-blink 1.1s steps(2) infinite;
+  vertical-align: middle;
+}
+@keyframes zk-blink { 0%, 50% { opacity: 1 } 51%, 100% { opacity: 0 } }
+
+.zenkai-login-panel .actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+.zenkai-login-panel .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--zk-accent) 0%, var(--zk-accent-warm) 100%);
+  color: #0a0a0a;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--zk-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.2s ease;
+}
+.zenkai-login-panel .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(236, 91, 43, 0.35);
+}
+.zenkai-login-panel .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: transparent;
+  color: var(--zk-text-muted);
+  border: 1px solid var(--zk-border-muted);
+  border-radius: 4px;
+  font-family: var(--zk-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.zenkai-login-panel .btn-secondary:hover {
+  color: var(--zk-text-strong);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.zenkai-login-panel .btn-secondary .arrow { color: var(--zk-accent); }
+
+.zenkai-login-panel .alts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px dashed var(--zk-border-muted);
+  font-size: 10.5px;
+  color: var(--zk-text-muted);
+}
+.zenkai-login-panel .provider {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+.zenkai-login-panel .provider:hover { color: var(--zk-text); }
+.zenkai-login-panel .provider .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--zk-accent);
+}
+
+.zenkai-login-panel .status-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  padding: 4px 0;
+}
+.zenkai-login-panel .status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.zenkai-login-panel .status-line .clave {
+  color: var(--zk-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  min-width: 80px;
+}
+.zenkai-login-panel .status-line .valor { color: var(--zk-text); flex: 1; }
+.zenkai-login-panel .status-line .ind {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.zenkai-login-panel .status-line .ind.ok { background: var(--zk-ok); }
+.zenkai-login-panel .status-line .ind.warn { background: var(--zk-warn); }
+
+.zenkai-login-statusbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  opacity: 0.6;
+  padding-top: 4px;
+}
+.zenkai-login-statusbar .left {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.zenkai-login-statusbar .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--zk-ok);
+  animation: zk-pulse-ok 2s ease-in-out infinite;
+}
+@keyframes zk-pulse-ok {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+  50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+}

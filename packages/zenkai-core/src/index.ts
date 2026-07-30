@@ -74,3 +74,6 @@ export * from "./catalog/index"
 export * from "./docs/index"
 export * from "./smoke/index"
 export * from "./sync/index"
+
+// v1.29: Onboarding wizard 30s con modelo tiny bundleado.
+export * from "./onboarding/index"

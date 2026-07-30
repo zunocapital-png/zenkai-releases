@@ -6,8 +6,12 @@
   <a href="https://github.com/zunocapital-png/zenkai-releases/releases/latest">
     <img alt="Última release" src="https://img.shields.io/github/v/release/zunocapital-png/zenkai-releases?style=flat-square&color=EC5B2B" />
   </a>
-  <img alt="Plataformas" src="https://img.shields.io/badge/Windows_·_Linux-x64-EC5B2B?style=flat-square" />
+  <img alt="Plataformas" src="https://img.shields.io/badge/Windows_·_macOS_·_Linux-x64/arm64-EC5B2B?style=flat-square" />
   <img alt="Licencia" src="https://img.shields.io/badge/licencia-MIT-EC5B2B?style=flat-square" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/hero-motor.svg" alt="Zenkai motor: diagnóstico HW auto + catálogo de modelos + tok/s en vivo" width="820"/>
 </p>
 
 ---
@@ -20,82 +24,131 @@
 
 | Plataforma | Archivo | Peso |
 |---|---|---|
-| **Windows** | `zenkai-desktop-win-x64.exe` | ~128 MB |
+| **Windows** | `zenkai-desktop-win-x64.exe` | ~130 MB |
+| **macOS ARM** | `zenkai-desktop-mac-arm64.dmg` | ~140 MB |
 | **Linux .deb** | `zenkai-desktop-linux-amd64.deb` | ~126 MB |
 | **Linux AppImage** | `zenkai-desktop-linux-x86_64.AppImage` | ~164 MB |
 
-Al abrir la app la primera vez, un wizard escanea tu equipo, sugiere el mejor modelo local para tu RAM, y te muestra links directos a proveedores de nube gratis. Ollama viene incluido en el instalador — se prende solo en silencio durante el setup.
+Al abrir la app la primera vez, un **wizard de 30 segundos** te guía: detecta tu equipo, sugiere el mejor modelo, y tenés IA lista para chatear sin configurar nada más.
 
 ---
 
-## 🎯 Qué hace
+## 🎯 Qué hace Zenkai
 
-- **Chat con IA** sobre tu código, offline o con nube gratis.
-- **16 sub-agentes especializados** (reviewer, refactor, debugger, tester, security, arquitecto, y más).
-- **26 herramientas MCP preinstaladas** (Git, filesystem, web, docs, imagen, terminal, browser, etc.).
-- **Multi-modelo real**: elegí el mejor por tarea o dejá que el router decida.
-- **Failover automático**: si un proveedor cae, salta al siguiente sin cortar tu conversación.
-- **Cost tracking en USD** por proveedor y por request.
-- **Auto-update**: la app te avisa cuando sale una versión nueva y actualiza sola.
-- **Offline real**: con qwen3:14b local no necesitás internet.
+Zenkai es un asistente de código que **vive en tu computadora**, con motor local propio + posibilidad de conectar cualquier proveedor cloud si lo elegís.
+
+- **Chat con IA** sobre tu código, offline o con cloud gratis.
+- **Diagnóstico automático de HW** — te dice qué modelo aguanta tu equipo antes de descargar 20 GB al pedo.
+- **Motor propio** compatible con GGUF (Qwen 32B, Llama 70B, DeepSeek R1) sin depender de servicios externos.
+- **Multi-provider con failover** — si un proveedor cae, salta al siguiente sin cortar el stream.
+- **Sub-agentes cognitivos**: reflector, auto-repair, parliament, sandbox.
+- **40+ MCPs curados** (Git, filesystem, web, browser, Postgres, Slack, etc.).
+- **Cost tracking USD real** por proveedor y por request.
+- **Auto-update** con electron-updater.
+
+---
+
+<p align="center">
+  <img src="docs/screenshots/chat-agente.svg" alt="Chat Zenkai con bloque de código pulido + slash commands" width="820"/>
+</p>
+
+## 💬 Chat con bloques de código estilo pro
+
+- Header con **lenguaje visible** + **botón Copiar dorado siempre presente**.
+- Iconos de acción: **✎ editar**, **[+] insertar**, **▶ ejecutar**.
+- Syntax highlight nativo con Shiki para 50+ lenguajes.
+- Streaming en vivo con backpressure real.
 
 ---
 
 ## ⚡ Slash commands
 
-Escribí `/` en el chat para ver todos. Los principales:
+Escribí `/` en el chat para ver todos con autocompletado. Los principales:
 
 | Comando | Qué hace |
 |---|---|
-| `/setup` | Wizard de configuración en 3 pasos |
-| `/estado` | Todo on/off (modelos, MCPs, agentes, proveedores) |
-| `/capacidades` | Qué sabe hacer ZENKAI hoy |
+| `/motor` | Gestor de modelos GGUF + diagnóstico HW + tok/s en vivo |
+| `/comandos` | Catálogo completo de todos los slashes |
+| `/reflexionar` | Otro modelo re-lee la respuesta anterior y la puntúa |
+| `/reparar` | Test → si falla, LLM propone fix → aplica → retesta |
+| `/parliament` | N modelos votan una decisión con confianza |
+| `/sandbox` | Corre código Node/Python/Bash aislado con timeout |
+| `/costos` | Gasto USD por proveedor + budget |
 | `/observability` | Motor en vivo (latencias, health, breaker) |
-| `/costos` | Gasto USD por proveedor |
-| `/twin` | Ficha del proyecto activo |
-| `/politicas` | Reglas declarativas (privacidad, budget, tipo de tarea) |
+| `/setup` | Wizard configuración en 3 pasos |
+| `/estado` | Estado global de todo el sistema |
 | `/imagen` | Generador de imágenes desde el chat |
 | `/computer` | Ver la pantalla mientras la IA la controla |
-| `/parliament` | Debate 2 modelos en paralelo con jurado |
-| `/twin` | Digital Twin del proyecto |
 
 ---
 
 ## 🧠 Modelos soportados
 
 **Locales** (offline, privacidad total):
-`qwen3:14b · qwen3:8b · qwen2.5-coder:7b · qwen2.5:7b · qwen2.5vl (vision) · llava · moondream · minicpm-v · llama3 · mistral · gemma · phi · deepseek`
 
-**Nube gratis** (con tu API key):
-OpenRouter · Groq · NVIDIA NIM · Google Gemini · Together AI · Mistral
+| Rango | Modelos | VRAM/RAM |
+|---|---|---|
+| Tiny | Qwen 2.5 1.5B, Qwen 2.5 3B | 2-4 GB |
+| Small | Qwen 2.5 Coder 7B, Llama 3.1 8B, Phi-4 14B | 6-12 GB |
+| Medium | Qwen 2.5 14B, Codestral 22B | 12-16 GB |
+| Large | **Qwen 2.5 Coder 32B**, Qwen 2.5 32B, **DeepSeek R1 Distill 32B**, QwQ 32B | 24 GB |
+| Frontier | Llama 3.3 70B, Qwen 2.5 72B | 48+ GB |
+| Vision | Qwen 2.5 VL 7B | 8 GB |
 
-**Pagos** (con tu key):
-OpenAI · Anthropic · DeepSeek · cualquier proveedor OpenAI-compatible
+Todos vienen del catálogo curado en `/motor`. Descarga directa desde HuggingFace con progress SSE y resume si se corta.
+
+**Cloud** (opcional, con tu API key):
+OpenAI · Anthropic · Google · Groq · Cerebras · DeepSeek · OpenRouter · Together · Fireworks · Perplexity · Mistral · xAI · NVIDIA NIM · Azure · Bedrock · Vertex · Cohere · 30+ providers preconfigurados.
 
 ---
 
 ## 🔒 Privacidad
 
-- Todo local por default. Nube solo si vos activás tu propia API key.
-- Cero telemetría, cero envío de tu código a terceros sin autorización explícita.
-- Modo "solo local" desde `/politicas` para forzar que nada salga del equipo.
+- **Todo local por default**. Cloud solo si vos activás tu propia API key.
+- **Cero telemetría**, cero envío de tu código a terceros sin autorización explícita.
+- **Modo "solo local"** desde `/politicas` para forzar que nada salga del equipo.
+- **Bundle sync encriptado** AES-256-GCM para llevar sesiones entre dispositivos vía cualquier medio (USB, Dropbox, iCloud) — no montamos backend propio.
 
 ---
 
-## 🚀 Novedades v1.19
+## 🖥️ CLI terminal
 
-**Backend `@zenkai/core` propio** con features únicas en el mercado 2026:
-- Racing entre modelos (mismo prompt a N proveedores en paralelo, gana el más rápido)
-- Cost tracking en USD real por request
-- Adaptive timeout (aprende p95 y ajusta dinámico)
-- Health scores rolling con colores verde/ámbar/rojo
-- Region-aware routing (privacy-first)
-- Budget-aware failover (si un proveedor agota su budget, se saltea)
-- Mid-stream failover (si el stream corta, siguiente proveedor retoma)
-- Heartbeat SSE cada 15s
-- Backpressure real (no bufferea sin límite)
+Además de la app desktop, hay un CLI para automatizar desde terminal:
 
-Activá el motor propio desde **Ajustes → General → "Motor @zenkai/core"**.
+```bash
+zenkai pull qwen2.5-coder-32b-q4    # descargar modelo
+zenkai list                          # listar instalados + tok/s
+zenkai chat "explicá TypeScript generics"
+zenkai diagnostico                   # recomendaciones según tu HW
+zenkai health                        # estado del router
+zenkai smoke                         # 12 checks auto (dogfooding)
+```
+
+Requiere la app desktop corriendo (o `zenkai serve` — WIP standalone).
+
+---
+
+## 🛠️ Features únicos vs competencia
+
+Lo que Zenkai tiene y otras apps no:
+
+- **Diagnóstico HW automático** con recomendación de modelo antes de descargar
+- **Semantic cache** (dedup de requests por similitud coseno con embeddings)
+- **Failover multi-provider** con circuit breaker de 3 estados
+- **AI Parliament** — N modelos votan decisiones críticas
+- **Auto-repair loop** — test → fix propuesto por LLM → retest
+- **Reflector** — sub-agente que re-lee y puntúa respuestas
+- **Cognitive Sandbox** — child_process aislado con env whitelist + timeout
+- **Docker Sandbox** opcional con hardening + fallback graceful
+- **Mobile pairing** por QR con token 64-hex + TTL
+- **Voz duplex** con VAD para interrumpir TTS
+- **LoRA training** con unsloth + progress SSE
+- **Codebase indexer** local en SQLite vector store
+- **Screenshot → código** para React/HTML/Solid/Vue con preview iframe
+- **App scaffold generator** (Vite React, Bun Elysia, static HTML, más)
+- **ZenkaiFile** — superset del Modelfile con MEMORY / CAPABILITY / TOOLS
+
+Total: **310+ tests reales pasando**, typecheck limpio, 30+ endpoints /v2/*.
 
 ---
 
@@ -103,4 +156,4 @@ Activá el motor propio desde **Ajustes → General → "Motor @zenkai/core"**.
 
 **Zuno Company** — Maycol Velazquez · Argentina
 
-Licencia MIT.
+Licencia MIT. Zero subscripciones, zero telemetría, zero drama.
