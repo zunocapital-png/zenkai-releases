@@ -32,7 +32,7 @@ const SECCIONES: { titulo: string; puntos: (string | { b: string; t: string })[]
     puntos: [
       { b: "Por acción", t: "para editar archivos, ejecutar comandos, web, etc.: elegí Preguntar / Permitir / Denegar." },
       { b: "Modo autónomo", t: "la IA actúa sin pedir permiso (rápido; usalo con confianza)." },
-      { b: "Control de PC", t: "permití que la IA vea la pantalla y maneje mouse/teclado (como Claude). Apagado por defecto." },
+      { b: "Control de PC", t: "permití que la IA vea la pantalla y maneje mouse/teclado. Apagado por defecto." },
     ],
   },
   {

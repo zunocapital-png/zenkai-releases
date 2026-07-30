@@ -23,7 +23,7 @@ type Categoria = {
 
 const CATEGORIAS: Categoria[] = [
   {
-    nombre: "Motor propio (reemplazo Ollama)",
+    nombre: "Motor local propio",
     color: "#ff6b35",
     comandos: [
       { slash: "/motor", titulo: "Zenkai Engine", descripcion: "Gestor de modelos GGUF: descarga, carga, unload, borrar. Muestra tok/s y RAM/GPU en vivo.", ejemplo: "/motor → descargar Qwen 2.5 Coder 7B" },

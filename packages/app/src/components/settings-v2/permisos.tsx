@@ -75,7 +75,7 @@ export const SettingsPermisosV2: Component = () => {
         </SettingsRowV2>
         <SettingsRowV2
           title="Permitir control de PC"
-          description="Deja que la IA vea la pantalla y maneje mouse y teclado (como Claude). Apagado por defecto; prendelo solo cuando lo necesites."
+          description="Deja que la IA vea la pantalla y maneje mouse y teclado. Apagado por defecto; prendelo solo cuando lo necesites."
         >
           <Switch checked={controlPc()} onChange={(v) => void toggleControlPc(v)} />
         </SettingsRowV2>
